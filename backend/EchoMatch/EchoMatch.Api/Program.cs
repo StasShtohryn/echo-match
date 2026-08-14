@@ -1,10 +1,12 @@
-using System.Text;
 using EchoMatch.Api.Middleware;
 using EchoMatch.Application;
 using EchoMatch.Infrastructure;
 using EchoMatch.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Text.Json.Serialization;
 
 namespace EchoMatch.Api
 {
@@ -14,9 +16,15 @@ namespace EchoMatch.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            if (builder.Environment.IsDevelopment())
+            {
+                builder.Configuration.AddUserSecrets<Program>();
+            }
+
             // Add services to the container.
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
@@ -25,6 +33,8 @@ namespace EchoMatch.Api
 
             var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
                 ?? throw new InvalidOperationException("Jwt settings are not configured.");
+
+            Console.WriteLine($"[DIAG] Environment={builder.Environment.EnvironmentName}, JwtKeyLength={jwtSettings.Key.Length}, Issuer={jwtSettings.Issuer}");
 
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -42,7 +52,12 @@ namespace EchoMatch.Api
                     };
                 });
 
-            builder.Services.AddAuthorization();
+            builder.Services.AddAuthorization(options =>
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+            });
 
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();
