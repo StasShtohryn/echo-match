@@ -2,11 +2,13 @@ using EchoMatch.Application.Common.Dtos;
 using EchoMatch.Application.Features.Auth.Login;
 using EchoMatch.Application.Features.Auth.Register;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EchoMatch.Api.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
