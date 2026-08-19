@@ -3,6 +3,7 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/space-grotesk";
 @import "@fontsource-variable/merriweather";
+@import "@fontsource-variable/ibm-plex-sans";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -76,7 +77,7 @@
 }
 
 @theme inline {
-    --font-sans: 'Space Grotesk Variable', sans-serif;
+    --font-sans: 'IBM Plex Sans Variable', sans-serif;
     --font-heading: 'Merriweather Variable', serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -127,5 +128,6 @@
     }
   html {
     @apply font-sans;
+    overflow-y: scroll;
     }
 }
