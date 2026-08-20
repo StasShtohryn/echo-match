@@ -13,12 +13,50 @@
 
 ## User Profile
 
-- [ ] Upload Photos
+Basics
+
+- [ ] Display Name
+- [ ] Date Of Birth (18+ required)
+- [ ] Gender
+- [ ] Sexual Orientation
+- [ ] Bio
+- [ ] Occupation / Company / School
+- [ ] Height
+
+Lifestyle
+
+- [ ] Relationship Goal
+- [ ] Family Plans
+- [ ] Communication Style
+- [ ] Love Style
+- [ ] Pets
+- [ ] Drinking
+- [ ] Smoking
+- [ ] Workout
+
+Content
+
+- [ ] Upload Photos (max 9, one main)
 - [ ] Upload Videos
 - [ ] Interests
-- [ ] Bio
-- [ ] Occupation
-- [ ] Facts
+- [ ] Languages
+- [ ] Facts (prompt based: fixed questions, user answers up to 3)
+
+Discovery & Privacy
+
+- [ ] Interested In (feed gender filter)
+- [ ] Geolocation
+- [ ] Profile Visibility (is private)
+- [ ] Last Active
+
+Verification
+
+- [ ] Face Verification (AWS Rekognition) — deferred
+
+Social
+
+- [ ] Instagram / Spotify handles
+- [ ] OAuth integration — deferred
 
 ---
 

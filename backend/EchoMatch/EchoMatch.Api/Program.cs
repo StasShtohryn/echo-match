@@ -34,7 +34,6 @@ namespace EchoMatch.Api
             var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
                 ?? throw new InvalidOperationException("Jwt settings are not configured.");
 
-            Console.WriteLine($"[DIAG] Environment={builder.Environment.EnvironmentName}, JwtKeyLength={jwtSettings.Key.Length}, Issuer={jwtSettings.Issuer}");
 
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
