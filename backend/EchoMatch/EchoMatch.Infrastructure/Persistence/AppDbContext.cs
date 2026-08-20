@@ -1,7 +1,8 @@
-using System.Linq.Expressions;
 using EchoMatch.Domain.Common;
 using EchoMatch.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Linq.Expressions;
 
 namespace EchoMatch.Infrastructure.Persistence;
 
@@ -12,6 +13,12 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+    public DbSet<Photo> Photos => Set<Photo>();
+    public DbSet<Interest> Interests => Set<Interest>();
+    public DbSet<Language> Languages => Set<Language>();
+    public DbSet<ProfilePrompt> ProfilePrompts => Set<ProfilePrompt>();
+    public DbSet<ProfilePromptAnswer> ProfilePromptAnswers => Set<ProfilePromptAnswer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +30,17 @@ public class AppDbContext : DbContext
             {
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(BuildSoftDeleteFilter(entityType.ClrType));
             }
+        }
+
+        foreach (var property in modelBuilder.Model.GetEntityTypes()
+             .SelectMany(entityType => entityType.GetProperties())
+             .Where(property => (Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType).IsEnum))
+        {
+            var enumType = Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType;
+            var converterType = typeof(EnumToStringConverter<>).MakeGenericType(enumType);
+
+            property.SetValueConverter((ValueConverter)Activator.CreateInstance(converterType)!);
+            property.SetMaxLength(50);
         }
 
         base.OnModelCreating(modelBuilder);

@@ -19,12 +19,15 @@ public class GlobalExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        var (statusCode, title) = exception switch
+        var (statusCode, title, exposeDetail) = exception switch
         {
-            ValidationException => (StatusCodes.Status400BadRequest, "Validation error"),
-            ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
-            UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
-            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred")
+            ValidationException => (StatusCodes.Status400BadRequest, "Validation error", true),
+            ArgumentException => (StatusCodes.Status400BadRequest, "Invalid argument", true),
+            ConflictException => (StatusCodes.Status409Conflict, "Conflict", true),
+            NotFoundException => (StatusCodes.Status404NotFound, "Not found", true),
+            ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden", true),
+            UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized", true),
+            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", false)
         };
 
         if (statusCode == StatusCodes.Status500InternalServerError)
@@ -36,7 +39,7 @@ public class GlobalExceptionHandler : IExceptionHandler
         {
             Status = statusCode,
             Title = title,
-            Detail = exception.Message
+            Detail = exposeDetail ? exception.Message : "An unexpected error occurred. Please try again later."
         };
 
         if (exception is ValidationException validationException)
