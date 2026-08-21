@@ -19,6 +19,21 @@ POST /api/auth/register
 POST /api/auth/login
 
 Both accept { email, password } and return { userId, email, accessToken }.
+Anonymous.
+
+Lookup Endpoints
+
+GET /api/lookups
+
+Returns every active lookup list in one response, so onboarding needs a single
+request instead of three.
+
+{ interests: [...], languages: [...], prompts: [...] }
+
+Each item is { id, code, name }. Prompts expose Question as name so all three
+lists share one shape on the client.
+
+Requires authentication. Only IsActive rows are returned.
 
 HTTP
 

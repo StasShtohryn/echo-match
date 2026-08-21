@@ -1,10 +1,11 @@
-using EchoMatch.Api.Middleware;
+﻿using EchoMatch.Api.Middleware;
 using EchoMatch.Application;
 using EchoMatch.Infrastructure;
 using EchoMatch.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -26,7 +27,26 @@ namespace EchoMatch.Api
             builder.Services.AddControllers()
                 .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Встав лише сам токен, без слова Bearer"
+                });
+
+                options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecuritySchemeReference("Bearer", document),
+                        new List<string>()
+                    }
+                });
+            });
 
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
