@@ -18,13 +18,20 @@ import { Link } from "react-router";
 export default function Header() {
 
 return (
-  <Card className="flex flex-row p-3 justify-between m-4 max-w-180 mx-auto">
+  <Card className="m-4 flex w-[calc(100%-2rem)] shrink-0 flex-row justify-between self-center p-3 max-w-180">
     <Link to="/" className="flex items-center text-[16px] gap-2 font-medium">
       <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         <Heart className="size-4" />
       </div>
       EchoMatch
     </Link>
+
+    <Link to={"/messenger"}>
+      <Button variant={"link"} className="cursor-pointer">
+        Месенджер
+      </Button>
+    </Link>
+
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="rounded-full"><Avatar className="w-10 h-10">
           {/* <AvatarImage src="https://github.com/shadcn.png" alt="shadcn" /> */}

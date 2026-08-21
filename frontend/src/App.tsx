@@ -8,6 +8,7 @@ import MessengerPage from "./pages/messenger-page.tsx"
 import PsychologicQuizPage from "./pages/psychologic-quiz-page.tsx"
 import MainLayout from "./layouts/main-layout.tsx"
 import NotFoundPage from "./pages/not-found-page.tsx"
+import VerificationPage from "./pages/verification-page.tsx"
 
 function App() {
 
@@ -32,6 +33,7 @@ function App() {
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verification" element={<VerificationPage />} />
     </Routes>
   )
 }

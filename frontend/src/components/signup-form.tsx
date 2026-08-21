@@ -30,6 +30,7 @@ export function SignupForm({
             id="name"
             type="text"
             placeholder="Іван Петренко"
+            className="border-border bg-card shadow-sm"
             required
           />
         </Field>
@@ -39,6 +40,7 @@ export function SignupForm({
             id="email"
             type="email"
             placeholder="m@example.com"
+            className="border-border bg-card shadow-sm"
             required
           />
           <FieldDescription>
@@ -51,6 +53,7 @@ export function SignupForm({
           <Input
             id="password"
             type="password"
+            className="border-border bg-card shadow-sm"
             required
           />
           <FieldDescription>
@@ -62,6 +65,7 @@ export function SignupForm({
           <Input
             id="confirm-password"
             type="password"
+            className="border-border bg-card shadow-sm"
             required
           />
           <FieldDescription>Підтвердьте свій пароль.</FieldDescription>
