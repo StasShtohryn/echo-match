@@ -26,7 +26,13 @@ export function LoginForm({
         </div>
         <Field>
           <FieldLabel htmlFor="email">Електронна пошта</FieldLabel>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
+            className="border-border bg-card shadow-sm"
+            required
+          />
         </Field>
         <Field>
           <div className="flex items-center">
@@ -38,7 +44,12 @@ export function LoginForm({
               Забули пароль?
             </a> */}
           </div>
-          <Input id="password" type="password" required />
+          <Input
+            id="password"
+            type="password"
+            className="border-border bg-card shadow-sm"
+            required
+          />
         </Field>
         <Field>
           <Button type="submit">Увійти</Button>
