@@ -6,9 +6,23 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit, Mail, Settings, MessageCircle, Heart, HeartHandshake, BadgeCheck } from "lucide-react";
+import { Edit, Settings, MessageCircle, Heart, HeartHandshake, BadgeCheck } from "lucide-react";
+import { useNavigate, Navigate } from "react-router";
+import { useAuthStore } from "@/store/useAuthStore"
 
 export default function ProfilePage() {
+  const { user, logout } = useAuthStore()
+
+  const navigate = useNavigate()
+
+  if (!user) {
+     return <Navigate to="/login" replace />;
+  }
+
+  const initials = user.name
+    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 2xl:max-w-350">
       <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row">
@@ -32,21 +46,21 @@ export default function ProfilePage() {
             <CardContent className="p-6">
               <div className="flex flex-col items-center">
                 <Avatar className="size-20">
-                  {/* <AvatarImage
-                    src="https://github.com/shadcn.png"
-                    alt="User Avatar"
-                  /> */}
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarImage
+                    src={user.picture}
+                    alt={user.name}
+                  />
+                  <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex mt-4 items-center gap-1.5">
-                  <h2 className="text-lg font-semibold">John Doe</h2>
+                  <h2 className="text-lg font-semibold">{user.name}</h2>
                   <Tooltip>
-                    <TooltipTrigger >
+                    <TooltipTrigger>
                       <span className="text-primary hover:opacity-80 transition-opacity">
                         <BadgeCheck className="size-5" />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[240px]">
+                    <TooltipContent side="top" className="max-w-60">
                       <p>Користувач пройшов верифікацію за допомогою сервісу AWS Amazon Rekognition</p>
                     </TooltipContent>
                   </Tooltip>
@@ -55,10 +69,7 @@ export default function ProfilePage() {
                   Архітектор
                 </p>
 
-                <Button className="mt-4 w-full" size="lg">
-                  <Mail className="mr-2 size-4" />
-                  Редагувати
-                </Button>
+
               </div>
 
               <div className="mt-6 space-y-4">
@@ -71,6 +82,9 @@ export default function ProfilePage() {
                   <span>2 год. тому</span>
                 </div>
               </div>
+              <Button className="mt-4 w-full" size="lg" onClick={() => { logout(); navigate("/login") } }>
+                Вийти
+              </Button>
             </CardContent>
           </Card>
         </div>

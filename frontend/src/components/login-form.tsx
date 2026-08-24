@@ -8,13 +8,38 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import googleIcon from "@/assets/signgooglelighttext.png";
-import { Link } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router"
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google"
+import { jwtDecode } from "jwt-decode"
+import { useAuthStore } from "@/store/useAuthStore"
+import type { GoogleUser } from "@/types/user.types"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const navigate = useNavigate()
+
+  const login = useAuthStore((state) => state.login)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  if (isAuthenticated) {
+    return <Navigate to="/me" replace />
+  }
+
+  function handleLogin(cred: CredentialResponse) {
+    if (!cred.credential) return;
+
+    try {
+      const decodedUser = jwtDecode<GoogleUser>(cred.credential)
+
+      login(decodedUser)
+      navigate("/me")
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props}>
       <FieldGroup>
@@ -56,17 +81,7 @@ export function LoginForm({
         </Field>
         <FieldSeparator>Або продовжити за допомогою</FieldSeparator>
         <Field>
-          <button 
-            type="button" 
-            className="max-w-40 w-full mx-auto hover:cursor-pointer"
-            onClick={() => { }}
-          >
-            <img 
-              src={googleIcon} 
-              alt="Увійти через Google" 
-              className="w-full h-auto object-contain" 
-            />
-          </button>
+          <GoogleLogin shape="pill" size="medium" onSuccess={handleLogin} onError={() => console.log("Login failed") }/>
           <FieldDescription className="text-center">
             Ще не маєте облікового запису?{" "}
             <Link to="/register" className="underline underline-offset-4">
