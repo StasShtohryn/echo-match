@@ -1,5 +1,7 @@
 ﻿using EchoMatch.Api.Middleware;
+using EchoMatch.Api.Services;
 using EchoMatch.Application;
+using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Infrastructure;
 using EchoMatch.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -47,6 +49,9 @@ namespace EchoMatch.Api
                     }
                 });
             });
+
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);

@@ -35,6 +35,22 @@ lists share one shape on the client.
 
 Requires authentication. Only IsActive rows are returned.
 
+Profile Endpoints
+
+POST /api/profiles
+
+Creates the profile for the caller. The owner is taken from the JWT, never
+from the request body.
+
+Body: { displayName, dateOfBirth, gender }
+
+201 Created with the full profile.
+409 Conflict if the caller already has a profile.
+400 Bad Request if under 18 or the payload is invalid.
+
+DateOfBirth is set once here and is not accepted by any update endpoint,
+because a freely editable birth date would defeat the 18+ rule.
+
 HTTP
 
 GET
