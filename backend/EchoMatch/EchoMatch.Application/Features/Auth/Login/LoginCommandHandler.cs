@@ -24,7 +24,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponseDto
     {
         var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
 
-        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+        if (user is null || user.PasswordHash is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
             throw new UnauthorizedAccessException("Invalid email or password.");
         }

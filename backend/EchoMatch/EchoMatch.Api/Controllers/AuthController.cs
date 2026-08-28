@@ -1,4 +1,5 @@
 using EchoMatch.Application.Common.Dtos;
+using EchoMatch.Application.Features.Auth.GoogleSignIn;
 using EchoMatch.Application.Features.Auth.Login;
 using EchoMatch.Application.Features.Auth.Register;
 using MediatR;
@@ -30,6 +31,15 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("google")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponseDto>> GoogleSignIn(GoogleSignInCommand command, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(command, cancellationToken);
         return Ok(result);
