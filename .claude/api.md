@@ -21,6 +21,26 @@ POST /api/auth/login
 Both accept { email, password } and return { userId, email, accessToken }.
 Anonymous.
 
+POST /api/auth/google
+
+Body: { idToken } — the Google ID token obtained by the client.
+
+The backend verifies the token against Google public keys and checks that its
+audience equals our Client ID, then issues our own JWT. The response shape is
+the same as register and login.
+
+Account resolution:
+  match by GoogleId          -> returning user
+  else match by Email        -> link GoogleId to the existing account
+  else                        -> create a passwordless account
+
+Linking and creation both require email_verified from Google. An unverified
+email is rejected with 401, otherwise an attacker could squat an address they
+do not own.
+
+Anonymous. 401 if the token is invalid, expired, issued for another audience,
+or the email is unverified.
+
 Lookup Endpoints
 
 GET /api/lookups

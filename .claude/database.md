@@ -125,8 +125,14 @@ Schema
 Auth
 
 User
-  Email, PasswordHash, Role
+  Email, PasswordHash, GoogleId, Role
   1:1 UserProfile
+
+  PasswordHash is null for accounts created through Google.
+  GoogleId is null for accounts created with a password.
+  Both may be set once an account is linked.
+  GoogleId has a unique index. On SQL Server EF adds a filtered index
+  (WHERE GoogleId IS NOT NULL) so that many rows may keep it null.
 
 Profile
 

@@ -24,6 +24,11 @@ public class UserRepository : IUserRepository
         return _context.Users.AnyAsync(u => u.Email == email, cancellationToken);
     }
 
+    public Task<User?> GetByGoogleIdAsync(string googleId, CancellationToken cancellationToken)
+    {
+        return _context.Users.FirstOrDefaultAsync(u => u.GoogleId == googleId, cancellationToken);
+    }
+
     public async Task AddAsync(User user, CancellationToken cancellationToken)
     {
         await _context.Users.AddAsync(user, cancellationToken);
