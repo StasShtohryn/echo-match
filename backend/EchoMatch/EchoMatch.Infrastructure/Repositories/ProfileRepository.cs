@@ -24,6 +24,19 @@ namespace EchoMatch.Infrastructure.Repositories
             await _context.UserProfiles.AddAsync(profile, cancellationToken);
         }
 
+        public Task<UserProfile?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles
+                .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+        }
+
+        public Task<UserProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             return _context.SaveChangesAsync(cancellationToken);
