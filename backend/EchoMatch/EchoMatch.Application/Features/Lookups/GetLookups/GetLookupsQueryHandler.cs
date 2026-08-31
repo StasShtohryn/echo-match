@@ -1,5 +1,6 @@
 ﻿using EchoMatch.Application.Common.Dtos;
 using EchoMatch.Application.Common.Interfaces;
+using EchoMatch.Domain.Enums;
 using MediatR;
 
 
@@ -23,11 +24,25 @@ namespace EchoMatch.Application.Features.Lookups.GetLookups
             var prompts = await _lookupRepository.GetActivePromptsAsync(cancellationToken);
 
             return new LookupsDto
-            (
-                interests.Select(i => new LookupItemDto(i.Id, i.Code, i.Name)).ToList(),
-                languages.Select(l => new LookupItemDto(l.Id, l.Code, l.Name)).ToList(),
-                prompts.Select(p => new LookupItemDto(p.Id, p.Code, p.Question)).ToList()
-            );
+            {
+                Interests = interests.Select(i => new LookupItemDto(i.Id, i.Code, i.Name)).ToList(),
+                Languages = languages.Select(l => new LookupItemDto(l.Id, l.Code, l.Name)).ToList(),
+                Prompts = prompts.Select(p => new LookupItemDto(p.Id, p.Code, p.Question)).ToList(),
+                Options = new EnumOptionsDto
+                {
+                    Gender = Enum.GetNames<Gender>(),
+                    Orientation = Enum.GetNames<SexualOrientation>(),
+                    ShowMe = Enum.GetNames<InterestedIn>(),
+                    LookingFor = Enum.GetNames<RelationshipGoal>(),
+                    FamilyPlans = Enum.GetNames<FamilyPlan>(),
+                    Communication = Enum.GetNames<CommunicationStyle>(),
+                    LoveLanguage = Enum.GetNames<LoveStyle>(),
+                    Pets = Enum.GetNames<PetPreference>(),
+                    Drinking = Enum.GetNames<DrinkingHabit>(),
+                    Smoking = Enum.GetNames<SmokingHabit>(),
+                    Workout = Enum.GetNames<WorkoutHabit>()
+                }
+            };
         }
     }
 }

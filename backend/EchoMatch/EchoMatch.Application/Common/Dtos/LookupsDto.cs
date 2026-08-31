@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace EchoMatch.Application.Common.Dtos
 {
-    public record LookupsDto(
-    IReadOnlyList<LookupItemDto> Interests,
-    IReadOnlyList<LookupItemDto> Languages,
-    IReadOnlyList<LookupItemDto> Prompts);
+    public record LookupsDto
+    {
+        public required IReadOnlyList<LookupItemDto> Interests { get; init; }
+        public required IReadOnlyList<LookupItemDto> Languages { get; init; }
+        public required IReadOnlyList<LookupItemDto> Prompts { get; init; }
+        public required EnumOptionsDto Options { get; init; }
+    }
 }

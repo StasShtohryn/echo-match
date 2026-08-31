@@ -50,6 +50,20 @@ namespace EchoMatch.Api
                 });
             });
 
+            const string corsPolicy = "Frontend";
+
+            var allowedOrigins = builder.Configuration
+                .GetSection("Cors:AllowedOrigins")
+                .Get<string[]>() ?? Array.Empty<string>();
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(corsPolicy, policy => policy
+                    .WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod());
+            });
+
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
@@ -98,6 +112,8 @@ namespace EchoMatch.Api
             app.UseExceptionHandler();
 
             app.UseHttpsRedirection();
+
+            app.UseCors(corsPolicy);
 
             app.UseAuthentication();
             app.UseAuthorization();
