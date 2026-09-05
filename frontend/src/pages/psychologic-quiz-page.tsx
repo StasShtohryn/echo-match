@@ -15,7 +15,25 @@ import {
   QuestionnaireTitle,
 } from "@/components/ui/questionnaire"
 
-const items = [
+type QuizChoice = {
+  value: string;
+  label: string;
+  description?: string;
+};
+
+type QuizItem = {
+  name: string;
+  required: boolean;
+  prompt: string;
+  description: string;
+  choices: QuizChoice[];
+  input?: {
+    label: string;
+    placeholder: string;
+  };
+};
+
+const items: QuizItem[] = [
   {
     name: "q1",
     required: true,
@@ -31,8 +49,8 @@ const items = [
         value: "questions",
         label: "СЧБЬМфів",
         description: "ючбьсмючс.",
-      }
-    ]
+      },
+    ],
   },
   {
     name: "q2",
@@ -44,7 +62,7 @@ const items = [
       { value: "complete", label: "чя.бюьсмьмс" },
     ],
   },
-    {
+  {
     name: "q3",
     required: true,
     prompt: "яч.саьчсм?",
@@ -59,17 +77,18 @@ const items = [
         value: "questions",
         label: "СЧБЬМфів",
         description: "ючбьсмючс.",
-      }
-    ]
+      },
+    ],
+    input: {
+      label: "Додатково",
+      placeholder: "Напишіть коротко",
+    },
   },
-] as const
+];
 
 export default function PsychologicQuizPage() {
-  
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const answers = new FormData(event.currentTarget)
-    // answers.get("direction"), answers.getAll(...) for multiple items.
   }
   
   return (
@@ -118,7 +137,7 @@ export default function PsychologicQuizPage() {
                   ) : null}
                 </QuestionnaireChoice>
               ))}
-              {"input" in question ? (
+              {question.input ? (
                 <QuestionnaireInput
                   aria-label={question.input.label}
                   placeholder={question.input.placeholder}

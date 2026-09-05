@@ -11,30 +11,21 @@ import NotFoundPage from "./pages/not-found-page.tsx"
 import VerificationPage from "./pages/verification-page.tsx"
 
 function App() {
-
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
-        <Route path="/" element={
-            <TooltipProvider>
-              <HomePage />
-            </TooltipProvider>
-          } />
-        <Route path="/quiz" element={<PsychologicQuizPage />} />
-        <Route path="/me" element={
-          <TooltipProvider>
-            <ProfilePage />
-          </TooltipProvider>
-          } />
-        <Route path="/messenger" element={<MessengerPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-
-
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/verification" element={<VerificationPage />} />
-    </Routes>
+    <TooltipProvider>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/quiz" element={<PsychologicQuizPage />} />
+          <Route path="/me" element={<ProfilePage />} />
+          <Route path="/messenger" element={<MessengerPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verification" element={<VerificationPage />} />
+      </Routes>
+    </TooltipProvider>
   )
 }
 
