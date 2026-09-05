@@ -1,6 +1,7 @@
 ﻿using EchoMatch.Application.Common.Dtos;
 using EchoMatch.Application.Common.Exceptions;
 using EchoMatch.Application.Common.Interfaces;
+using EchoMatch.Application.Common.Mappings;
 using EchoMatch.Domain.Entities;
 using MediatR;
 using System;
@@ -44,36 +45,9 @@ namespace EchoMatch.Application.Features.Profiles.CreateProfile
             await _profileRepository.AddAsync(profile, cancellationToken);
             await _profileRepository.SaveChangesAsync(cancellationToken);
 
-            return MapToDto(profile);
+            return profile.ToMyProfileDto();
         }
 
-        private static MyProfileDto MapToDto(UserProfile profile) => new()
-        {
-            Id = profile.Id,
-            DisplayName = profile.DisplayName,
-            DateOfBirth = profile.DateOfBirth,
-            Age = profile.Age,
-            Gender = profile.Gender,
-            Zodiac = profile.Zodiac,
-            Orientation = profile.Orientation,
-            Bio = profile.Bio,
-            Occupation = profile.Occupation,
-            Company = profile.Company,
-            School = profile.School,
-            HeightCm = profile.HeightCm,
-            ShowMe = profile.ShowMe,
-            LookingFor = profile.LookingFor,
-            FamilyPlans = profile.FamilyPlans,
-            Communication = profile.Communication,
-            LoveLanguage = profile.LoveLanguage,
-            Pets = profile.Pets,
-            Drinking = profile.Drinking,
-            Smoking = profile.Smoking,
-            Workout = profile.Workout,
-            InstagramHandle = profile.InstagramHandle,
-            SpotifyHandle = profile.SpotifyHandle,
-            IsPrivate = profile.IsPrivate,
-            IsFaceVerified = profile.IsFaceVerified
-        };
+        
     }
 }

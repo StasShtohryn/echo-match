@@ -6,7 +6,8 @@ namespace EchoMatch.Domain.Entities;
 public class User : BaseEntity
 {
     public string Email { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
+    public string? PasswordHash { get; set; }
+    public string? GoogleId { get; set; }
     public UserRole Role { get; set; } = UserRole.User;
 
     public UserProfile? Profile { get; set; }

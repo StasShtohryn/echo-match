@@ -5,6 +5,7 @@
 - [x] Register
 - [x] Login
 - [x] JWT
+- [x] Google Sign-In
 - [ ] Refresh Token
 - [ ] Email Confirmation
 - [ ] Forgot Password
