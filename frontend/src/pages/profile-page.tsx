@@ -19,8 +19,10 @@ export default function ProfilePage() {
      return <Navigate to="/login" replace />;
   }
 
-  const initials = user.name
-    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+  const displayName = user.name ?? user.email.split("@")[0];
+
+  const initials = displayName
+    ? displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
   return (
@@ -47,13 +49,13 @@ export default function ProfilePage() {
               <div className="flex flex-col items-center">
                 <Avatar className="size-20">
                   <AvatarImage
-                    src={user.picture}
-                    alt={user.name}
+                    src={user.picture ?? undefined}
+                    alt={displayName}
                   />
                   <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex mt-4 items-center gap-1.5">
-                  <h2 className="text-lg font-semibold">{user.name}</h2>
+                  <h2 className="text-lg font-semibold">{displayName}</h2>
                   <Tooltip>
                     <TooltipTrigger>
                       <span className="text-primary hover:opacity-80 transition-opacity">
@@ -66,7 +68,7 @@ export default function ProfilePage() {
                   </Tooltip>
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  Архітектор
+                  {user.provider === "google" ? "Google user" : "Користувач"}
                 </p>
 
 
