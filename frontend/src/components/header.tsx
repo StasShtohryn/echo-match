@@ -37,8 +37,8 @@ export default function Header() {
 
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="rounded-full"><Avatar className="w-10 h-10">
-            <AvatarImage src={user?.picture} alt={user?.name} />
-            <AvatarFallback>ME</AvatarFallback>
+            <AvatarImage src={user?.picture ?? undefined} alt={user?.name ?? user?.email ?? "User"} />
+            <AvatarFallback>{(user?.name ?? user?.email ?? "ME").slice(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar></Button>} />
         <DropdownMenuContent align="center" className="min-w-max">
           <DropdownMenuGroup>
@@ -56,7 +56,7 @@ export default function Header() {
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => logout() }>
+          <DropdownMenuItem onClick={() => logout()}>
             <LogOutIcon />
             Вийти
           </DropdownMenuItem>
