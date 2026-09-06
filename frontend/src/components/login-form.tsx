@@ -16,7 +16,11 @@ import { useAuthStore } from "@/store/useAuthStore"
 import type { GoogleJwtPayload } from "@/types/auth.types"
 import { useState } from "react"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { loginWithPassword } from "@/services/auth-service"
+import {
+  getMyProfile,
+  loginWithPassword,
+  signInWithGoogle,
+} from "@/services/auth-service"
 
 export function LoginForm({
   className,
@@ -33,24 +37,48 @@ export function LoginForm({
     return <Navigate to="/me" replace />
   }
 
-  function handleGoogleLogin(cred: CredentialResponse) {
+  async function handleGoogleLogin(cred: CredentialResponse) {
     if (!cred.credential) return
 
     try {
       const decoded = jwtDecode<GoogleJwtPayload>(cred.credential)
+      const response = await signInWithGoogle(cred.credential)
 
       login({
-        userId: decoded.sub,
-        email: decoded.email,
-        accessToken: cred.credential,
+        userId: response.userId,
+        email: response.email,
+        accessToken: response.accessToken,
         name: decoded.name,
         picture: decoded.picture,
         provider: "google",
       })
 
+      await navigateAfterAuthentication()
+    } catch (error: unknown) {
+      toast.add({
+        type: "error",
+        title: "Не вдалося увійти через Google",
+        description: getApiErrorMessage(error, "Спробуйте ще раз."),
+      })
+    }
+  }
+
+  async function navigateAfterAuthentication() {
+    try {
+      await getMyProfile()
       navigate("/me")
-    } catch (error) {
-      console.error(error)
+    } catch (error: unknown) {
+      const isMissingProfile =
+        error && typeof error === "object" && "response" in error &&
+        error.response && typeof error.response === "object" &&
+        "status" in error.response && error.response.status === 404
+
+      if (isMissingProfile) {
+        navigate("/register?onboarding=1")
+        return
+      }
+
+      throw error
     }
   }
 
@@ -67,7 +95,7 @@ export function LoginForm({
         provider: "local",
       })
 
-      navigate("/me")
+      await navigateAfterAuthentication()
     } catch (error: unknown) {
       const errorMessage =
         error && typeof error === "object" && "response" in error &&
@@ -98,7 +126,9 @@ export function LoginForm({
           <Input
             id="email"
             type="email"
-            placeholder="m@example.com"
+            placeholder="you@example.com"
+            pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+            autoComplete="email"
             className="border-border bg-card shadow-sm"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}

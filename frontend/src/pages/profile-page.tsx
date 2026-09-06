@@ -9,21 +9,76 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Edit, Settings, MessageCircle, Heart, HeartHandshake, BadgeCheck } from "lucide-react";
 import { useNavigate, Navigate } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore"
+import { useEffect, useState } from "react";
+import { getMyProfile, type MyProfile } from "@/services/auth-service";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { toast } from "@/components/ui/toast";
 
 export default function ProfilePage() {
   const { user, logout } = useAuthStore()
+  const [profile, setProfile] = useState<MyProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const navigate = useNavigate()
 
-  if (!user) {
-     return <Navigate to="/login" replace />;
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    let isMounted = true
+
+    async function loadProfile() {
+      try {
+        const result = await getMyProfile()
+        if (isMounted) {
+          setProfile(result)
+        }
+      } catch (error: unknown) {
+        const isMissingProfile =
+          error && typeof error === "object" && "response" in error &&
+          error.response && typeof error.response === "object" &&
+          "status" in error.response && error.response.status === 404
+
+        if (isMounted && isMissingProfile) {
+          navigate("/register?onboarding=1", { replace: true })
+        } else if (isMounted) {
+          toast.add({
+            type: "error",
+            title: "Не вдалося завантажити профіль",
+            description: getApiErrorMessage(error, "Спробуйте ще раз."),
+          })
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadProfile()
+
+    return () => {
+      isMounted = false
+    }
+    }, [navigate, user])
+
+    if (!user) {
+      return <Navigate to="/login" replace />;
+    }
+
+  if (isLoading) {
+    return <div className="container mx-auto px-4 py-6">Завантаження профілю...</div>
   }
 
-  const displayName = user.name ?? user.email.split("@")[0];
+  const displayName = profile?.displayName ?? user.name ?? user.email.split("@")[0];
 
   const initials = displayName
     ? displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
+
+  console.log(profile?.createdAt);
+  
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 2xl:max-w-350">
@@ -56,16 +111,18 @@ export default function ProfilePage() {
                 </Avatar>
                 <div className="flex mt-4 items-center gap-1.5">
                   <h2 className="text-lg font-semibold">{displayName}</h2>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <span className="text-primary hover:opacity-80 transition-opacity">
-                        <BadgeCheck className="size-5" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-60">
-                      <p>Користувач пройшов верифікацію за допомогою сервісу AWS Amazon Rekognition</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  {profile?.isFaceVerified ? 
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <span className="text-primary hover:opacity-80 transition-opacity">
+                          <BadgeCheck className="size-5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-60">
+                        <p>Користувач пройшов верифікацію за допомогою сервісу AWS Amazon Rekognition</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  : ""}
                 </div>
                 <p className="text-muted-foreground text-sm">
                   {user.provider === "google" ? "Google user" : "Користувач"}
@@ -77,11 +134,11 @@ export default function ProfilePage() {
               <div className="mt-6 space-y-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Дата реєстрації</span>
-                  <span>Січ 2024</span>
+                  <span>{profile?.createdAt ? "Профіль заповнено" : "Не вказано"}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Активність</span>
-                  <span>2 год. тому</span>
+                  <span>{profile?.isFaceVerified ? "Верифіковано" : "Не верифіковано"}</span>
                 </div>
               </div>
               <Button className="mt-4 w-full" size="lg" onClick={() => { logout(); navigate("/login") } }>
