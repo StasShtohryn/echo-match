@@ -36,27 +36,33 @@ export default function Header() {
       </Link>
 
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="rounded-full"><Avatar className="w-10 h-10">
-            <AvatarImage src={user?.picture ?? undefined} alt={user?.name ?? user?.email ?? "User"} />
-            <AvatarFallback>{(user?.name ?? user?.email ?? "ME").slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar></Button>} />
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="rounded-full"><Avatar className="w-10 h-10 cursor-pointer">
+          <AvatarImage src={user?.picture ?? undefined} alt={user?.name ?? user?.email ?? "User"} />
+          <AvatarFallback>{(user?.name ?? user?.email ?? "ME").slice(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar></Button>} />
         <DropdownMenuContent align="center" className="min-w-max">
           <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <BellIcon />
-              <Link to={"/notifications"}>Сповіщення</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <User />
-              <Link to={"/me"}>Профіль</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings />
-              Налаштування
-            </DropdownMenuItem>
+            <Link to={"/notifications"} >
+              <DropdownMenuItem className="cursor-pointer">
+                <BellIcon />
+                Сповіщення
+              </DropdownMenuItem>
+            </Link>
+            <Link to={"/me"}>
+              <DropdownMenuItem className="cursor-pointer">
+                <User />
+                Профіль
+              </DropdownMenuItem>
+            </Link>
+            <Link to={"/"} >
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings />
+                Налаштування
+              </DropdownMenuItem>
+            </Link>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => logout()}>
+          <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">
             <LogOutIcon />
             Вийти
           </DropdownMenuItem>
