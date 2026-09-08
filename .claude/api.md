@@ -105,10 +105,83 @@ Settings must not travel through a full-replacement payload belonging to a
 screen that does not display them. An edit-profile form that forgets to echo
 IsPrivate back would silently make a hidden profile public.
 
+PUT /api/profiles/me/interests
+PUT /api/profiles/me/languages
+
+Body: { interestIds: [...] } / { languageIds: [...] }
+
+Full replacement of the collection. Sending [1, 3] leaves exactly those two.
+Returns the resolved list as { id, code, name } so the client needs no second
+request to render what it just saved.
+
+Limits: 5 interests, 10 languages, no duplicates.
+
+PUT /api/profiles/me/prompts
+
+Body: { answers: [ { promptId, answer } ] }
+
+Full replacement, max 3, each prompt answered at most once, answer up to 124
+characters. Display order comes from the array position, so the client controls
+it without an extra field.
+
+Returns [ { promptId, code, question, answer } ] so the client can render the
+saved state without resolving questions itself.
+
+Unknown or inactive ids answer 404 naming them, rather than reaching the
+database and surfacing a foreign key violation as a 500.
+
+Photo Endpoints
+
+POST /api/profiles/me/photos
+
+multipart/form-data with a single field: file.
+JPEG, PNG, WebP, HEIC or HEIF, up to 5 MB. Max 9 photos per profile.
+
+HEIC is accepted because it is the default camera format on iOS. Cloudinary
+normalises it on upload, and f_auto picks the delivery format, so nothing
+downstream ever sees HEIC.
+
+The format check rejects mistakes, not attackers: both Content-Type and the
+file name come from the client. Cloudinary inspects the actual bytes and is the
+real gate.
+
+The limit is checked before the upload leaves for storage, so a rejected tenth
+photo never occupies space in the cloud.
+
+The first photo uploaded becomes the main one automatically.
+
+201 Created with { id, url, isMain, order }.
+409 Conflict when the profile already holds nine photos.
+
+DELETE /api/profiles/me/photos/{photoId}
+
+Removes the file from storage and the row from the database, renumbers Order to
+close the gap, and promotes the next photo to main if the deleted one was main.
+
+204 No Content. A photo belonging to someone else answers 404, not 403, so its
+existence is not revealed.
+
+Deleting the last photo is allowed on purpose. A user must stay able to remove
+an image they published by mistake, so the rule is not "you may not delete" but
+"a profile without a photo is not shown".
+
+MyProfileDto carries isDiscoverable, true when the profile is not private and
+holds at least one photo. The onboarding wizard gates its final step on it, and
+the discovery feed filters on the same condition, so a profile created through
+the API directly still earns no impressions until a photo exists.
+
+PUT /api/profiles/me/photos/{photoId}/main
+
+Clears IsMain on every photo of the profile, then sets it on the target, so the
+"exactly one main" invariant always holds.
+
+204 No Content.
+
 Planned separate endpoints
 
 PATCH /api/profiles/me/visibility    { isPrivate }
 PUT   /api/profiles/me/preferences   { showMe, minAge, maxAge, maxDistanceKm }
+PUT   /api/profiles/me/photos/order  reordering by drag and drop
 
 The second one lands together with swiping, since its other fields have
 nothing to filter until then.
@@ -119,6 +192,14 @@ MyProfileDto      owner view, includes DateOfBirth, ShowMe, IsPrivate
 PublicProfileDto  visitor view, exposes Age instead of DateOfBirth and hides
                   ShowMe (a search preference, not information about the user)
                   and IsPrivate
+
+Both carry the collections: photos, interests, languages, promptAnswers.
+Photos stays an empty array until upload exists, so the response shape is
+already final for the client.
+
+Reads load the profile with every collection and use AsSplitQuery, because four
+collection includes in one statement multiply into a cartesian product that
+repeats all profile columns on every row.
 
 HTTP
 

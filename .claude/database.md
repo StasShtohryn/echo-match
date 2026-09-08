@@ -17,6 +17,13 @@ BaseEntity
   Covered by the global soft delete query filter.
   User, UserProfile, Photo, ProfilePromptAnswer
 
+  Id must not be initialised in code. EF Core generates it, and decides whether
+  an entity found in a tracked collection is new by whether its key is still
+  default. A constructor assigned Guid makes EF read a new child as an existing
+  row and emit an UPDATE that matches nothing, which surfaces as
+  DbUpdateConcurrencyException. EF fills Id during Add, before SaveChanges, so
+  code may still read it right after adding.
+
 LookupEntity
   For reference data we seed ourselves.
   int Id, IsActive.
@@ -149,6 +156,14 @@ UserProfile
 Photo
   UserProfileId, Url, PublicId, IsMain, Order
   Max 9 per profile. Exactly one IsMain.
+  Deleting the main photo promotes the next one by Order.
+  Order is renumbered on delete so new uploads never collide.
+
+Computed on UserProfile, ignored by EF
+
+Age            derived from DateOfBirth
+ZodiacSign     derived from DateOfBirth
+IsDiscoverable not private and holds at least one photo
 
 ProfilePrompt (lookup)
   Code, Question, IsActive

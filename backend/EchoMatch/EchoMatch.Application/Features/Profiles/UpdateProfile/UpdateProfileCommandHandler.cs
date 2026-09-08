@@ -22,7 +22,7 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
 
         public async Task<MyProfileDto> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
         {
-            var profile = await _profileRepository.GetByUserIdAsync(_currentUserService.UserId, cancellationToken)
+            var profile = await _profileRepository.GetByUserIdWithDetailsAsync(_currentUserService.UserId, cancellationToken)
                 ?? throw new NotFoundException("Профіль ще не створено.");
 
             profile.DisplayName = request.DisplayName;

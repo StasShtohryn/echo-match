@@ -38,6 +38,29 @@ dotnet user-secrets set "Jwt:Key" ([Convert]::ToBase64String($bytes))
 
 ---
 
+## 1a. Ключі Cloudinary (потрібні для фото)
+
+Сховище фото. Без цих двох значень працює все, крім завантаження фото —
+`POST /api/profiles/me/photos` падатиме.
+
+Візьми їх у [console.cloudinary.com](https://console.cloudinary.com) →
+**Programmable Media** → **Dashboard** → блок **Product Environment Credentials**:
+
+```powershell
+cd backend/EchoMatch/EchoMatch.Api
+dotnet user-secrets set "Cloudinary:ApiKey" "<API key з дашборду>"
+dotnet user-secrets set "Cloudinary:ApiSecret" "<API secret з дашборду>"
+```
+
+`CloudName` уже лежить у `appsettings.json` — він не секретний, бо видно в
+кожному URL картинки. Секретні тільки ці два, і в репозиторій вони не
+потрапляють.
+
+Стас має надіслати їх особисто — це спільний акаунт проєкту, свій реєструвати
+не треба.
+
+---
+
 ## 2. Підключення до бази
 
 За замовчуванням у `appsettings.json` стоїть:
@@ -127,6 +150,13 @@ https://localhost:7203/swagger
 
 **`IDX10703: key length is zero`**
 Не заданий `Jwt:Key`. Повернись до кроку 1.
+
+**`Invalid cloud_name ...`** при завантаженні фото
+`Cloudinary:CloudName` не збігається зі справжнім. Це технічний ідентифікатор з
+дашборду, а не назва Product Environment. Звір крок 1a.
+
+**`Cloud name must be specified in Account!`**
+Секрети Cloudinary не задані взагалі. Крок 1a.
 
 **`Cannot open database "EchoMatch"` / `A network-related error`**
 Неправильний рядок підключення або сервер не запущений. Перевір, що служба SQL Server працює, і звір крок 2.

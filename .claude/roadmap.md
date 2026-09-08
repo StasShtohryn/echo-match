@@ -37,7 +37,7 @@ Lifestyle
 
 Content
 
-- [ ] Upload Photos (max 9, one main)
+- [x] Upload Photos (max 9, one main) — Cloudinary
 - [ ] Upload Videos
 - [ ] Interests
 - [ ] Languages
@@ -62,6 +62,11 @@ Social
 ---
 
 ## Swiping
+
+The candidate feed must filter on IsDiscoverable: not private, at least one
+photo. A profile that fails it stays reachable by direct link but earns no
+impressions.
+
 
 - [ ] Like
 - [ ] Dislike

@@ -36,5 +36,11 @@ namespace EchoMatch.Application.Common.Dtos
         public string? SpotifyHandle { get; init; }
 
         public required bool IsFaceVerified { get; init; }
+
+
+        public required IReadOnlyList<PhotoDto> Photos { get; init; }
+        public required IReadOnlyList<LookupItemDto> Interests { get; init; }
+        public required IReadOnlyList<LookupItemDto> Languages { get; init; }
+        public required IReadOnlyList<PromptAnswerDto> PromptAnswers { get; init; }
     }
 }

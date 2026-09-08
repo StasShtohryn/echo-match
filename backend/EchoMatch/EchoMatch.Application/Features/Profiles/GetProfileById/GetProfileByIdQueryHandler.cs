@@ -26,7 +26,7 @@ namespace EchoMatch.Application.Features.Profiles.GetProfileById
 
         public async Task<PublicProfileDto> Handle(GetProfileByIdQuery request, CancellationToken cancellationToken)
         {
-            var profile = await _profileRepository.GetByIdAsync(request.Id, cancellationToken);
+            var profile = await _profileRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken);
 
             if (profile is null || (profile.IsPrivate && profile.UserId != _currentUserService.UserId))
             {

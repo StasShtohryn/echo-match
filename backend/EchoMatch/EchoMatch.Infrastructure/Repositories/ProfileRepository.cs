@@ -36,6 +36,54 @@ namespace EchoMatch.Infrastructure.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
         }
+        public Task<UserProfile?> GetByUserIdWithInterestsAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles
+                .Include(p => p.Interests)
+                .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+        }
+
+        public Task<UserProfile?> GetByUserIdWithLanguagesAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles
+                .Include(p => p.Languages)
+                .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+        }
+
+        public Task<UserProfile?> GetByUserIdWithPromptAnswersAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles
+                .Include(p => p.PromptAnswers)
+                .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+        }
+
+
+        private IQueryable<UserProfile> WithDetails()
+        {
+            return _context.UserProfiles
+                .Include(p => p.Photos)
+                .Include(p => p.Interests).ThenInclude(link => link.Interest)
+                .Include(p => p.Languages).ThenInclude(link => link.Language)
+                .Include(p => p.PromptAnswers).ThenInclude(answer => answer.ProfilePrompt)
+                .AsSplitQuery();
+        }
+
+        public Task<UserProfile?> GetByUserIdWithDetailsAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            return WithDetails().FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+        }
+
+        public Task<UserProfile?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return WithDetails().AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        }
+
+        public Task<UserProfile?> GetByUserIdWithPhotosAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles
+                .Include(p => p.Photos)
+                .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+        }
 
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
