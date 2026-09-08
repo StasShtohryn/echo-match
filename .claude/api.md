@@ -137,9 +137,10 @@ POST /api/profiles/me/photos
 multipart/form-data with a single field: file.
 JPEG, PNG, WebP, HEIC or HEIF, up to 5 MB. Max 9 photos per profile.
 
-HEIC is accepted because it is the default camera format on iOS. Cloudinary
-normalises it on upload, and f_auto picks the delivery format, so nothing
-downstream ever sees HEIC.
+HEIC is accepted because it is the default camera format on iOS. Every upload
+is converted to JPEG in storage, so the stored url renders in any browser on
+its own. Delivery transformations may still ask for f_auto to get WebP where
+it is supported, but nothing depends on remembering to.
 
 The format check rejects mistakes, not attackers: both Content-Type and the
 file name come from the client. Cloudinary inspects the actual bytes and is the
@@ -188,7 +189,8 @@ nothing to filter until then.
 
 Two profile shapes
 
-MyProfileDto      owner view, includes DateOfBirth, ShowMe, IsPrivate
+MyProfileDto      owner view, includes DateOfBirth, ShowMe, IsPrivate,
+                  CreatedAt
 PublicProfileDto  visitor view, exposes Age instead of DateOfBirth and hides
                   ShowMe (a search preference, not information about the user)
                   and IsPrivate
@@ -200,6 +202,11 @@ already final for the client.
 Reads load the profile with every collection and use AsSplitQuery, because four
 collection includes in one statement multiply into a cartesian product that
 repeats all profile columns on every row.
+
+DateTime fields are sent as UTC with the Z suffix. SQL Server datetime2 keeps
+no offset, so EF reads values back as Unspecified and the serialiser would drop
+the suffix, leaving the client to read the value as its own local time. The
+mapping restores the kind on the way out.
 
 HTTP
 

@@ -7,6 +7,7 @@ namespace EchoMatch.Application.Common.Dtos
     public record MyProfileDto
     {
         public required Guid Id { get; init; }
+        public required DateTime CreatedAt { get; init; }
         public required string DisplayName { get; init; }
         public required DateOnly DateOfBirth { get; init; }
         public required int Age { get; init; }

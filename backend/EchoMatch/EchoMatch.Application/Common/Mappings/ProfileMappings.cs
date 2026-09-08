@@ -13,6 +13,7 @@ namespace EchoMatch.Application.Common.Mappings
         public static MyProfileDto ToMyProfileDto(this UserProfile profile) => new()
         {
             Id = profile.Id,
+            CreatedAt = DateTime.SpecifyKind(profile.CreatedAt, DateTimeKind.Utc),
             DisplayName = profile.DisplayName,
             DateOfBirth = profile.DateOfBirth,
             Age = profile.Age,
