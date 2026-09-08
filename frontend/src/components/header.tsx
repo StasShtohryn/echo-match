@@ -68,6 +68,6 @@ export default function Header() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </Card >
+    </Card>
   )
 }
