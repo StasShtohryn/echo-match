@@ -2,6 +2,7 @@ using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Infrastructure.Persistence;
 using EchoMatch.Infrastructure.Repositories;
 using EchoMatch.Infrastructure.Security;
+using EchoMatch.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,9 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<ILookupRepository, LookupRepository>();
+
+        services.Configure<CloudinarySettings>(configuration.GetSection(CloudinarySettings.SectionName));
+        services.AddSingleton<IPhotoStorage, CloudinaryPhotoStorage>();
 
         return services;
     }

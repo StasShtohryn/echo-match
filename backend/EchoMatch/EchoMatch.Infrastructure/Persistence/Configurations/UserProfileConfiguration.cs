@@ -40,6 +40,8 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(p => new { p.Gender, p.DateOfBirth });
             builder.HasIndex(p => p.LastActiveAt);
+
+            builder.Ignore(p => p.IsDiscoverable);
         }
     }
 }

@@ -48,6 +48,8 @@ namespace EchoMatch.Domain.Entities
         public bool IsFaceVerified { get; set; }
         public DateTime? LastActiveAt { get; set; }
 
+        public bool IsDiscoverable => !IsPrivate && Photos.Count > 0;
+
         // Зв'язки
         public ICollection<Photo> Photos { get; set; } = new List<Photo>();
         public ICollection<UserInterest> Interests { get; set; } = new List<UserInterest>();

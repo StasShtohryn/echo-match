@@ -36,7 +36,32 @@ namespace EchoMatch.Application.Common.Mappings
             InstagramHandle = profile.InstagramHandle,
             SpotifyHandle = profile.SpotifyHandle,
             IsPrivate = profile.IsPrivate,
-            IsFaceVerified = profile.IsFaceVerified
+            IsFaceVerified = profile.IsFaceVerified,
+            IsDiscoverable = profile.IsDiscoverable,
+
+            Photos = profile.Photos
+                .OrderBy(photo => photo.Order)
+                .Select(photo => new PhotoDto(photo.Id, photo.Url, photo.IsMain, photo.Order))
+                .ToList(),
+
+            Interests = profile.Interests
+                .Select(link => new LookupItemDto(link.Interest.Id, link.Interest.Code, link.Interest.Name))
+                .OrderBy(item => item.Name)
+                .ToList(),
+
+            Languages = profile.Languages
+                .Select(link => new LookupItemDto(link.Language.Id, link.Language.Code, link.Language.Name))
+                .OrderBy(item => item.Name)
+                .ToList(),
+
+            PromptAnswers = profile.PromptAnswers
+                .OrderBy(answer => answer.Order)
+                .Select(answer => new PromptAnswerDto(
+                    answer.ProfilePromptId,
+                    answer.ProfilePrompt.Code,
+                    answer.ProfilePrompt.Question,
+                    answer.Answer))
+                .ToList()
         };
 
         public static PublicProfileDto ToPublicProfileDto(this UserProfile profile) => new()
@@ -62,7 +87,31 @@ namespace EchoMatch.Application.Common.Mappings
             Workout = profile.Workout,
             InstagramHandle = profile.InstagramHandle,
             SpotifyHandle = profile.SpotifyHandle,
-            IsFaceVerified = profile.IsFaceVerified
+            IsFaceVerified = profile.IsFaceVerified,
+
+            Photos = profile.Photos
+                .OrderBy(photo => photo.Order)
+                .Select(photo => new PhotoDto(photo.Id, photo.Url, photo.IsMain, photo.Order))
+                .ToList(),
+
+            Interests = profile.Interests
+                .Select(link => new LookupItemDto(link.Interest.Id, link.Interest.Code, link.Interest.Name))
+                .OrderBy(item => item.Name)
+                .ToList(),
+
+            Languages = profile.Languages
+                .Select(link => new LookupItemDto(link.Language.Id, link.Language.Code, link.Language.Name))
+                .OrderBy(item => item.Name)
+                .ToList(),
+
+            PromptAnswers = profile.PromptAnswers
+                .OrderBy(answer => answer.Order)
+                .Select(answer => new PromptAnswerDto(
+                    answer.ProfilePromptId,
+                    answer.ProfilePrompt.Code,
+                    answer.ProfilePrompt.Question,
+                    answer.Answer))
+                .ToList()
         };
     }
 }
