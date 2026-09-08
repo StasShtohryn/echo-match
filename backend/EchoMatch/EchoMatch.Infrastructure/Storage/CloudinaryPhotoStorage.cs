@@ -30,6 +30,7 @@ public class CloudinaryPhotoStorage : IPhotoStorage
         {
             File = new FileDescription(fileName, content),
             Folder = Folder,
+            Format = "jpg",
             Transformation = new Transformation()
                 .Width(1200)
                 .Height(1200)
