@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-// Типізація повідомлення
 export interface IMessage {
   id: string
   sender: "me" | "match"
@@ -45,7 +44,6 @@ export interface IMessage {
   timestamp?: string
 }
 
-// Початкові дані (приклад)
 const INITIAL_MESSAGES: IMessage[] = [
   { id: "1", sender: "me", text: "Вітаю! Як в тебе справи?", status: "read" },
   { id: "2", sender: "match", text: "Доброго вечора, все чудово, а ти як?" },
@@ -63,7 +61,6 @@ export default function MessengerPage() {
   const [inputValue, setInputValue] = useState("")
   const [isTyping, setIsTyping] = useState(false)
 
-  // Ref для автоматичного скролу вниз
   const viewportRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
@@ -75,12 +72,11 @@ export default function MessengerPage() {
       })
     }
   }
-  // При першому рендері або оновленні списку повідомлень прокручуємо вниз
+
   useEffect(() => {
     scrollToBottom("auto")
   }, [messages, isTyping])
 
-  // Відправка повідомлення
   const handleSendMessage = () => {
     if (!inputValue.trim()) return
 
