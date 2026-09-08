@@ -26,6 +26,7 @@ import {
   createProfile as submitProfile,
   registerWithPassword,
   signInWithGoogle,
+  uploadProfilePhoto,
 } from "@/services/auth-service"
 import {
   Questionnaire,
@@ -90,11 +91,13 @@ function getProfileErrors(formData: {
   name: string
   birthDate: string
   gender: string
+  avatarFile: File | null
 }) {
   const errors: {
     name?: string
     birthDate?: string
     gender?: string
+    avatarFile?: string
   } = {}
 
   if (!formData.name.trim()) {
@@ -127,6 +130,10 @@ function getProfileErrors(formData: {
     errors.gender = "Оберіть стать."
   }
 
+  if (!formData.avatarFile) {
+    errors.avatarFile = "Додайте аватарку."
+  }
+
   return errors
 }
 
@@ -152,6 +159,7 @@ export function SignupForm({
     birthDate: "",
     gender: "",
     avatarUrl: "",
+    avatarFile: null as File | null,
   })
   const [showAccountErrors, setShowAccountErrors] = useState(false)
 
@@ -267,13 +275,14 @@ export function SignupForm({
           gender: formData.gender,
         },
       )
+      const uploadedPhoto = await uploadProfilePhoto(formData.avatarFile as File)
 
       login({
         userId: user.id,
         email: user.email,
         accessToken: user.token,
         name: formData.name,
-        picture: formData.avatarUrl || user.picture,
+        picture: uploadedPhoto.url,
         provider: user.provider,
       })
       navigate("/me")
@@ -475,7 +484,7 @@ export function SignupForm({
             </Select>
           </Field>
           <Field>
-            <FieldLabel htmlFor="avatar">Аватарка (необов'язково)</FieldLabel>
+            <FieldLabel htmlFor="avatar">Аватарка</FieldLabel>
             <Input
               id="avatar"
               type="file"
@@ -484,14 +493,14 @@ export function SignupForm({
               onChange={(event) => {
                 const file = event.target.files?.[0]
                 if (!file) return
-                const reader = new FileReader()
-                reader.onload = () =>
-                  setFormData((previous) => ({
-                    ...previous,
-                    avatarUrl: typeof reader.result === "string" ? reader.result : "",
-                  }))
-                reader.readAsDataURL(file)
+                setFormData((previous) => ({
+                  ...previous,
+                  avatarFile: file,
+                  avatarUrl: URL.createObjectURL(file),
+                }))
               }}
+              aria-invalid={showProfileErrors && !!profileErrors.avatarFile}
+              required
             />
             {formData.avatarUrl && (
               <img
@@ -499,6 +508,9 @@ export function SignupForm({
                 alt="Попередній перегляд аватарки"
                 className="size-20 rounded-full object-cover"
               />
+            )}
+            {showProfileErrors && profileErrors.avatarFile && (
+              <p className="text-sm text-destructive">{profileErrors.avatarFile}</p>
             )}
           </Field>
         </FieldGroup>

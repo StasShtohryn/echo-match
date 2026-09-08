@@ -12,6 +12,13 @@ export interface CreateProfileRequest {
   gender: string
 }
 
+export interface ProfilePhoto {
+  id: string
+  url: string
+  isMain: boolean
+  order: number
+}
+
 export interface MyProfile {
   id: string
   displayName: string
@@ -39,6 +46,7 @@ export interface MyProfile {
   isPrivate: boolean
   isFaceVerified: boolean
   createdAt?: boolean
+  photos: ProfilePhoto[]
 }
 
 export async function loginWithPassword(
@@ -77,5 +85,18 @@ export async function createProfile(
   profile: CreateProfileRequest,
 ): Promise<MyProfile> {
   const response = await api.post<MyProfile>("/profiles", profile)
+  return response.data
+}
+
+export async function uploadProfilePhoto(file: File): Promise<ProfilePhoto> {
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const response = await api.post<ProfilePhoto>("/profiles/me/photos", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  })
+
   return response.data
 }
