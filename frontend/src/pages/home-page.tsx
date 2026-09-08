@@ -3,8 +3,8 @@ import PersonCard from "@/components/person-card";
 export default function HomePage() {
 
   return (
-    // <div className="flex flex-col h-screen items-center justify-center gap-4">
-    <PersonCard />
-    /* </div> */
+    <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+      <PersonCard />
+    </div>
   )
 }
