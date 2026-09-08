@@ -227,8 +227,8 @@ export function SignupForm({
     } catch (error: unknown) {
       const errorMessage =
         error && typeof error === "object" && "response" in error &&
-        error.response && typeof error.response === "object" &&
-        "status" in error.response && error.response.status === 409
+          error.response && typeof error.response === "object" &&
+          "status" in error.response && error.response.status === 409
           ? "Користувач з такою поштою вже існує"
           : getApiErrorMessage(error, "Щось пішло не так")
 
@@ -301,6 +301,7 @@ export function SignupForm({
     <Questionnaire
       item={step}
       items={questionnaireItems}
+      noValidate
       onItemChange={(item) => setStep(item as RegistrationStep)}
       className={cn("flex flex-col gap-6", className)}
       {...props}
@@ -351,7 +352,7 @@ export function SignupForm({
                 className={cn(
                   "bg-card shadow-sm",
                   showAccountErrors && accountErrors.email &&
-                    "border-destructive ring-3 ring-destructive/20"
+                  "border-destructive ring-3 ring-destructive/20"
                 )}
                 required
               />
@@ -370,7 +371,7 @@ export function SignupForm({
                 className={cn(
                   "bg-card shadow-sm",
                   showAccountErrors && accountErrors.password &&
-                    "border-destructive ring-3 ring-destructive/20"
+                  "border-destructive ring-3 ring-destructive/20"
                 )}
                 required
               />
@@ -392,7 +393,7 @@ export function SignupForm({
                 className={cn(
                   "bg-card shadow-sm",
                   showAccountErrors && accountErrors.confirmPassword &&
-                    "border-destructive ring-3 ring-destructive/20"
+                  "border-destructive ring-3 ring-destructive/20"
                 )}
                 required
               />
@@ -420,14 +421,14 @@ export function SignupForm({
               className={cn(
                 "bg-card shadow-sm",
                 showProfileErrors && profileErrors.name &&
-                  "border-destructive ring-3 ring-destructive/20"
+                "border-destructive ring-3 ring-destructive/20"
               )}
               required
             />
           </Field>
           <Field>
             <FieldLabel htmlFor="birthDate">Дата народження</FieldLabel>
-            <QuestionnaireInput
+            <Input
               id="birthDate"
               type="date"
               value={formData.birthDate}
@@ -438,7 +439,7 @@ export function SignupForm({
               className={cn(
                 "bg-card shadow-sm",
                 showProfileErrors && profileErrors.birthDate &&
-                  "border-destructive ring-3 ring-destructive/20"
+                "border-destructive ring-3 ring-destructive/20"
               )}
               required
             />
@@ -461,7 +462,7 @@ export function SignupForm({
                 className={cn(
                   "w-full",
                   showProfileErrors && profileErrors.gender &&
-                    "border-destructive ring-3 ring-destructive/20"
+                  "border-destructive ring-3 ring-destructive/20"
                 )}
               >
                 <SelectValue placeholder="Оберіть стать" />
