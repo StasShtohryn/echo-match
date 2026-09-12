@@ -469,6 +469,8 @@ export function SignupForm({
                 aria-required="true"
                 aria-invalid={showProfileErrors && !!profileErrors.gender}
                 className={cn(
+                  "bg-card",
+                  "shadow-sm",
                   "w-full",
                   showProfileErrors && profileErrors.gender &&
                   "border-destructive ring-3 ring-destructive/20"
