@@ -166,10 +166,15 @@ Deleting the last photo is allowed on purpose. A user must stay able to remove
 an image they published by mistake, so the rule is not "you may not delete" but
 "a profile without a photo is not shown".
 
-MyProfileDto carries isDiscoverable, true when the profile is not private and
-holds at least one photo. The onboarding wizard gates its final step on it, and
-the discovery feed filters on the same condition, so a profile created through
-the API directly still earns no impressions until a photo exists.
+MyProfileDto carries isDiscoverable, true when the profile is not private,
+holds at least one photo and has discovery preferences. The onboarding wizard
+gates its final step on it, and the discovery feed filters on the same
+condition, so a profile created through the API directly still earns no
+impressions until it is complete.
+
+Preferences belong in that rule because the feed filter is mutual: a profile
+that never said whom it wants to see cannot be matched against anyone, so
+showing it would hand out likes it can never return.
 
 PUT /api/profiles/me/photos/{photoId}/main
 
@@ -178,21 +183,51 @@ Clears IsMain on every photo of the profile, then sets it on the target, so the
 
 204 No Content.
 
+Discovery Settings
+
+Three endpoints instead of one, because they belong to different screens and
+change at different rates: the phone sends location on every app open, the
+user edits preferences rarely, and visibility is a single switch. A merged
+payload would make every screen resend fields it does not show.
+
+PUT /api/profiles/me/preferences
+
+Body: { showMe, minAge, maxAge, maxDistanceKm }
+
+Full replacement. Returns the saved { showMe, minAge, maxAge, maxDistanceKm }.
+
+showMe is required. An omitted value is rejected instead of being read as Men,
+the first enum member. minAge and maxAge lie in 18..99 with minAge <= maxAge.
+maxDistanceKm lies in 1..160, or null for no distance limit. As with every full
+replacement, omitting it means null.
+
+A new profile has no preferences, and MyProfileDto.preferences stays null until
+the user saves them. There is no server default on purpose: a default showMe
+would assume the user's orientation, and the profile would start appearing to
+people the user never chose. The client may prefill the form with 18..99 and
+50 km, but nothing is stored until the user confirms.
+
+PUT /api/profiles/me/location
+
+Body: { latitude, longitude }. Both required: an omitted field is rejected
+instead of silently becoming 0, a real point in the Gulf of Guinea. Stamps
+LastLocationUpdatedAt. 204 No Content.
+
+PATCH /api/profiles/me/visibility
+
+Body: { isPrivate }. Required: an omitted value would read as false and
+silently make a hidden profile public. 204 No Content.
+
 Planned separate endpoints
 
-PATCH /api/profiles/me/visibility    { isPrivate }
-PUT   /api/profiles/me/preferences   { showMe, minAge, maxAge, maxDistanceKm }
-PUT   /api/profiles/me/photos/order  reordering by drag and drop
-
-The second one lands together with swiping, since its other fields have
-nothing to filter until then.
+PUT /api/profiles/me/photos/order  reordering by drag and drop
 
 Two profile shapes
 
-MyProfileDto      owner view, includes DateOfBirth, ShowMe, IsPrivate,
-                  CreatedAt
+MyProfileDto      owner view, includes DateOfBirth, IsPrivate, CreatedAt and
+                  preferences { showMe, minAge, maxAge, maxDistanceKm }
 PublicProfileDto  visitor view, exposes Age instead of DateOfBirth and hides
-                  ShowMe (a search preference, not information about the user)
+                  preferences (what the user searches for, not who they are)
                   and IsPrivate
 
 Both carry the collections: photos, interests, languages, promptAnswers.

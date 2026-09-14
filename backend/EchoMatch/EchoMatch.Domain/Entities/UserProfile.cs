@@ -23,8 +23,8 @@ namespace EchoMatch.Domain.Entities
         public int? HeightCm { get; set; }
 
         // Пошук
-        public InterestedIn? ShowMe { get; set; }
         public RelationshipGoal? LookingFor { get; set; }
+        public DiscoveryPreferences? Preferences { get; set; }
 
         // Спосіб життя
         public FamilyPlan? FamilyPlans { get; set; }
@@ -48,7 +48,7 @@ namespace EchoMatch.Domain.Entities
         public bool IsFaceVerified { get; set; }
         public DateTime? LastActiveAt { get; set; }
 
-        public bool IsDiscoverable => !IsPrivate && Photos.Count > 0;
+        public bool IsDiscoverable => !IsPrivate && Photos.Count > 0 && Preferences is not null;
 
         // Зв'язки
         public ICollection<Photo> Photos { get; set; } = new List<Photo>();

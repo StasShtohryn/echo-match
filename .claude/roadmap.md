@@ -16,38 +16,40 @@
 
 Basics
 
-- [ ] Display Name
-- [ ] Date Of Birth (18+ required)
-- [ ] Gender
-- [ ] Sexual Orientation
-- [ ] Bio
-- [ ] Occupation / Company / School
-- [ ] Height
+- [x] Display Name
+- [x] Date Of Birth (18+ required)
+- [x] Gender
+- [x] Sexual Orientation
+- [x] Bio
+- [x] Occupation / Company / School
+- [x] Height
 
 Lifestyle
 
-- [ ] Relationship Goal
-- [ ] Family Plans
-- [ ] Communication Style
-- [ ] Love Style
-- [ ] Pets
-- [ ] Drinking
-- [ ] Smoking
-- [ ] Workout
+- [x] Relationship Goal
+- [x] Family Plans
+- [x] Communication Style
+- [x] Love Style
+- [x] Pets
+- [x] Drinking
+- [x] Smoking
+- [x] Workout
 
 Content
 
 - [x] Upload Photos (max 9, one main) — Cloudinary
+- [ ] Photo reordering
 - [ ] Upload Videos
-- [ ] Interests
-- [ ] Languages
-- [ ] Facts (prompt based: fixed questions, user answers up to 3)
+- [x] Interests
+- [x] Languages
+- [x] Facts (prompt based: fixed questions, user answers up to 3)
 
 Discovery & Privacy
 
-- [ ] Interested In (feed gender filter)
-- [ ] Geolocation
-- [ ] Profile Visibility (is private)
+- [x] Interested In — editable; applied once the feed exists
+- [x] Age range and max distance preferences — editable; applied once the feed exists
+- [x] Geolocation
+- [x] Profile Visibility (is private)
 - [ ] Last Active
 
 Verification
@@ -56,7 +58,7 @@ Verification
 
 Social
 
-- [ ] Instagram / Spotify handles
+- [x] Instagram / Spotify handles
 - [ ] OAuth integration — deferred
 
 ---
@@ -64,7 +66,7 @@ Social
 ## Swiping
 
 The candidate feed must filter on IsDiscoverable: not private, at least one
-photo. A profile that fails it stays reachable by direct link but earns no
+photo, discovery preferences set. A profile that fails it stays reachable by direct link but earns no
 impressions.
 
 

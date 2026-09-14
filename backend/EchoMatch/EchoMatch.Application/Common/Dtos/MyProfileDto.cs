@@ -21,8 +21,8 @@ namespace EchoMatch.Application.Common.Dtos
         public string? School { get; init; }
         public int? HeightCm { get; init; }
 
-        public InterestedIn? ShowMe { get; init; }
         public RelationshipGoal? LookingFor { get; init; }
+        public DiscoveryPreferencesDto? Preferences { get; init; }
 
         public FamilyPlan? FamilyPlans { get; init; }
         public CommunicationStyle? Communication { get; init; }
