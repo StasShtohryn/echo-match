@@ -60,7 +60,7 @@ export default function PersonCard() {
           </Badge>
           <Badge >
             <Tooltip >
-              <TooltipTrigger render={<Button>+2</Button>} />
+              <TooltipTrigger render={<Badge className="cursor-pointer">+2</Badge>} />
               <TooltipContent className="max-w-70 bg-chart-4">
                 <p className="flex flex-row gap-2 justify-center items-center"><Badge className="bg-sidebar-ring">Астрологія</Badge><Badge className="bg-sidebar-ring">Нумізматика</Badge></p>
               </TooltipContent>
@@ -69,7 +69,7 @@ export default function PersonCard() {
         </CardFooter>
       </Card>
       <div className="flex flex-row gap-4 justify-center items-center" >
-        <Card className="flex flex-row gap-4 py-2 px-7">
+        <Card className="flex flex-row items-center gap-4 py-2 px-7">
           <Button variant={"outline"} size={"icon-lg"} className="h-11 w-11 cursor-pointer">
             <Undo2 />
           </Button>

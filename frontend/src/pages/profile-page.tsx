@@ -15,7 +15,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { toast } from "@/components/ui/toast";
 
 export default function ProfilePage() {
-  const { user, logout } = useAuthStore()
+  const { user, login, logout } = useAuthStore()
   const [profile, setProfile] = useState<MyProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -33,6 +33,18 @@ export default function ProfilePage() {
         const result = await getMyProfile()
         if (isMounted) {
           setProfile(result)
+
+          const mainPhoto = result.photos.find((photo) => photo.isMain) ?? result.photos[0]
+          if (mainPhoto && mainPhoto.url !== user.picture) {
+            login({
+              userId: user.id,
+              email: user.email,
+              accessToken: user.token,
+              name: result.displayName,
+              picture: mainPhoto.url,
+              provider: user.provider,
+            })
+          }
         }
       } catch (error: unknown) {
         const isMissingProfile =
@@ -77,6 +89,9 @@ export default function ProfilePage() {
     ? displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
+  const mainPhoto = profile?.photos.find((photo) => photo.isMain) ?? profile?.photos[0]
+  const profilePicture = mainPhoto?.url ?? user.picture
+
   console.log(profile?.createdAt);
   
 
@@ -104,7 +119,7 @@ export default function ProfilePage() {
               <div className="flex flex-col items-center">
                 <Avatar className="size-20">
                   <AvatarImage
-                    src={user.picture ?? undefined}
+                    src={profilePicture ?? undefined}
                     alt={displayName}
                   />
                   <AvatarFallback>{initials}</AvatarFallback>
