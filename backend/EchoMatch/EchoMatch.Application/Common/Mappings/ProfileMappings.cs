@@ -25,7 +25,7 @@ namespace EchoMatch.Application.Common.Mappings
             Company = profile.Company,
             School = profile.School,
             HeightCm = profile.HeightCm,
-            ShowMe = profile.ShowMe,
+            Preferences = profile.Preferences?.ToDto(),
             LookingFor = profile.LookingFor,
             FamilyPlans = profile.FamilyPlans,
             Communication = profile.Communication,

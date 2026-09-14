@@ -35,6 +35,17 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
                 location.Property(l => l.Longitude).HasColumnName("Longitude");
             });
 
+            // Без HasDefaultValue: з ним EF підміняє Men і null значенням бази
+            // і при вставці, і при заміні налаштувань. Наявні рядки заповнює міграція.
+            builder.OwnsOne(p => p.Preferences, preferences =>
+            {
+                preferences.Property(x => x.ShowMe).HasColumnName("ShowMe");
+                preferences.Property(x => x.MinAge).HasColumnName("MinAgePreference");
+                preferences.Property(x => x.MaxAge).HasColumnName("MaxAgePreference");
+                preferences.Property(x => x.MaxDistanceKm).HasColumnName("MaxDistanceKm");
+            });
+
+
             builder.Ignore(p => p.Age);
             builder.Ignore(p => p.Zodiac);
 
@@ -42,6 +53,8 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
             builder.HasIndex(p => p.LastActiveAt);
 
             builder.Ignore(p => p.IsDiscoverable);
+
+
         }
     }
 }

@@ -72,6 +72,18 @@ Always create new migration.
 
 Never use EnsureCreated().
 
+A freshly generated migration may be edited before it is applied. Once applied
+anywhere it is history.
+
+Review every generated migration that adds a NOT NULL column or makes one NOT
+NULL. EF fills existing rows with the CLR default (0, empty string), which is
+rarely a valid value.
+
+Do not use HasDefaultValue on a property whose CLR default is a legitimate
+value (0, false, null, the first enum member). EF reads that value as "not set"
+and writes the database default instead, both on insert and when an owned
+instance is replaced. Put the value for existing rows in the migration.
+
 Enum Storage
 
 Store enums as string.
@@ -147,7 +159,8 @@ UserProfile
   UserId
   DisplayName, DateOfBirth, Gender          (required)
   Orientation, Bio, Occupation, Company, School, HeightCm
-  ShowMe, LookingFor                        (discovery)
+  LookingFor
+  Preferences (DiscoveryPreferences, see Value Objects)
   FamilyPlans, Communication, LoveLanguage, Pets, Drinking, Smoking, Workout
   InstagramHandle, SpotifyHandle
   Location (owned value object: Latitude, Longitude), LastLocationUpdatedAt
@@ -163,7 +176,7 @@ Computed on UserProfile, ignored by EF
 
 Age            derived from DateOfBirth
 ZodiacSign     derived from DateOfBirth
-IsDiscoverable not private and holds at least one photo
+IsDiscoverable not private, holds at least one photo, preferences set
 
 ProfilePrompt (lookup)
   Code, Question, IsActive
@@ -192,3 +205,19 @@ GeoLocation
   Latitude, Longitude
   Mapped with OwnsOne. No separate table.
   Validates range on construction.
+
+DiscoveryPreferences
+  ShowMe, MinAge, MaxAge, MaxDistanceKm
+  Mapped with OwnsOne into UserProfiles as ShowMe, MinAgePreference,
+  MaxAgePreference, MaxDistanceKm. Optional: null until the user saves them,
+  so every column is nullable. EF treats the object as present when ShowMe,
+  MinAge and MaxAge are set, so a stored MaxDistanceKm of null still reads as
+  "no distance limit", not as "no preferences".
+  What the user searches for, kept apart from what the profile says about
+  them. Not a table of its own: the feed checks both sides' preferences for
+  every candidate, so a join per row would cost on the hottest query, and
+  preferences have no identity and never exist without their profile.
+  MaxDistanceKm null means no distance limit.
+  Validates ranges on construction. EF materialises it through the private
+  constructor, so those checks do not run on read, and bad stored values
+  surface as wrong filtering rather than an error.

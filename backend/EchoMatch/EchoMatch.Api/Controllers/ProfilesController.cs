@@ -7,7 +7,10 @@ using EchoMatch.Application.Features.Profiles.SetInterests;
 using EchoMatch.Application.Features.Profiles.SetLanguages;
 using EchoMatch.Application.Features.Profiles.SetMainPhoto;
 using EchoMatch.Application.Features.Profiles.SetPromptAnswers;
+using EchoMatch.Application.Features.Profiles.UpdateLocation;
+using EchoMatch.Application.Features.Profiles.UpdatePreferences;
 using EchoMatch.Application.Features.Profiles.UpdateProfile;
+using EchoMatch.Application.Features.Profiles.UpdateVisibility;
 using EchoMatch.Application.Features.Profiles.UploadPhoto;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -136,6 +139,43 @@ namespace EchoMatch.Api.Controllers
         public async Task<IActionResult> SetMainPhoto(Guid photoId, CancellationToken cancellationToken)
         {
             await _sender.Send(new SetMainPhotoCommand(photoId), cancellationToken);
+            return NoContent();
+        }
+
+
+        [HttpPut("me/preferences")]
+        [ProducesResponseType(typeof(DiscoveryPreferencesDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<DiscoveryPreferencesDto>> UpdatePreferences(
+            UpdatePreferencesCommand command,
+            CancellationToken cancellationToken)
+        {
+            var result = await _sender.Send(command, cancellationToken);
+            return Ok(result);
+        }
+
+        [HttpPut("me/location")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateLocation(
+            UpdateLocationCommand command,
+            CancellationToken cancellationToken)
+        {
+            await _sender.Send(command, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPatch("me/visibility")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateVisibility(
+            UpdateVisibilityCommand command,
+            CancellationToken cancellationToken)
+        {
+            await _sender.Send(command, cancellationToken);
             return NoContent();
         }
     }
