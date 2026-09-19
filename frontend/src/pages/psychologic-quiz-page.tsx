@@ -90,32 +90,32 @@ export default function PsychologicQuizPage() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
   }
-  
+
   return (
     <div className="max-w-4xl p-12 mx-auto">
       <Questionnaire items={items} onSubmit={handleSubmit}>
-      <QuestionnaireProgress
-        className="w-full"
-        render={(props, state) => (
-          <div {...props}>
-            <div className="mb-2 flex gap-1.5" aria-hidden="true">
-              {Array.from({ length: state.total }, (_, index) => (
-                <span
-                  key={index}
-                  className={
-                    index < state.current
-                      ? "h-1.5 flex-1 rounded-full bg-primary"
-                      : "h-1.5 flex-1 rounded-full bg-muted"
-                  }
-                />
-              ))}
+        <QuestionnaireProgress
+          className="w-full"
+          render={(props, state) => (
+            <div {...props}>
+              <div className="mb-2 flex gap-1.5" aria-hidden="true">
+                {Array.from({ length: state.total }, (_, index) => (
+                  <span
+                    key={index}
+                    className={
+                      index < state.current
+                        ? "h-1.5 flex-1 rounded-full bg-primary"
+                        : "h-1.5 flex-1 rounded-full bg-muted"
+                    }
+                  />
+                ))}
+              </div>
+              <span>
+                Питання {state.current} з {state.total}
+              </span>
             </div>
-            <span>
-              Питання {state.current} з {state.total}
-            </span>
-          </div>
-        )}
-      />
+          )}
+        />
         {items.map((question) => (
           <QuestionnaireItem
             key={question.name}
@@ -150,7 +150,7 @@ export default function PsychologicQuizPage() {
         <QuestionnaireActions>
           <QuestionnairePrevious children="Попереднє" />
           <QuestionnaireSkip children="Пропустити" />
-          <QuestionnaireNext children="Наступне"/>
+          <QuestionnaireNext children="Наступне" />
           <QuestionnaireSubmit children="Завершити" />
         </QuestionnaireActions>
       </Questionnaire>
