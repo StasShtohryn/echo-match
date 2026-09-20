@@ -176,6 +176,11 @@ Preferences belong in that rule because the feed filter is mutual: a profile
 that never said whom it wants to see cannot be matched against anyone, so
 showing it would hand out likes it can never return.
 
+readiness names the first thing missing — Hidden, PhotoRequired,
+PreferencesRequired or Ready — so the wizard opens the right step without
+inspecting three fields. Both come from one rule in the domain, where
+isDiscoverable is defined as readiness == Ready.
+
 PUT /api/profiles/me/photos/{photoId}/main
 
 Clears IsMain on every photo of the profile, then sets it on the target, so the
@@ -224,8 +229,9 @@ PUT /api/profiles/me/photos/order  reordering by drag and drop
 
 Two profile shapes
 
-MyProfileDto      owner view, includes DateOfBirth, IsPrivate, CreatedAt and
-                  preferences { showMe, minAge, maxAge, maxDistanceKm }
+MyProfileDto      owner view, includes DateOfBirth, IsPrivate, CreatedAt,
+                  readiness, and preferences { showMe, minAge, maxAge,
+                  maxDistanceKm }
 PublicProfileDto  visitor view, exposes Age instead of DateOfBirth and hides
                   preferences (what the user searches for, not who they are)
                   and IsPrivate
@@ -242,6 +248,71 @@ DateTime fields are sent as UTC with the Z suffix. SQL Server datetime2 keeps
 no offset, so EF reads values back as Unspecified and the serialiser would drop
 the suffix, leaving the client to read the value as its own local time. The
 mapping restores the kind on the way out.
+
+Swipe Endpoints
+
+POST /api/swipes
+
+Body: { targetProfileId, direction }   direction: Like | Dislike
+
+Records the caller's decision about another profile and reports whether it
+produced a match: { isMatch, matchId }. 200, not 201: the point of the reply is
+the outcome, and there is no swipe resource to fetch afterwards.
+
+A match is created when a like meets an earlier like from the other side. The
+swipe and the match are saved in one transaction.
+
+direction is required: an omitted value would read as Like, the first enum
+member, and silently like someone the user meant to pass.
+
+400  swiping oneself, or invalid payload
+404  the caller has no profile, or the target does not exist
+409  the caller already swiped this person, unless it was a dislike older than
+     30 days, which the new decision overwrites
+
+Two simultaneous likes can each miss the other's uncommitted row and produce no
+match. The unique index prevents the opposite failure, a duplicate match.
+Reconciliation lands with the matches list.
+
+Discovery Endpoint
+
+GET /api/discovery?limit=20
+
+Returns the next batch of candidate cards:
+
+{ status, candidates: [ { profile, distanceKm } ] }
+
+Ready                at least one card
+NoCandidates         everything is set up, nobody matched
+ProfileHidden        the caller turned their own visibility off
+PhotoRequired        no photo yet
+PreferencesRequired  discovery preferences never saved
+LocationRequired     a distance limit is set but coordinates are missing
+
+An empty feed is a screen state, not a failure, so none of these is an error
+code: the client reads status and shows the matching prompt instead of parsing
+a message. Ready always carries at least one card.
+
+limit is 1..50, default 20. There is no page number. Swiped people drop out of
+the query, so asking again returns the next batch, and offset paging would skip
+exactly as many people as were swiped between the two calls. The client fetches
+again when about three cards remain and drops ids it already holds, since a
+card it has not swiped yet is still free as far as the server knows.
+
+Every filter is mutual — the candidate matches the caller's preferences and the
+caller matches theirs:
+
+  visibility   the candidate is discoverable
+  gender       each side's ShowMe accepts the other's Gender
+  age          each side's age falls inside the other's range
+  distance     within min(both limits); null on either side lifts that side
+  swipes       the caller has no like, and no dislike newer than 30 days
+
+distanceKm is rounded up to whole kilometres and never below 1: exact metres
+across a few updates would locate someone's home. It is null when no limit
+applies on either side, so the distance was never needed.
+
+Candidates come back in random order. Ranking waits for real usage data.
 
 HTTP
 

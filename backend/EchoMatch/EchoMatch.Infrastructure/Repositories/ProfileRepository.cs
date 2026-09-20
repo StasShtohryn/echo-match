@@ -85,6 +85,30 @@ namespace EchoMatch.Infrastructure.Repositories
                 .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
         }
 
+        public Task<Guid?> GetIdByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles
+                .Where(p => p.UserId == userId)
+                .Select(p => (Guid?)p.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public Task<bool> ExistsAsync(Guid profileId, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles.AnyAsync(p => p.Id == profileId, cancellationToken);
+        }
+
+
+        public async Task<IReadOnlyList<UserProfile>> GetManyWithDetailsAsync(
+            IReadOnlyCollection<Guid> ids,
+            CancellationToken cancellationToken)
+        {
+            return await WithDetails()
+                .AsNoTracking()
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync(cancellationToken);
+        }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             return _context.SaveChangesAsync(cancellationToken);

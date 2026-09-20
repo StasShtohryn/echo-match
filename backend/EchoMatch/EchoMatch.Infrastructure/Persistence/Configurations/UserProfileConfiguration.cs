@@ -53,6 +53,7 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
             builder.HasIndex(p => p.LastActiveAt);
 
             builder.Ignore(p => p.IsDiscoverable);
+            builder.Ignore(p => p.Readiness);
 
 
         }

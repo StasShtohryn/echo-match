@@ -4,6 +4,8 @@ namespace EchoMatch.Domain.ValueObjects
 {
     public class GeoLocation
     {
+        private const double EarthRadiusKm = 6371;
+
         public double Latitude { get; private set; }
         public double Longitude { get; private set; }
 
@@ -27,7 +29,6 @@ namespace EchoMatch.Domain.ValueObjects
 
         public double DistanceKmTo(GeoLocation other)
         {
-            const double earthRadiusKm = 6371;
 
             var dLat = ToRadians(other.Latitude - Latitude);
             var dLon = ToRadians(other.Longitude - Longitude);
@@ -36,8 +37,29 @@ namespace EchoMatch.Domain.ValueObjects
                     + Math.Cos(ToRadians(Latitude)) * Math.Cos(ToRadians(other.Latitude))
                     * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
 
-            return earthRadiusKm * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return EarthRadiusKm * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         }
+
+
+        // Квадрат, у який гарантовано вміщується коло заданого радіуса. Це грубий
+        // фільтр для бази, точну відстань рахує DistanceKmTo. Запас 1% покриває
+        // те, що коло на сфері трохи ширше за наближення. Перехід через 180-й
+        // меридіан не враховано — для наших широт і довгот це не актуально.
+        public GeoBounds BoundingBox(double radiusKm)
+        {
+            const double margin = 1.01;
+            var kmPerDegree = EarthRadiusKm * Math.PI / 180;
+
+            var latitudeDelta = radiusKm * margin / kmPerDegree;
+            var longitudeDelta = radiusKm * margin / (kmPerDegree * Math.Max(Math.Cos(ToRadians(Latitude)), 0.01));
+
+            return new GeoBounds(
+                Latitude - latitudeDelta,
+                Latitude + latitudeDelta,
+                Longitude - longitudeDelta,
+                Longitude + longitudeDelta);
+        }
+
 
         private static double ToRadians(double degrees) => degrees * Math.PI / 180;
 

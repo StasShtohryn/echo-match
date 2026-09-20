@@ -70,9 +70,12 @@ photo, discovery preferences set. A profile that fails it stays reachable by dir
 impressions.
 
 
-- [ ] Like
-- [ ] Dislike
-- [ ] Match Detection
+- [x] Like
+- [x] Dislike (expires after 30 days, likes never do)
+- [x] Match Detection
+- [x] Candidate feed (mutual filters, random order)
+- [ ] Widen-radius hint for an empty feed
+- [ ] Matches list
 - [ ] Undo Like
 
 ---

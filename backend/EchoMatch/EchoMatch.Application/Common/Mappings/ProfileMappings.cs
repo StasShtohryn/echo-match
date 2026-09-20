@@ -39,6 +39,7 @@ namespace EchoMatch.Application.Common.Mappings
             IsPrivate = profile.IsPrivate,
             IsFaceVerified = profile.IsFaceVerified,
             IsDiscoverable = profile.IsDiscoverable,
+            Readiness = profile.Readiness,
 
             Photos = profile.Photos
                 .OrderBy(photo => photo.Order)
