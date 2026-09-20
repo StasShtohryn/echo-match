@@ -1,4 +1,5 @@
-import React, { useRef } from "react";
+import type { FC } from "react";
+import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 
 export interface ProfileDetailsProps {
@@ -12,7 +13,7 @@ export interface ProfileDetailsProps {
     lastActive: string; // наприклад, "онлайн 2 години тому"
 }
 
-export const InfoPanel: React.FC<ProfileDetailsProps> = ({
+export const InfoPanel: FC<ProfileDetailsProps> = ({
     displayName,
     age,
     bio,
@@ -22,39 +23,36 @@ export const InfoPanel: React.FC<ProfileDetailsProps> = ({
     distanceKm,
     lastActive,
 }) => {
-
-    // Прокрутка 
-    const viewportRef = useRef<HTMLDivElement>(null)
     return (
-        <ScrollArea viewportRef={viewportRef} className="w-80 h-full bg-[#FFF8F2] border-r border-[#E8D9CD] flex flex-col justify-between p-6 font-sans select-none overflow-y-auto">
+        <ScrollArea className="flex h-full w-80 shrink-0 flex-col justify-between border-l border-border/80 bg-card/55 p-6 font-sans select-none">
             {/* Верхня частина з анкетою */}
             <div className="space-y-4">
                 {/* Заголовок блоку та ім'я */}
                 <div>
-                    <span className="text-[#8D827A] font-semibold text-xs tracking-wider uppercase">
+                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                         Про анкету
                     </span>
-                    <h1 className="text-2xl font-black text-[#1E1E1E] mt-1 tracking-tight">
+                    <h1 className="mt-1 text-2xl font-black tracking-tight text-foreground">
                         {displayName} &nbsp;{age}
                     </h1>
                 </div>
 
-                <div className="h-[1px] bg-[#F2DDD0] w-full" />
+                <Separator />
 
                 {/* Біографія */}
-                <p className="text-[#3D2C24] text-xs leading-relaxed">
+                <p className="text-xs leading-relaxed text-foreground">
                     {bio}
                 </p>
 
                 {/* Секція: Ідеальна субота */}
                 {idealSaturday && (
                     <>
-                        <div className="h-[1px] bg-[#F2DDD0] w-full" />
+                        <Separator />
                         <div>
-                            <h2 className="text-[#3D2C24] font-bold text-xs uppercase tracking-wider mb-1">
+                            <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
                                 Ідеальна субота
                             </h2>
-                            <p className="text-[#3D2C24] text-xs leading-relaxed">
+                            <p className="text-xs leading-relaxed text-muted-foreground">
                                 {idealSaturday}
                             </p>
                         </div>
@@ -64,12 +62,12 @@ export const InfoPanel: React.FC<ProfileDetailsProps> = ({
                 {/* Секція: Шукаю */}
                 {lookingFor && (
                     <>
-                        <div className="h-[1px] bg-[#F2DDD0] w-full" />
+                        <Separator />
                         <div>
-                            <h2 className="text-[#3D2C24] font-bold text-xs uppercase tracking-wider mb-1">
+                            <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
                                 Шукаю
                             </h2>
-                            <p className="text-[#3D2C24] text-xs leading-relaxed">
+                            <p className="text-xs leading-relaxed text-muted-foreground">
                                 {lookingFor}
                             </p>
                         </div>
@@ -81,22 +79,29 @@ export const InfoPanel: React.FC<ProfileDetailsProps> = ({
             <div className="pt-6 space-y-3">
                 {/* Відсоток сумісності */}
                 <div>
-                    <div className="text-xs font-bold text-[#3D2C24] mb-1.5">
+                    <div className="mb-1.5 text-xs font-bold text-foreground">
                         Ви сумісні на&nbsp; {compatibilityPercent}%
                     </div>
                     {/* Прогрес-бар */}
-                    <div className="w-full h-2 bg-[#7E8B93] rounded-full overflow-hidden">
+                    <div
+                        className="h-2 w-full overflow-hidden rounded-full bg-muted"
+                        role="progressbar"
+                        aria-label="Відсоток сумісності"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.min(Math.max(compatibilityPercent, 0), 100)}
+                    >
                         <div
-                            className="h-full bg-[#E55039] rounded-full transition-all duration-300"
+                            className="h-full rounded-full bg-primary transition-all duration-300"
                             style={{ width: `${Math.min(Math.max(compatibilityPercent, 0), 100)}%` }}
                         />
                     </div>
                 </div>
 
-                <div className="h-[1px] bg-[#F2DDD0] w-full" />
+                <Separator />
 
                 {/* Відстань та статус онлайну */}
-                <div className="text-[11px] font-semibold text-[#5A4D45]">
+                <div className="text-[11px] font-semibold text-muted-foreground">
                     {distanceKm} км від вас : {lastActive}
                 </div>
             </div>
