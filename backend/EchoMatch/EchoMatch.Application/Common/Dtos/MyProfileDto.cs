@@ -40,6 +40,8 @@ namespace EchoMatch.Application.Common.Dtos
 
         public required bool IsDiscoverable { get; init; }
 
+        public required ProfileReadiness Readiness { get; init; }
+
 
         public required IReadOnlyList<PhotoDto> Photos { get; init; }
         public required IReadOnlyList<LookupItemDto> Interests { get; init; }

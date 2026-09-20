@@ -48,7 +48,15 @@ namespace EchoMatch.Domain.Entities
         public bool IsFaceVerified { get; set; }
         public DateTime? LastActiveAt { get; set; }
 
-        public bool IsDiscoverable => !IsPrivate && Photos.Count > 0 && Preferences is not null;
+        // Один опис готовності профілю: і для фільтра стрічки, і для підказки,
+        // чого саме бракує. Порядок — від найпершого, що треба виправити.
+        public ProfileReadiness Readiness =>
+            IsPrivate ? ProfileReadiness.Hidden
+            : Photos.Count == 0 ? ProfileReadiness.PhotoRequired
+            : Preferences is null ? ProfileReadiness.PreferencesRequired
+            : ProfileReadiness.Ready;
+
+        public bool IsDiscoverable => Readiness == ProfileReadiness.Ready;
 
         // Зв'язки
         public ICollection<Photo> Photos { get; set; } = new List<Photo>();
