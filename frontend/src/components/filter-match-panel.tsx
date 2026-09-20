@@ -36,10 +36,10 @@ export function FilterMatchPanel() {
   const [maxAge, setMaxAge] = useState<number>(60);
 
   const [minInput, setMinInput] = useState<string>("18");
-  const [maxInput, setMaxInput] = useState<string>("60");
+  const [maxInput, setMaxInput] = useState<string>("50");
 
   const minLimit = 18;
-  const maxLimit = 80;
+  const maxLimit = 99;
 
   const [lookingFor, setLookingFor] = useState("female");
 
@@ -128,7 +128,7 @@ export function FilterMatchPanel() {
                 onChange={handleMinInputChange}
                 onBlur={handleMinBlur}
                 onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                className="w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground shadow-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                className="w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
               />
 
               {/* Максимальний вік */}
@@ -139,7 +139,7 @@ export function FilterMatchPanel() {
                 onChange={handleMaxInputChange}
                 onBlur={handleMaxBlur}
                 onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                className="w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground shadow-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                className="w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
               />
             </div>
 
@@ -160,7 +160,7 @@ export function FilterMatchPanel() {
             <Select value={lookingFor} onValueChange={(value) => setLookingFor(value ?? "female")}>
               <SelectTrigger
                 id="lookingFor"
-                className="h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground shadow-sm"
+                className="h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground"
               >
                 <SelectValue />
               </SelectTrigger>
