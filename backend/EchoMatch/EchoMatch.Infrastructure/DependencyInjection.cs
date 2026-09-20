@@ -29,6 +29,7 @@ public static class DependencyInjection
 
         services.AddScoped<ISwipeRepository, SwipeRepository>();
         services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddScoped<IDiscoveryRepository, DiscoveryRepository>();
 
         services.Configure<CloudinarySettings>(configuration.GetSection(CloudinarySettings.SectionName));
         services.AddSingleton<IPhotoStorage, CloudinaryPhotoStorage>();
