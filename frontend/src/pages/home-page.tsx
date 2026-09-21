@@ -37,12 +37,12 @@ export default function HomePage() {
   const [currentPerson, setCurrentPerson] = useState<PersonData>(initialPerson)
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#FFFDFB]">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Ліва панель: фільтри та нові метчі */}
       <FilterMatchPanel />
 
       {/* Центральна картка: передаємо фото або ім'я */}
-      <main className="flex min-h-0 flex-1 items-center justify-center p-4">
+      <main className="flex min-h-0 flex-1 items-center justify-center bg-muted/20 p-4">
         <PersonCard />
       </main>
 

@@ -18,7 +18,11 @@ namespace EchoMatch.Application.Common.Interfaces
         Task<UserProfile?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken);
 
         Task<UserProfile?> GetByUserIdWithPhotosAsync(Guid userId, CancellationToken cancellationToken);
+        Task<Guid?> GetIdByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 
+        Task<bool> ExistsAsync(Guid profileId, CancellationToken cancellationToken);
+
+        Task<IReadOnlyList<UserProfile>> GetManyWithDetailsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
         Task SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

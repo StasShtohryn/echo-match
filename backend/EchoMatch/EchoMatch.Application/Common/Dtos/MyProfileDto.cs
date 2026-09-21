@@ -20,6 +20,7 @@ namespace EchoMatch.Application.Common.Dtos
         public string? Company { get; init; }
         public string? School { get; init; }
         public int? HeightCm { get; init; }
+        public string? City { get; init; }
 
         public RelationshipGoal? LookingFor { get; init; }
         public DiscoveryPreferencesDto? Preferences { get; init; }
@@ -39,6 +40,8 @@ namespace EchoMatch.Application.Common.Dtos
         public required bool IsFaceVerified { get; init; }
 
         public required bool IsDiscoverable { get; init; }
+
+        public required ProfileReadiness Readiness { get; init; }
 
 
         public required IReadOnlyList<PhotoDto> Photos { get; init; }

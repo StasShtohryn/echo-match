@@ -25,6 +25,7 @@ namespace EchoMatch.Application.Common.Mappings
             Company = profile.Company,
             School = profile.School,
             HeightCm = profile.HeightCm,
+            City = profile.City,
             Preferences = profile.Preferences?.ToDto(),
             LookingFor = profile.LookingFor,
             FamilyPlans = profile.FamilyPlans,
@@ -39,6 +40,7 @@ namespace EchoMatch.Application.Common.Mappings
             IsPrivate = profile.IsPrivate,
             IsFaceVerified = profile.IsFaceVerified,
             IsDiscoverable = profile.IsDiscoverable,
+            Readiness = profile.Readiness,
 
             Photos = profile.Photos
                 .OrderBy(photo => photo.Order)
@@ -78,6 +80,7 @@ namespace EchoMatch.Application.Common.Mappings
             Company = profile.Company,
             School = profile.School,
             HeightCm = profile.HeightCm,
+            City = profile.City,
             LookingFor = profile.LookingFor,
             FamilyPlans = profile.FamilyPlans,
             Communication = profile.Communication,

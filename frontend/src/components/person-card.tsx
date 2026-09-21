@@ -61,8 +61,8 @@ export default function PersonCard() {
           <Badge >
             <Tooltip >
               <TooltipTrigger render={<Badge className="cursor-pointer">+2</Badge>} />
-              <TooltipContent className="max-w-70 bg-chart-4">
-                <p className="flex flex-row gap-2 justify-center items-center"><Badge className="bg-sidebar-ring">Астрологія</Badge><Badge className="bg-sidebar-ring">Нумізматика</Badge></p>
+              <TooltipContent className="max-w-70 bg-popover">
+                <p className="flex flex-row items-center justify-center gap-2"><Badge className="bg-sidebar-ring">Астрологія</Badge><Badge className="bg-sidebar-ring">Нумізматика</Badge></p>
               </TooltipContent>
             </Tooltip>
           </Badge>

@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<Language> Languages => Set<Language>();
     public DbSet<ProfilePrompt> ProfilePrompts => Set<ProfilePrompt>();
     public DbSet<ProfilePromptAnswer> ProfilePromptAnswers => Set<ProfilePromptAnswer>();
+    public DbSet<Swipe> Swipes => Set<Swipe>();
+    public DbSet<Match> Matches => Set<Match>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

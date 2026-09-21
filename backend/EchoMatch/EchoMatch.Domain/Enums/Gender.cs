@@ -55,3 +55,7 @@ public enum ZodiacSign
     Aries, Taurus, Gemini, Cancer, Leo, Virgo,
     Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces
 }
+
+public enum SwipeDirection { Like, Dislike }
+
+public enum ProfileReadiness { Ready, Hidden, PhotoRequired, PreferencesRequired }

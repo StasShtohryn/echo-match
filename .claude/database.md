@@ -158,7 +158,7 @@ Profile
 UserProfile
   UserId
   DisplayName, DateOfBirth, Gender          (required)
-  Orientation, Bio, Occupation, Company, School, HeightCm
+  Orientation, Bio, Occupation, Company, School, HeightCm, City
   LookingFor
   Preferences (DiscoveryPreferences, see Value Objects)
   FamilyPlans, Communication, LoveLanguage, Pets, Drinking, Smoking, Workout
@@ -177,6 +177,9 @@ Computed on UserProfile, ignored by EF
 Age            derived from DateOfBirth
 ZodiacSign     derived from DateOfBirth
 IsDiscoverable not private, holds at least one photo, preferences set
+Readiness      which of those three is missing, or Ready. IsDiscoverable is
+               defined as Readiness == Ready, so the rule exists in one place
+               and the feed filter cannot drift from the onboarding prompt
 
 ProfilePrompt (lookup)
   Code, Question, IsActive
@@ -191,6 +194,41 @@ Interest (lookup) + UserInterest
 
 Language (lookup) + UserLanguage
   Many to many. Language Code is ISO 639-1.
+
+Swiping
+
+Swipe
+  SwiperProfileId, TargetProfileId, Direction (Like | Dislike), DecidedAt
+  A dislike expires after 30 days (Swipe.DislikeExpiry): the person may appear
+  in the feed again, and swiping them updates the same row instead of adding
+  one. A like never expires, because an unanswered like is a match still in
+  the making. Nothing is ever reset in bulk: that would destroy pending likes
+  and bring back people the user deliberately passed.
+  DecidedAt is the time of the current decision. It is a field of its own
+  rather than UpdatedAt, an audit field that any modification touches and that
+  would silently restart the clock.
+  Both foreign keys point at UserProfiles, so neither may cascade: SQL Server
+  refuses a table whose delete reaches the same row by two paths. Restrict also
+  matches how profiles are actually removed, which is softly.
+  Unique index on (SwiperProfileId, TargetProfileId) filtered to IsDeleted = 0:
+  one active swipe per pair, and undoing one frees the pair to be swiped again.
+  A check constraint forbids swiping oneself.
+  No collection navigation on UserProfile: a person accumulates thousands of
+  swipes and nothing should make loading them all convenient.
+
+Match
+  ProfileOneId, ProfileTwoId
+  Symmetric: a match has no initiator. The pair is ordered by Guid in
+  Match.Between, the only way to create one, so (A, B) and (B, A) cannot both
+  be stored. The unique index filtered to IsDeleted = 0 then catches duplicates
+  and still lets a broken match form again later.
+  Listing someone's matches reads WHERE ProfileOneId = me OR ProfileTwoId = me;
+  the first half uses the composite index, the second needs its own index on
+  ProfileTwoId.
+  ProfileOneSeenAt, ProfileTwoSeenAt: when each side first opened the match,
+  null while it is still new for that side. Two columns rather than one flag,
+  because a match is shared but being seen is not. Set only through
+  Match.MarkSeenBy, which keeps the first time (??=) and rejects outsiders.
 
 Required profile fields
 

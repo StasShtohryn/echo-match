@@ -563,6 +563,48 @@ namespace EchoMatch.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("EchoMatch.Domain.Entities.Match", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ProfileOneId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ProfileOneSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ProfileTwoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ProfileTwoSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileTwoId")
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.HasIndex("ProfileOneId", "ProfileTwoId")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("Matches", (string)null);
+                });
+
             modelBuilder.Entity("EchoMatch.Domain.Entities.Photo", b =>
                 {
                     b.Property<Guid>("Id")
@@ -795,6 +837,52 @@ namespace EchoMatch.Infrastructure.Migrations
                     b.ToTable("ProfilePromptAnswers", (string)null);
                 });
 
+            modelBuilder.Entity("EchoMatch.Domain.Entities.Swipe", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DecidedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("SwiperProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TargetProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetProfileId");
+
+                    b.HasIndex("SwiperProfileId", "TargetProfileId")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("Swipes", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Swipes_NotSelf", "[SwiperProfileId] <> [TargetProfileId]");
+                        });
+                });
+
             modelBuilder.Entity("EchoMatch.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -881,6 +969,10 @@ namespace EchoMatch.Infrastructure.Migrations
                     b.Property<string>("Bio")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Communication")
                         .HasMaxLength(50)
@@ -993,6 +1085,25 @@ namespace EchoMatch.Infrastructure.Migrations
                     b.ToTable("UserProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("EchoMatch.Domain.Entities.Match", b =>
+                {
+                    b.HasOne("EchoMatch.Domain.Entities.UserProfile", "ProfileOne")
+                        .WithMany()
+                        .HasForeignKey("ProfileOneId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EchoMatch.Domain.Entities.UserProfile", "ProfileTwo")
+                        .WithMany()
+                        .HasForeignKey("ProfileTwoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ProfileOne");
+
+                    b.Navigation("ProfileTwo");
+                });
+
             modelBuilder.Entity("EchoMatch.Domain.Entities.Photo", b =>
                 {
                     b.HasOne("EchoMatch.Domain.Entities.UserProfile", "UserProfile")
@@ -1021,6 +1132,25 @@ namespace EchoMatch.Infrastructure.Migrations
                     b.Navigation("ProfilePrompt");
 
                     b.Navigation("UserProfile");
+                });
+
+            modelBuilder.Entity("EchoMatch.Domain.Entities.Swipe", b =>
+                {
+                    b.HasOne("EchoMatch.Domain.Entities.UserProfile", "SwiperProfile")
+                        .WithMany()
+                        .HasForeignKey("SwiperProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EchoMatch.Domain.Entities.UserProfile", "TargetProfile")
+                        .WithMany()
+                        .HasForeignKey("TargetProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SwiperProfile");
+
+                    b.Navigation("TargetProfile");
                 });
 
             modelBuilder.Entity("EchoMatch.Domain.Entities.UserInterest", b =>
