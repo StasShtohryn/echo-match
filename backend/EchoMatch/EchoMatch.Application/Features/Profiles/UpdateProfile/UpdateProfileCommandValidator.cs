@@ -15,6 +15,7 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
             RuleFor(x => x.Occupation).MaximumLength(100);
             RuleFor(x => x.Company).MaximumLength(100);
             RuleFor(x => x.School).MaximumLength(100);
+            RuleFor(x => x.City).MaximumLength(100);
             RuleFor(x => x.InstagramHandle).MaximumLength(30);
             RuleFor(x => x.SpotifyHandle).MaximumLength(50);
 

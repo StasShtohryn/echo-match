@@ -11,6 +11,10 @@ namespace EchoMatch.Domain.Entities
         public Guid ProfileTwoId { get; private set; }
         public UserProfile ProfileTwo { get; set; } = null!;
 
+        // Коли кожен учасник уперше відкрив метч; null — для нього метч ще новий
+        public DateTime? ProfileOneSeenAt { get; private set; }
+        public DateTime? ProfileTwoSeenAt { get; private set; }
+
         private Match() { }
 
         public static Match Between(Guid firstProfileId, Guid secondProfileId)
@@ -31,5 +35,25 @@ namespace EchoMatch.Domain.Entities
 
         public Guid OtherProfileId(Guid profileId) =>
             profileId == ProfileOneId ? ProfileTwoId : ProfileOneId;
+
+        public bool Involves(Guid profileId) =>
+            profileId == ProfileOneId || profileId == ProfileTwoId;
+
+        // Повторний виклик нічого не змінює: зберігається момент першого перегляду
+        public void MarkSeenBy(Guid profileId, DateTime utcNow)
+        {
+            if (profileId == ProfileOneId)
+            {
+                ProfileOneSeenAt ??= utcNow;
+            }
+            else if (profileId == ProfileTwoId)
+            {
+                ProfileTwoSeenAt ??= utcNow;
+            }
+            else
+            {
+                throw new ArgumentException("The profile is not part of this match.", nameof(profileId));
+            }
+        }
     }
 }

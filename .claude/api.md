@@ -95,6 +95,10 @@ PUT /api/profiles/me
 Full replacement of profile content. The client loads the profile first and
 sends every field back. A field omitted from the body is stored as null.
 
+city is free text the user writes about where they live, shown on both profile
+shapes. It is display text only: the feed filters by the coordinates from
+PUT /api/profiles/me/location, which are never shown to anyone.
+
 Three fields are deliberately not accepted here:
 
 DateOfBirth  write-once, guards the 18+ rule
@@ -313,6 +317,43 @@ across a few updates would locate someone's home. It is null when no limit
 applies on either side, so the distance was never needed.
 
 Candidates come back in random order. Ranking waits for real usage data.
+
+Match Endpoints
+
+GET /api/matches
+
+The caller's matches, newest first:
+
+[ { id, createdAt, isNew, partner: { profileId, displayName, age, mainPhotoUrl } } ]
+
+isNew is per participant: a match stays new for each side until that side
+opens it. Both sides start new, including the one whose like completed the
+match, so the client decides whether its "It's a match" screen counts as
+opening. Matches with a deleted partner drop out of the list.
+
+POST /api/matches/{id}/seen
+
+Marks the match as opened by the caller. 204. Idempotent: repeating it keeps the
+time of the first opening and writes nothing. A match the caller is not part of
+answers 404, not 403, so its existence is not revealed.
+
+Opening is a separate POST rather than a side effect of GET: a GET may be
+prefetched, retried or called for a badge, and each of those would silently
+mark matches as read.
+
+Development Endpoints
+
+POST   /api/dev/seed?count=30&likeEmail=…
+DELETE /api/dev/seed
+
+Create and remove test profiles (emails end with @seed.local, password
+Seed1234!). count is 1..200, default 30. With likeEmail, the first five are
+shaped to pass that user's filters and have already liked them, so a match can
+be tried in one swipe. DELETE removes every seeded profile with its swipes and
+matches, whoever created them.
+
+Both are open without login, and Swagger is on in every environment, on purpose
+while the app has no real users. See security.md.
 
 HTTP
 
