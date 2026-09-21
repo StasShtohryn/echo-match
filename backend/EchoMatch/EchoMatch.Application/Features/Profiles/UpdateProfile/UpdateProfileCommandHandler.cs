@@ -34,6 +34,7 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
             profile.Company = request.Company;
             profile.School = request.School;
             profile.HeightCm = request.HeightCm;
+            profile.City = request.City;
 
             profile.LookingFor = request.LookingFor;
 

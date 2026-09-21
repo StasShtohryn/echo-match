@@ -23,6 +23,7 @@ Basics
 - [x] Bio
 - [x] Occupation / Company / School
 - [x] Height
+- [x] City (free text shown on the profile)
 
 Lifestyle
 
@@ -75,7 +76,8 @@ impressions.
 - [x] Match Detection
 - [x] Candidate feed (mutual filters, random order)
 - [ ] Widen-radius hint for an empty feed
-- [ ] Matches list
+- [x] Matches list (new until each side opens it)
+- [ ] Unseen matches count for a badge
 - [ ] Undo Like
 
 ---
@@ -125,3 +127,5 @@ impressions.
 - [ ] SQL Server
 - [ ] HTTPS
 - [ ] CI/CD
+- [ ] Before a public launch: remove /api/dev/seed and turn off public Swagger.
+      Both are open without login on purpose while the app has no real users.
