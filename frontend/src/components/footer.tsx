@@ -1,5 +1,6 @@
 import { Heart, Sun } from "lucide-react";
 import { Link } from "react-router";
+import { ModeToggle } from "./mode-toggle";
 
 const links = [
   {
@@ -46,15 +47,7 @@ const Footer = () => {
           </p>
 
           <div className="flex items-center gap-4">
-            <Link to="/">
-              <Sun className="h-5 w-5 text-muted-foreground" />
-            </Link>
-            <Link to="/">
-              <Sun className="h-5 w-5 text-muted-foreground" />
-            </Link>
-            <Link to="/">
-              <Sun className="h-5 w-5 text-muted-foreground" />
-            </Link>
+            <ModeToggle />
           </div>
         </div>
       </div>

@@ -8,7 +8,8 @@ import MessengerPage from "./pages/messenger-page.tsx"
 import PsychologicQuizPage from "./pages/psychologic-quiz-page.tsx"
 import MainLayout from "./layouts/main-layout.tsx"
 import NotFoundPage from "./pages/not-found-page.tsx"
-import VerificationPage from "./pages/verification-page.tsx"
+import ProfileEditPage from "./pages/profile-edit-page.tsx"
+import ProfileSettingsPage from "./pages/profile-settings-page.tsx"
 import { useAuthStore } from "@/store/useAuthStore"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -25,12 +26,13 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/quiz" element={<PsychologicQuizPage />} />
           <Route path="/me" element={<ProfilePage />} />
+          <Route path="/me/edit" element={<ProfileEditPage />} />
+          <Route path="/settings" element={<ProfileSettingsPage />} />
           <Route path="/messenger" element={<MessengerPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/verification" element={<VerificationPage />} />
       </Routes>
     </TooltipProvider>
   )
