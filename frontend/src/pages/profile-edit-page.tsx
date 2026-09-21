@@ -1,6 +1,15 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router"
-import { ArrowLeft, ImagePlus, Save, Trash2 } from "lucide-react"
+import { ArrowLeft, ImagePlus, LoaderCircle, Save, Trash2, X } from "lucide-react"
+import {
+  Attachment,
+  AttachmentAction,
+  AttachmentActions,
+  AttachmentContent,
+  AttachmentDescription,
+  AttachmentMedia,
+  AttachmentTitle,
+} from "@/components/ui/attachment"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -104,6 +113,8 @@ export default function ProfileEditPage() {
   const [promptAnswers, setPromptAnswers] = useState<PromptAnswerInput[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState<{ fileName: string; progress: number } | null>(null)
+  const photoUploadController = useRef<AbortController | null>(null)
 
   useEffect(() => {
     void Promise.all([getMyProfile(), getLookups()]).then(([nextProfile, nextLookups]) => {
@@ -153,14 +164,31 @@ export default function ProfileEditPage() {
   }
 
   async function handlePhoto(file: File) {
+    const controller = new AbortController()
+    photoUploadController.current = controller
+    setUploadingPhoto({ fileName: file.name, progress: 0 })
+
     try {
-      await uploadProfilePhoto(file)
+      await uploadProfilePhoto(file, {
+        signal: controller.signal,
+        onProgress: (progress) => setUploadingPhoto({ fileName: file.name, progress }),
+      })
       const nextProfile = await getMyProfile()
       setProfile(nextProfile)
       toast.add({ type: "success", title: "Фото додано" })
     } catch (error: unknown) {
+      if (controller.signal.aborted) return
       toast.add({ type: "error", title: "Не вдалося додати фото", description: getApiErrorMessage(error, "Перевірте формат і розмір файлу.") })
+    } finally {
+      if (photoUploadController.current === controller) {
+        photoUploadController.current = null
+        setUploadingPhoto(null)
+      }
     }
+  }
+
+  function cancelPhotoUpload() {
+    photoUploadController.current?.abort()
   }
 
   async function removePhoto(photoId: string) {
@@ -211,7 +239,7 @@ export default function ProfileEditPage() {
 
       <Card><CardHeader><CardTitle>Запитання</CardTitle></CardHeader><CardContent className="space-y-4">{[0, 1, 2].map((index) => { const answer = promptAnswers[index] ?? { promptId: 0, answer: "" }; return <div className="grid gap-2 md:grid-cols-2" key={index}><select className="h-9 rounded-2xl border border-transparent bg-input/50 px-3 text-sm" value={answer.promptId || ""} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, promptId: Number(event.target.value) }; return next })}><option value="">Оберіть запитання</option>{lookups.prompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}</select><Textarea placeholder="Ваша відповідь" maxLength={124} value={answer.answer} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, answer: event.target.value }; return next })} /></div> })}</CardContent></Card>
 
-      <Card><CardHeader><CardTitle>Фотографії</CardTitle></CardHeader><CardContent className="space-y-4"><label className="inline-flex cursor-pointer items-center rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground"><ImagePlus className="mr-2 size-4" />Додати фото<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void handlePhoto(file) }} /></label><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{profile.photos.map((photo) => <div className="space-y-2" key={photo.id}><img src={photo.url} alt="Фото профілю" className="aspect-square w-full rounded-2xl object-cover" /> <div className="flex gap-1"><Button size="sm" variant={photo.isMain ? "secondary" : "outline"} disabled={photo.isMain} onClick={() => void makeMain(photo.id)}>{photo.isMain ? "Головне" : "Зробити головним"}</Button><Button size="icon" variant="ghost" aria-label="Видалити фото" onClick={() => void removePhoto(photo.id)}><Trash2 className="size-4" /></Button></div></div>)}</div></CardContent></Card>
+      <Card><CardHeader><CardTitle>Фотографії</CardTitle></CardHeader><CardContent className="space-y-4"><label className="inline-flex cursor-pointer items-center rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground"><ImagePlus className="mr-2 size-4" />Додати фото<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={!!uploadingPhoto} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void handlePhoto(file) }} /></label>{uploadingPhoto && <Attachment state="uploading" className="w-full max-w-md"><AttachmentMedia><LoaderCircle className="animate-spin" /></AttachmentMedia><AttachmentContent><AttachmentTitle>{uploadingPhoto.fileName}</AttachmentTitle><AttachmentDescription>Завантаження · {uploadingPhoto.progress}%</AttachmentDescription></AttachmentContent><AttachmentActions><AttachmentAction type="button" aria-label="Скасувати завантаження" onClick={cancelPhotoUpload}><X /></AttachmentAction></AttachmentActions></Attachment>}<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{profile.photos.map((photo) => <div className="space-y-2" key={photo.id}><img src={photo.url} alt="Фото профілю" className="aspect-square w-full rounded-2xl object-cover" /> <div className="flex gap-1"><Button size="sm" variant={photo.isMain ? "secondary" : "outline"} disabled={photo.isMain} onClick={() => void makeMain(photo.id)}>{photo.isMain ? "Головне" : "Зробити головним"}</Button><Button size="icon" variant="ghost" aria-label="Видалити фото" onClick={() => void removePhoto(photo.id)}><Trash2 className="size-4" /></Button></div></div>)}</div></CardContent></Card>
       <div className="flex justify-end"><Link to="/settings"><Button variant="outline">Перейти до налаштувань</Button></Link></div>
         </main>
       </ScrollArea>

@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { ScrollArea } from "./ui/scroll-area";
+import { Button } from "./ui/button"
+import type { DiscoveryPreferences, UpdatePreferencesRequest } from "@/services/auth-service"
 
 interface MatchItem {
   id: string;
@@ -31,7 +33,13 @@ const mockMatches: MatchItem[] = [
 ];
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function FilterMatchPanel() {
+interface FilterMatchPanelProps {
+  isSaving?: boolean
+  initialPreferences?: DiscoveryPreferences | null
+  onApply: (preferences: UpdatePreferencesRequest) => void
+}
+
+export function FilterMatchPanel({ isSaving = false, initialPreferences, onApply }: FilterMatchPanelProps) {
   const [minAge, setMinAge] = useState<number>(18);
   const [maxAge, setMaxAge] = useState<number>(60);
 
@@ -41,7 +49,19 @@ export function FilterMatchPanel() {
   const minLimit = 18;
   const maxLimit = 99;
 
-  const [lookingFor, setLookingFor] = useState("female");
+  const [lookingFor, setLookingFor] = useState("Women");
+  const [maxDistanceKm, setMaxDistanceKm] = useState<number | null>(50);
+
+  React.useEffect(() => {
+    if (!initialPreferences) return
+
+    setLookingFor(initialPreferences.showMe)
+    setMinAge(initialPreferences.minAge)
+    setMaxAge(initialPreferences.maxAge)
+    setMinInput(String(initialPreferences.minAge))
+    setMaxInput(String(initialPreferences.maxAge))
+    setMaxDistanceKm(initialPreferences.maxDistanceKm)
+  }, [initialPreferences])
 
   // Оновлення повзунком
   const handleAgeSliderChange = (value: number | readonly number[]) => {
@@ -109,7 +129,7 @@ export function FilterMatchPanel() {
   return (
     <ScrollArea viewportRef={viewportRef} className="flex h-screen w-80 shrink-0 flex-col border-r border-border/80 bg-card/55 p-5 font-sans select-none">
       <Accordion
-        defaultValue={["matches"]}
+        defaultValue={["filters"]}
         className="w-full overflow-visible rounded-none border-0"
       >
         <AccordionItem value="filters" className="border-0 bg-transparent">
@@ -157,7 +177,7 @@ export function FilterMatchPanel() {
               Кого шукаю
             </label>
 
-            <Select value={lookingFor} onValueChange={(value) => setLookingFor(value ?? "female")}>
+            <Select value={lookingFor} onValueChange={(value) => setLookingFor(value ?? "Women")}>
               <SelectTrigger
                 id="lookingFor"
                 className="h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground"
@@ -165,11 +185,41 @@ export function FilterMatchPanel() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="female">Дівчат</SelectItem>
-                <SelectItem value="male">Хлопців</SelectItem>
-                <SelectItem value="everyone">Будь-кого</SelectItem>
+                <SelectItem value="Women">Дівчат</SelectItem>
+                <SelectItem value="Men">Хлопців</SelectItem>
+                <SelectItem value="Everyone">Будь-кого</SelectItem>
               </SelectContent>
             </Select>
+
+            <label htmlFor="maxDistance" className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+              Максимальна відстань, км
+            </label>
+            <input
+              id="maxDistance"
+              type="number"
+              min={1}
+              max={160}
+              disabled={maxDistanceKm === null}
+              value={maxDistanceKm ?? ""}
+              onChange={(event) => setMaxDistanceKm(event.target.value ? Number(event.target.value) : null)}
+              className="h-9 w-full rounded-xl border border-input bg-background px-3 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+            />
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={maxDistanceKm === null}
+                onChange={(event) => setMaxDistanceKm(event.target.checked ? null : 50)}
+              />
+              Без обмежень
+            </label>
+
+            <Button
+              className="w-full"
+              disabled={isSaving}
+              onClick={() => onApply({ showMe: lookingFor, minAge, maxAge, maxDistanceKm })}
+            >
+              {isSaving ? "Зберігаємо..." : "Застосувати фільтри"}
+            </Button>
 
           </div>
           </AccordionContent>

@@ -111,6 +111,60 @@ export interface UpdatePreferencesRequest {
   maxDistanceKm: number | null
 }
 
+export type DiscoveryStatus =
+  | "Ready"
+  | "NoCandidates"
+  | "ProfileHidden"
+  | "PhotoRequired"
+  | "PreferencesRequired"
+  | "LocationRequired"
+
+export interface PublicProfile {
+  id: string
+  displayName: string
+  age: number
+  gender: string
+  zodiac: string
+  orientation: string | null
+  bio: string | null
+  occupation: string | null
+  company: string | null
+  school: string | null
+  heightCm: number | null
+  lookingFor: string | null
+  familyPlans: string | null
+  communication: string | null
+  loveLanguage: string | null
+  pets: string | null
+  drinking: string | null
+  smoking: string | null
+  workout: string | null
+  instagramHandle: string | null
+  spotifyHandle: string | null
+  isFaceVerified: boolean
+  photos: ProfilePhoto[]
+  interests: LookupItem[]
+  languages: LookupItem[]
+  promptAnswers: PromptAnswer[]
+}
+
+export interface DiscoveryCandidate {
+  profile: PublicProfile
+  distanceKm: number | null
+}
+
+export interface DiscoveryFeed {
+  status: DiscoveryStatus
+  candidates: DiscoveryCandidate[]
+}
+
+export type SwipeDirection = "Like" | "Dislike"
+
+export interface SwipeResult {
+  isMatch: boolean
+  matchId: string | null
+}
+
 export interface PromptAnswerInput {
   promptId: number
   answer: string
@@ -189,6 +243,22 @@ export async function updateMyPreferences(
   return response.data
 }
 
+export async function getDiscoveryFeed(limit = 20): Promise<DiscoveryFeed> {
+  const response = await api.get<DiscoveryFeed>("/discovery", { params: { limit } })
+  return response.data
+}
+
+export async function createSwipe(
+  targetProfileId: string,
+  direction: SwipeDirection,
+): Promise<SwipeResult> {
+  const response = await api.post<SwipeResult>("/swipes", {
+    targetProfileId,
+    direction,
+  })
+  return response.data
+}
+
 export async function updateMyLocation(latitude: number, longitude: number): Promise<void> {
   await api.put("/profiles/me/location", { latitude, longitude })
 }
@@ -212,13 +282,27 @@ export async function createProfile(
   return response.data
 }
 
-export async function uploadProfilePhoto(file: File): Promise<ProfilePhoto> {
+export interface UploadProfilePhotoOptions {
+  signal?: AbortSignal
+  onProgress?: (progress: number) => void
+}
+
+export async function uploadProfilePhoto(
+  file: File,
+  options?: UploadProfilePhotoOptions,
+): Promise<ProfilePhoto> {
   const formData = new FormData()
   formData.append("file", file)
 
   const response = await api.post<ProfilePhoto>("/profiles/me/photos", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
+    },
+    signal: options?.signal,
+    onUploadProgress: (event) => {
+      if (event.total) {
+        options?.onProgress?.(Math.round((event.loaded / event.total) * 100))
+      }
     },
   })
 
@@ -234,10 +318,16 @@ export async function createFaceVerificationSession(): Promise<FaceVerificationS
 
 export async function completeFaceVerification(
   sessionId: string,
+  referenceImage: File,
 ): Promise<FaceVerificationResult> {
+  const formData = new FormData()
+  formData.append("sessionId", sessionId)
+  formData.append("referenceImage", referenceImage)
+
   const response = await api.post<FaceVerificationResult>(
     "/profiles/me/face-verification/complete",
-    { sessionId },
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
   )
   return response.data
 }
