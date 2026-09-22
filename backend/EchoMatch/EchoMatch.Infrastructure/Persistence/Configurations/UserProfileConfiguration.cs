@@ -22,6 +22,7 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
 
             builder.Property(p => p.DisplayName).IsRequired().HasMaxLength(50);
 
+            builder.Property(p => p.City).HasMaxLength(100);
             builder.Property(p => p.Bio).HasMaxLength(500);
             builder.Property(p => p.Occupation).HasMaxLength(100);
             builder.Property(p => p.Company).HasMaxLength(100);

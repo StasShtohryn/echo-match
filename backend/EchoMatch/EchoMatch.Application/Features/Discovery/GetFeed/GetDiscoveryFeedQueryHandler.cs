@@ -50,7 +50,7 @@ namespace EchoMatch.Application.Features.Discovery.GetFeed
 
             if (preferences.MaxDistanceKm is not null && me.Location is null)
             {
-                return DiscoveryFeedDto.Empty(DiscoveryStatus.NoCandidates);
+                return DiscoveryFeedDto.Empty(DiscoveryStatus.LocationRequired);
             }
 
             var now = DateTime.UtcNow;
@@ -99,7 +99,7 @@ namespace EchoMatch.Application.Features.Discovery.GetFeed
 
             if (picked.Count == 0)
             {
-                return DiscoveryFeedDto.Empty(DiscoveryStatus.Ready);
+                return DiscoveryFeedDto.Empty(DiscoveryStatus.NoCandidates);
             }
 
             var profiles = (await _profileRepository

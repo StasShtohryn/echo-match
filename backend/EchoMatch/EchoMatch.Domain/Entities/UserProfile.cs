@@ -16,6 +16,7 @@ namespace EchoMatch.Domain.Entities
 
         // Про себе
         public SexualOrientation? Orientation { get; set; }
+        public string? City { get; set; }
         public string? Bio { get; set; }
         public string? Occupation { get; set; }
         public string? Company { get; set; }
@@ -64,21 +65,20 @@ namespace EchoMatch.Domain.Entities
         public ICollection<UserLanguage> Languages { get; set; } = new List<UserLanguage>();
         public ICollection<ProfilePromptAnswer> PromptAnswers { get; set; } = new List<ProfilePromptAnswer>();
 
-        // Обчислювані — у БД не зберігаються
-        public int Age
+        public int Age => AgeOn(DateOfBirth, DateOnly.FromDateTime(DateTime.UtcNow));
+
+        // Статичний, щоб рахувати вік і там, де під рукою лише дата народження,
+        // а не весь профіль — наприклад, у списку метчів
+        public static int AgeOn(DateOnly dateOfBirth, DateOnly today)
         {
-            get
+            var age = today.Year - dateOfBirth.Year;
+
+            if (dateOfBirth > today.AddYears(-age))
             {
-                var today = DateOnly.FromDateTime(DateTime.UtcNow);
-                var age = today.Year - DateOfBirth.Year;
-
-                if (DateOfBirth > today.AddYears(-age))
-                {
-                    age--;
-                }
-
-                return age;
+                age--;
             }
+
+            return age;
         }
 
         public ZodiacSign Zodiac => CalculateZodiac(DateOfBirth);

@@ -1,6 +1,7 @@
 import { Heart } from "lucide-react"
 import { LoginForm } from "@/components/login-form"
 import { Link } from "react-router"
+import animationVideo from "../media/animation.mp4";
 
 export default function LoginPage() {
   return (
@@ -20,8 +21,15 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="relative hidden bg-muted lg:block">
-        
+      <div className="">
+        <video
+          src={animationVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
       </div>
     </div>
   )

@@ -158,7 +158,7 @@ Profile
 UserProfile
   UserId
   DisplayName, DateOfBirth, Gender          (required)
-  Orientation, Bio, Occupation, Company, School, HeightCm
+  Orientation, Bio, Occupation, Company, School, HeightCm, City
   LookingFor
   Preferences (DiscoveryPreferences, see Value Objects)
   FamilyPlans, Communication, LoveLanguage, Pets, Drinking, Smoking, Workout
@@ -225,6 +225,10 @@ Match
   Listing someone's matches reads WHERE ProfileOneId = me OR ProfileTwoId = me;
   the first half uses the composite index, the second needs its own index on
   ProfileTwoId.
+  ProfileOneSeenAt, ProfileTwoSeenAt: when each side first opened the match,
+  null while it is still new for that side. Two columns rather than one flag,
+  because a match is shared but being seen is not. Set only through
+  Match.MarkSeenBy, which keeps the first time (??=) and rejects outsiders.
 
 Required profile fields
 

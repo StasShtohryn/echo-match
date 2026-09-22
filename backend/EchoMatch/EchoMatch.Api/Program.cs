@@ -3,6 +3,7 @@ using EchoMatch.Api.Services;
 using EchoMatch.Application;
 using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Infrastructure;
+using EchoMatch.Infrastructure.Persistence;
 using EchoMatch.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -67,6 +68,8 @@ namespace EchoMatch.Api
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+            builder.Services.AddScoped<DevDataSeeder>();
+
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -104,8 +107,47 @@ namespace EchoMatch.Api
 
             var app = builder.Build();
 
+            // Configure the HTTP request pipeline.
+            //if (app.Environment.IsDevelopment())
+            //{
+            //    app.UseSwagger();
+            //    app.UseSwaggerUI();
+
+            //    app.MapPost("/api/dev/seed", async (
+            //       DevDataSeeder seeder,
+            //       int? count,
+            //       string? likeEmail,
+            //       CancellationToken cancellationToken) =>
+            //           Results.Ok(await seeder.SeedAsync(count ?? 30, likeEmail, cancellationToken)))
+            //       .AllowAnonymous()
+            //       .WithTags("Dev");
+
+            //    app.MapDelete("/api/dev/seed", async (
+            //        DevDataSeeder seeder,
+            //        CancellationToken cancellationToken) =>
+            //            Results.Ok(new { removed = await seeder.RemoveAsync(cancellationToken) }))
+            //        .AllowAnonymous()
+            //        .WithTags("Dev");
+            //}
+
             app.UseSwagger();
             app.UseSwaggerUI();
+
+            app.MapPost("/api/dev/seed", async (
+               DevDataSeeder seeder,
+               int? count,
+               string? likeEmail,
+               CancellationToken cancellationToken) =>
+                   Results.Ok(await seeder.SeedAsync(count ?? 30, likeEmail, cancellationToken)))
+               .AllowAnonymous()
+               .WithTags("Dev");
+
+            app.MapDelete("/api/dev/seed", async (
+                DevDataSeeder seeder,
+                CancellationToken cancellationToken) =>
+                    Results.Ok(new { removed = await seeder.RemoveAsync(cancellationToken) }))
+                .AllowAnonymous()
+                .WithTags("Dev");
 
             app.UseExceptionHandler();
 

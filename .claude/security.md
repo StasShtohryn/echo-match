@@ -34,6 +34,19 @@ request reaches Kestrel as plain HTTP. Redirecting it answers the preflight
 with a 307, which CORS forbids, and points at a port that exists only on the
 machine running the server. In production the redirect stays.
 
+Development Tools
+
+Swagger and /api/dev/seed are reachable in every environment, and the seed
+endpoints need no login. This is a deliberate choice while the app has no real
+users, so the team can work against the Azure deployment without extra setup.
+
+What it exposes: anyone who finds the URL can add up to 200 fake profiles per
+call, wipe the seeded ones, and learn whether an email is registered from the
+likeEmail note. Only test data is at stake today.
+
+Before any public launch both must go: remove the dev endpoints and gate
+Swagger again. The item is tracked in roadmap.md under Deployment.
+
 XSS
 
 CSRF
