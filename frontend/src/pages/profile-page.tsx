@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Edit, Settings, MessageCircle, Heart, HeartHandshake, BadgeCheck } from "lucide-react";
+import { Edit, Settings, MessageCircle, Heart, HeartHandshake, BadgeCheck, ShieldCheck } from "lucide-react";
 import { useNavigate, Navigate } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore"
 import { useEffect, useState } from "react";
