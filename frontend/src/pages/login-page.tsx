@@ -5,7 +5,19 @@ import animationVideo from "../media/animation.mp4";
 
 export default function LoginPage() {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
+    <div className="grid min-h-svh lg:grid-cols-3">
+      <div className="w-full h-full overflow-hidden flex items-center justify-center">
+        <video
+          src={animationVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          disablePictureInPicture
+          controlsList="nodownload nofullscreen noremoteplayback"
+          className="w-full h-full object-cover -scale-x-100"
+        />
+      </div>
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
           <Link to="/" className="flex items-center gap-2 font-medium">
@@ -21,6 +33,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
       <div className="">
         <video
           src={animationVideo}
@@ -28,6 +41,8 @@ export default function LoginPage() {
           loop
           muted
           playsInline
+          disablePictureInPicture
+          controlsList="nodownload nofullscreen noremoteplayback"
           className="w-full h-full object-cover"
         />
       </div>
