@@ -100,8 +100,6 @@ namespace EchoMatch.Api
                     .Build();
             });
 
-            builder.Services.AddAuthorization();
-
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();
 
