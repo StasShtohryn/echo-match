@@ -14,7 +14,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BadgeCheck, Star, Heart, Undo2, X } from "lucide-react"
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import type { DiscoveryCandidate, SwipeDirection } from "@/services/auth-service"
+
+const SWIPE_THRESHOLD = 100
 
 interface PersonCardProps {
   candidate: DiscoveryCandidate
@@ -23,20 +26,85 @@ interface PersonCardProps {
 }
 
 export default function PersonCard({ candidate, isSwiping = false, onSwipe }: PersonCardProps) {
+  const [dragOffset, setDragOffset] = useState(0)
+  const [exitDirection, setExitDirection] = useState<SwipeDirection | null>(null)
+  const dragStart = useRef<number | null>(null)
+  const isDragging = useRef(false)
   const { profile } = candidate
   const photo = [...profile.photos].sort((left, right) => {
     if (left.isMain !== right.isMain) return left.isMain ? -1 : 1
     return left.order - right.order
   })[0]
 
+  useEffect(() => {
+    setDragOffset(0)
+    setExitDirection(null)
+    dragStart.current = null
+    isDragging.current = false
+  }, [candidate.profile.id])
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (isSwiping || exitDirection) return
+    dragStart.current = event.clientX
+    isDragging.current = false
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (dragStart.current === null || isSwiping || exitDirection) return
+    const offset = event.clientX - dragStart.current
+    if (Math.abs(offset) > 6) isDragging.current = true
+    setDragOffset(offset)
+  }
+
+  function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    if (dragStart.current === null) return
+    const offset = event.clientX - dragStart.current
+    dragStart.current = null
+    if (!isDragging.current) {
+      setDragOffset(0)
+      return
+    }
+
+    isDragging.current = false
+    if (Math.abs(offset) < SWIPE_THRESHOLD || isSwiping) {
+      setDragOffset(0)
+      return
+    }
+
+    const direction: SwipeDirection = offset > 0 ? "Like" : "Dislike"
+    setExitDirection(direction)
+    setDragOffset(offset > 0 ? window.innerWidth : -window.innerWidth)
+    onSwipe(direction)
+  }
+
+  function handlePointerCancel() {
+    dragStart.current = null
+    isDragging.current = false
+    setDragOffset(0)
+  }
+
+  const cardRotation = Math.max(-12, Math.min(12, dragOffset / 18))
+
   return (
     <div className="flex flex-col gap-4">
-      <Card className="overflow-hidden relative mx-auto w-full max-w-sm pt-0">
+      <Card
+        className="relative mx-auto w-full max-w-sm touch-pan-y overflow-hidden pt-0 select-none"
+        style={{
+          transform: `translateX(${dragOffset}px) rotate(${cardRotation}deg)`,
+          transition: dragStart.current === null ? "transform 220ms ease-out" : "none",
+          cursor: isSwiping ? "wait" : isDragging.current ? "grabbing" : "grab",
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+      >
         <div className="absolute inset-0 z-30 aspect-video bg-black/35" />
         {photo ? <img
           src={photo.url}
           alt={profile.displayName}
-          className="relative z-20 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
+          className="relative z-20 aspect-video w-full object-cover"
         /> : <div className="relative z-20 flex aspect-video w-full items-center justify-center bg-muted text-5xl font-bold text-muted-foreground">
           {profile.displayName.charAt(0)}
         </div>}

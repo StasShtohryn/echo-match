@@ -16,30 +16,17 @@ import { Slider } from "@/components/ui/slider"
 import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button"
 import type { DiscoveryPreferences, UpdatePreferencesRequest } from "@/services/auth-service"
-
-interface MatchItem {
-  id: string;
-  name: string;
-  subtitle: string;
-  avatarLetter?: string;
-  avatarUrl?: string;
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const mockMatches: MatchItem[] = [
-  { id: "1", name: "Марія", subtitle: "Новий метч", avatarLetter: "М" },
-  { id: "2", name: "Марія", subtitle: "Новий метч", avatarLetter: "М" },
-  { id: "3", name: "Марія", subtitle: "Новий метч", avatarLetter: "М" },
-  { id: "4", name: "Марія", subtitle: "Новий метч", avatarLetter: "М" },
-];
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
+import type { Match } from "@/types/match.types"
 
 interface FilterMatchPanelProps {
   isSaving?: boolean
   initialPreferences?: DiscoveryPreferences | null
+  matches: Match[]
+  isMatchesLoading?: boolean
   onApply: (preferences: UpdatePreferencesRequest) => void
 }
 
-export function FilterMatchPanel({ isSaving = false, initialPreferences, onApply }: FilterMatchPanelProps) {
+export function FilterMatchPanel({ isSaving = false, initialPreferences, matches, isMatchesLoading = false, onApply }: FilterMatchPanelProps) {
   const [minAge, setMinAge] = useState<number>(18);
   const [maxAge, setMaxAge] = useState<number>(60);
 
@@ -237,29 +224,33 @@ export function FilterMatchPanel({ isSaving = false, initialPreferences, onApply
           </AccordionTrigger>
           <AccordionContent className="px-0 pb-0">
           <div className="overflow-y-auto">
-            {mockMatches.map((match) => (
+            {isMatchesLoading ? (
+              <p className="px-1 py-3 text-xs text-muted-foreground">Завантаження...</p>
+            ) : matches.length === 0 ? (
+              <p className="px-1 py-3 text-xs text-muted-foreground">Поки що немає метчів</p>
+            ) : matches.map((match) => (
               <div
                 key={match.id}
                 className="flex cursor-pointer items-center gap-3.5 rounded-lg px-1 py-3.5 transition-colors hover:bg-muted/60"
               >
                 <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-lg font-semibold text-muted-foreground">
-                  {match.avatarUrl ? (
+                  {match.partner.mainPhotoUrl ? (
                     <img
-                      src={match.avatarUrl}
-                      alt={match.name}
+                      src={match.partner.mainPhotoUrl}
+                      alt={match.partner.displayName}
                       className="size-full rounded-xl object-cover"
                     />
                   ) : (
-                    match.avatarLetter
+                    match.partner.displayName.charAt(0).toUpperCase()
                   )}
                 </div>
 
                 <div className="flex flex-col">
                   <span className="text-sm font-bold leading-tight text-foreground">
-                    {match.name}
+                    {match.partner.displayName}, {match.partner.age}
                   </span>
                   <span className="mt-0.5 text-xs text-muted-foreground">
-                    {match.subtitle}
+                    {match.isNew ? "Новий метч" : "Метч"}
                   </span>
 
                 </div>

@@ -8,6 +8,7 @@ import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { getMyProfile, updateMyPreferences, type DiscoveryPreferences, type DiscoveryStatus, type UpdatePreferencesRequest } from "@/services/auth-service"
 import { useDiscoveryFeed } from "@/hooks/use-discovery-feed"
+import { useMatches } from "@/hooks/use-matches.tsx"
 
 const statusContent: Record<DiscoveryStatus, { title: string; description: string; action?: string }> = {
   Ready: { title: "Шукаємо пару", description: "Завантажуємо анкети для вас." },
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [isSavingFilters, setIsSavingFilters] = useState(false)
   const [preferences, setPreferences] = useState<DiscoveryPreferences | null>(null)
   const { currentCandidate, status, isLoading, isSwiping, error, lastSwipe, swipe, refresh, dismissSwipeResult } = useDiscoveryFeed()
+  const { matches, isLoading: isMatchesLoading, refresh: refreshMatches } = useMatches()
 
   useEffect(() => {
     getMyProfile().then((profile) => {
@@ -30,6 +32,10 @@ export default function HomePage() {
       if (profile.preferences) void refresh()
     }).catch(() => undefined)
   }, [refresh])
+
+  useEffect(() => {
+    if (lastSwipe?.isMatch) void refreshMatches()
+  }, [lastSwipe, refreshMatches])
 
   async function applyFilters(preferences: UpdatePreferencesRequest) {
     setIsSavingFilters(true)
@@ -49,7 +55,7 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      <FilterMatchPanel initialPreferences={preferences} isSaving={isSavingFilters} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
+      <FilterMatchPanel matches={matches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
       <main className="flex min-h-0 flex-1 items-center justify-center bg-muted/20 p-4">
         {showStatus ? (
           <div className="flex max-w-sm flex-col items-center gap-4 text-center">
