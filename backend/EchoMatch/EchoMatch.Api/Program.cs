@@ -93,14 +93,12 @@ namespace EchoMatch.Api
                     };
                 });
 
-            //builder.Services.AddAuthorization(options =>
-            //{
-            //    options.FallbackPolicy = new AuthorizationPolicyBuilder()
-            //        .RequireAuthenticatedUser()
-            //        .Build();
-            //});
-
-            builder.Services.AddAuthorization();
+            builder.Services.AddAuthorization(options =>
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+            });
 
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();

@@ -14,24 +14,19 @@ import {
 } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { ScrollArea } from "./ui/scroll-area";
+import { Button } from "./ui/button"
+import type { DiscoveryPreferences, UpdatePreferencesRequest } from "@/services/auth-service"
+import type { Match } from "@/types/match.types"
 
-interface MatchItem {
-  id: string;
-  name: string;
-  subtitle: string;
-  avatarLetter?: string;
-  avatarUrl?: string;
+interface FilterMatchPanelProps {
+  isSaving?: boolean
+  initialPreferences?: DiscoveryPreferences | null
+  matches: Match[]
+  isMatchesLoading?: boolean
+  onApply: (preferences: UpdatePreferencesRequest) => void
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const mockMatches: MatchItem[] = [
-  { id: "1", name: "Марія", subtitle: "Новий метч", avatarLetter: "М" },
-  { id: "2", name: "Марія", subtitle: "Новий метч", avatarLetter: "М" },
-  { id: "3", name: "Марія", subtitle: "Новий метч", avatarLetter: "М" },
-  { id: "4", name: "Марія", subtitle: "Новий метч", avatarLetter: "М" },
-];
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function FilterMatchPanel() {
+export function FilterMatchPanel({ isSaving = false, initialPreferences, matches, isMatchesLoading = false, onApply }: FilterMatchPanelProps) {
   const [minAge, setMinAge] = useState<number>(18);
   const [maxAge, setMaxAge] = useState<number>(60);
 
@@ -41,7 +36,19 @@ export function FilterMatchPanel() {
   const minLimit = 18;
   const maxLimit = 99;
 
-  const [lookingFor, setLookingFor] = useState("female");
+  const [lookingFor, setLookingFor] = useState("Women");
+  const [maxDistanceKm, setMaxDistanceKm] = useState<number | null>(50);
+
+  React.useEffect(() => {
+    if (!initialPreferences) return
+
+    setLookingFor(initialPreferences.showMe)
+    setMinAge(initialPreferences.minAge)
+    setMaxAge(initialPreferences.maxAge)
+    setMinInput(String(initialPreferences.minAge))
+    setMaxInput(String(initialPreferences.maxAge))
+    setMaxDistanceKm(initialPreferences.maxDistanceKm)
+  }, [initialPreferences])
 
   // Оновлення повзунком
   const handleAgeSliderChange = (value: number | readonly number[]) => {
@@ -109,7 +116,7 @@ export function FilterMatchPanel() {
   return (
     <ScrollArea viewportRef={viewportRef} className="flex h-screen w-80 shrink-0 flex-col border-r border-border/80 bg-card/55 p-5 font-sans select-none">
       <Accordion
-        defaultValue={["matches"]}
+        defaultValue={["filters"]}
         className="w-full overflow-visible rounded-none border-0"
       >
         <AccordionItem value="filters" className="border-0 bg-transparent">
@@ -157,7 +164,7 @@ export function FilterMatchPanel() {
               Кого шукаю
             </label>
 
-            <Select value={lookingFor} onValueChange={(value) => setLookingFor(value ?? "female")}>
+            <Select value={lookingFor} onValueChange={(value) => setLookingFor(value ?? "Women")}>
               <SelectTrigger
                 id="lookingFor"
                 className="h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground"
@@ -165,11 +172,41 @@ export function FilterMatchPanel() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="female">Дівчат</SelectItem>
-                <SelectItem value="male">Хлопців</SelectItem>
-                <SelectItem value="everyone">Будь-кого</SelectItem>
+                <SelectItem value="Women">Дівчат</SelectItem>
+                <SelectItem value="Men">Хлопців</SelectItem>
+                <SelectItem value="Everyone">Будь-кого</SelectItem>
               </SelectContent>
             </Select>
+
+            <label htmlFor="maxDistance" className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+              Максимальна відстань, км
+            </label>
+            <input
+              id="maxDistance"
+              type="number"
+              min={1}
+              max={160}
+              disabled={maxDistanceKm === null}
+              value={maxDistanceKm ?? ""}
+              onChange={(event) => setMaxDistanceKm(event.target.value ? Number(event.target.value) : null)}
+              className="h-9 w-full rounded-xl border border-input bg-background px-3 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+            />
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={maxDistanceKm === null}
+                onChange={(event) => setMaxDistanceKm(event.target.checked ? null : 50)}
+              />
+              Без обмежень
+            </label>
+
+            <Button
+              className="w-full"
+              disabled={isSaving}
+              onClick={() => onApply({ showMe: lookingFor, minAge, maxAge, maxDistanceKm })}
+            >
+              {isSaving ? "Зберігаємо..." : "Застосувати фільтри"}
+            </Button>
 
           </div>
           </AccordionContent>
@@ -187,29 +224,33 @@ export function FilterMatchPanel() {
           </AccordionTrigger>
           <AccordionContent className="px-0 pb-0">
           <div className="overflow-y-auto">
-            {mockMatches.map((match) => (
+            {isMatchesLoading ? (
+              <p className="px-1 py-3 text-xs text-muted-foreground">Завантаження...</p>
+            ) : matches.length === 0 ? (
+              <p className="px-1 py-3 text-xs text-muted-foreground">Поки що немає метчів</p>
+            ) : matches.map((match) => (
               <div
                 key={match.id}
                 className="flex cursor-pointer items-center gap-3.5 rounded-lg px-1 py-3.5 transition-colors hover:bg-muted/60"
               >
                 <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-lg font-semibold text-muted-foreground">
-                  {match.avatarUrl ? (
+                  {match.partner.mainPhotoUrl ? (
                     <img
-                      src={match.avatarUrl}
-                      alt={match.name}
+                      src={match.partner.mainPhotoUrl}
+                      alt={match.partner.displayName}
                       className="size-full rounded-xl object-cover"
                     />
                   ) : (
-                    match.avatarLetter
+                    match.partner.displayName.charAt(0).toUpperCase()
                   )}
                 </div>
 
                 <div className="flex flex-col">
                   <span className="text-sm font-bold leading-tight text-foreground">
-                    {match.name}
+                    {match.partner.displayName}, {match.partner.age}
                   </span>
                   <span className="mt-0.5 text-xs text-muted-foreground">
-                    {match.subtitle}
+                    {match.isNew ? "Новий метч" : "Метч"}
                   </span>
 
                 </div>
