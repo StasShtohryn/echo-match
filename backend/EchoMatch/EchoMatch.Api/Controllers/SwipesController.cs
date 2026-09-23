@@ -1,5 +1,6 @@
 ﻿using EchoMatch.Application.Common.Dtos;
 using EchoMatch.Application.Features.Swipes.CreateSwipe;
+using EchoMatch.Application.Features.Swipes.UndoSwipe;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,6 +28,17 @@ namespace EchoMatch.Api.Controllers
         {
             var result = await _sender.Send(command, cancellationToken);
             return Ok(result);
+        }
+
+
+        [HttpDelete("{targetProfileId:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Undo(Guid targetProfileId, CancellationToken cancellationToken)
+        {
+            await _sender.Send(new UndoSwipeCommand(targetProfileId), cancellationToken);
+            return NoContent();
         }
     }
 }

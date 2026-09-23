@@ -10,7 +10,6 @@ namespace EchoMatch.Application.Common.Models
         DateOnly EarliestBirthDate,
         DateOnly LatestBirthDate,
         int ViewerAge,
-        bool ViewerHasLocation,
         GeoBounds? Bounds,
         DateTime SwipeCutoff);
 }

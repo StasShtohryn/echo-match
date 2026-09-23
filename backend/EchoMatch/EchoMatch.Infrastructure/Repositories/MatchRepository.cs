@@ -1,4 +1,5 @@
-﻿using EchoMatch.Application.Common.Interfaces;
+﻿using EchoMatch.Application.Common.Dtos;
+using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Application.Common.Models;
 using EchoMatch.Domain.Entities;
 using EchoMatch.Infrastructure.Persistence;
@@ -47,6 +48,35 @@ namespace EchoMatch.Infrastructure.Repositories
                         ? m.ProfileTwo.Photos.Where(p => p.IsMain).Select(p => p.Url).FirstOrDefault()
                         : m.ProfileOne.Photos.Where(p => p.IsMain).Select(p => p.Url).FirstOrDefault()))
                 .ToListAsync(cancellationToken);
+        }
+
+
+        public async Task<MatchCountsDto> CountForProfileAsync(Guid profileId, CancellationToken cancellationToken)
+        {
+            // Звернення до партнера змушує EF додати JOIN, а глобальний фільтр
+            // прибирає метчі з видаленими профілями — так само, як у списку
+            var counts = await _context.Matches
+                .Where(m => m.ProfileOneId == profileId || m.ProfileTwoId == profileId)
+                .Where(m => m.ProfileOneId == profileId ? !m.ProfileTwo.IsDeleted : !m.ProfileOne.IsDeleted)
+                .GroupBy(_ => 1)
+                .Select(g => new MatchCountsDto(
+                    g.Count(),
+                    g.Count(m => (m.ProfileOneId == profileId ? m.ProfileOneSeenAt : m.ProfileTwoSeenAt) == null)))
+                .FirstOrDefaultAsync(cancellationToken);
+
+            // Жодного метчу — групувати нічого, запит повертає порожньо
+            return counts ?? new MatchCountsDto(0, 0);
+        }
+
+        public Task<bool> ExistsForPairAsync(
+            Guid profileA,
+            Guid profileB,
+            CancellationToken cancellationToken)
+        {
+            return _context.Matches.AnyAsync(
+                m => (m.ProfileOneId == profileA && m.ProfileTwoId == profileB)
+                     || (m.ProfileOneId == profileB && m.ProfileTwoId == profileA),
+                cancellationToken);
         }
 
         public Task SaveChangesAsync(CancellationToken cancellationToken)

@@ -1,4 +1,5 @@
-﻿using EchoMatch.Application.Common.Models;
+﻿using EchoMatch.Application.Common.Dtos;
+using EchoMatch.Application.Common.Models;
 using EchoMatch.Domain.Entities;
 
 namespace EchoMatch.Application.Common.Interfaces
@@ -9,6 +10,10 @@ namespace EchoMatch.Application.Common.Interfaces
         Task<Match?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
         Task<IReadOnlyList<MatchListItem>> GetForProfileAsync(Guid profileId, CancellationToken cancellationToken);
+
+        Task<MatchCountsDto> CountForProfileAsync(Guid profileId, CancellationToken cancellationToken);
+
+        Task<bool> ExistsForPairAsync(Guid profileA, Guid profileB, CancellationToken cancellationToken);
 
         Task SaveChangesAsync(CancellationToken cancellationToken);
     }

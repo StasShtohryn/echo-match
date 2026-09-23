@@ -47,6 +47,15 @@ likeEmail note. Only test data is at stake today.
 Before any public launch both must go: remove the dev endpoints and gate
 Swagger again. The item is tracked in roadmap.md under Deployment.
 
+Known gap: the authorization FallbackPolicy is commented out in Program.cs
+(arrived with commit 863a556). No controller carries [Authorize], because every
+one relied on that policy, so all endpoints now accept anonymous calls.
+Endpoints that read the current user still fail with 401, but only because
+CurrentUserService throws deep in the handler, after validation has already
+run; GET /api/profiles/{id} and GET /api/lookups answer anyone. Restore the
+policy before real traffic, and open a single endpoint with [AllowAnonymous]
+where one genuinely has to be public.
+
 XSS
 
 CSRF

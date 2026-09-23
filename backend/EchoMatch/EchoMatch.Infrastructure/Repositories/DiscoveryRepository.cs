@@ -26,7 +26,6 @@ namespace EchoMatch.Infrastructure.Repositories
             var earliestBirthDate = criteria.EarliestBirthDate;
             var latestBirthDate = criteria.LatestBirthDate;
             var viewerAge = criteria.ViewerAge;
-            var viewerHasLocation = criteria.ViewerHasLocation;
             var swipeCutoff = criteria.SwipeCutoff;
 
             var query = _context.UserProfiles
@@ -37,7 +36,7 @@ namespace EchoMatch.Infrastructure.Repositories
                 .Where(p => showMeAcceptingViewer.Contains(p.Preferences!.ShowMe))
                 .Where(p => p.DateOfBirth >= earliestBirthDate && p.DateOfBirth <= latestBirthDate)
                 .Where(p => p.Preferences!.MinAge <= viewerAge && p.Preferences!.MaxAge >= viewerAge)
-                .Where(p => p.Preferences!.MaxDistanceKm == null || (viewerHasLocation && p.Location != null))
+                .Where(p => p.Preferences!.MaxDistanceKm == null || p.Location != null)
                 .Where(p => !_context.Swipes.Any(s =>
                     s.SwiperProfileId == viewerId
                     && s.TargetProfileId == p.Id
