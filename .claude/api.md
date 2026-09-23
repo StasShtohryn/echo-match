@@ -218,9 +218,22 @@ people the user never chose. The client may prefill the form with 18..99 and
 
 PUT /api/profiles/me/location
 
-Body: { latitude, longitude }. Both required: an omitted field is rejected
-instead of silently becoming 0, a real point in the Gulf of Guinea. Stamps
-LastLocationUpdatedAt. 204 No Content.
+Body: { latitude, longitude, city }. The coordinates are both required: an
+omitted field is rejected instead of silently becoming 0, a real point in the
+Gulf of Guinea. Stamps LastLocationUpdatedAt. 204 No Content.
+
+city is optional, up to 100 characters. The client resolves it from the
+coordinates by reverse geocoding and sends both together, so the stored city
+can never belong to an older position. Omitted or blank means the lookup did
+not succeed and leaves the current city untouched: losing a name the user may
+have typed by hand, because a third-party service failed, would be worse than
+keeping an older one. The server does not check the name against the
+coordinates — the city is display only, while every distance filter reads the
+coordinates.
+
+The same field is also writable through PUT /api/profiles/me, which is the
+manual path: a full profile replacement is the wrong shape for a background
+update that knows nothing but the position.
 
 PATCH /api/profiles/me/visibility
 
