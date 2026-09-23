@@ -218,9 +218,22 @@ people the user never chose. The client may prefill the form with 18..99 and
 
 PUT /api/profiles/me/location
 
-Body: { latitude, longitude }. Both required: an omitted field is rejected
-instead of silently becoming 0, a real point in the Gulf of Guinea. Stamps
-LastLocationUpdatedAt. 204 No Content.
+Body: { latitude, longitude, city }. The coordinates are both required: an
+omitted field is rejected instead of silently becoming 0, a real point in the
+Gulf of Guinea. Stamps LastLocationUpdatedAt. 204 No Content.
+
+city is optional, up to 100 characters. The client resolves it from the
+coordinates by reverse geocoding and sends both together, so the stored city
+can never belong to an older position. Omitted or blank means the lookup did
+not succeed and leaves the current city untouched: losing a name the user may
+have typed by hand, because a third-party service failed, would be worse than
+keeping an older one. The server does not check the name against the
+coordinates — the city is display only, while every distance filter reads the
+coordinates.
+
+The same field is also writable through PUT /api/profiles/me, which is the
+manual path: a full profile replacement is the wrong shape for a background
+update that knows nothing but the position.
 
 PATCH /api/profiles/me/visibility
 
@@ -278,6 +291,22 @@ Two simultaneous likes can each miss the other's uncommitted row and produce no
 match. The unique index prevents the opposite failure, a duplicate match.
 Reconciliation lands with the matches list.
 
+DELETE /api/swipes/{targetProfileId}
+
+Cancels the caller's own decision about that person. 204. The row is kept and
+marked deleted rather than removed: the filtered unique index counts active
+rows only, so the pair is free again and the person returns to the feed.
+
+Works for a like without an answer and for a dislike. A like that already
+produced a match answers 409 — undoing it would end the match, which is a
+separate action, not a rewind.
+
+404  the caller has no profile, or no active swipe on that person
+409  the pair already matched
+
+The target is the address, so the client can undo the last card or a like
+picked from a list with the same call.
+
 Discovery Endpoint
 
 GET /api/discovery?limit=20
@@ -291,11 +320,15 @@ NoCandidates         everything is set up, nobody matched
 ProfileHidden        the caller turned their own visibility off
 PhotoRequired        no photo yet
 PreferencesRequired  discovery preferences never saved
-LocationRequired     a distance limit is set but coordinates are missing
+LocationRequired     coordinates are missing
 
 An empty feed is a screen state, not a failure, so none of these is an error
 code: the client reads status and shows the matching prompt instead of parsing
 a message. Ready always carries at least one card.
+
+Coordinates are a condition of entry: without them the feed answers
+LocationRequired whether or not a distance limit is set. Everything else —
+profile, matches, editing — works without them.
 
 limit is 1..50, default 20. There is no page number. Swiped people drop out of
 the query, so asking again returns the next batch, and offset paging would skip
@@ -330,6 +363,17 @@ isNew is per participant: a match stays new for each side until that side
 opens it. Both sides start new, including the one whose like completed the
 match, so the client decides whether its "It's a match" screen counts as
 opening. Matches with a deleted partner drop out of the list.
+
+GET /api/matches/count
+
+{ total, unseen }
+
+The same matches the list returns, counted in the database instead of loaded:
+one aggregate query, so a badge can ask for it often. Matches with a deleted
+partner are left out here too, and the two numbers always agree with the list.
+
+unseen counts the matches this caller has not opened; the partner has their own
+count.
 
 POST /api/matches/{id}/seen
 

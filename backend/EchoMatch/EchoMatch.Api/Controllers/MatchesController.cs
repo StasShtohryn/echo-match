@@ -1,4 +1,5 @@
 ﻿using EchoMatch.Application.Common.Dtos;
+using EchoMatch.Application.Features.Matches.GetMatchCounts;
 using EchoMatch.Application.Features.Matches.GetMatches;
 using EchoMatch.Application.Features.Matches.MarkMatchSeen;
 using MediatR;
@@ -33,6 +34,16 @@ namespace EchoMatch.Api.Controllers
         {
             await _sender.Send(new MarkMatchSeenCommand(id), cancellationToken);
             return NoContent();
+        }
+
+
+        [HttpGet("count")]
+        [ProducesResponseType(typeof(MatchCountsDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<MatchCountsDto>> GetCounts(CancellationToken cancellationToken)
+        {
+            var result = await _sender.Send(new GetMatchCountsQuery(), cancellationToken);
+            return Ok(result);
         }
     }
 }

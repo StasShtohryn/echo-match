@@ -13,6 +13,9 @@ namespace EchoMatch.Application.Features.Profiles.UpdateLocation
             RuleFor(x => x.Longitude)
                 .NotNull().WithMessage("Довгота обов'язкова.")
                 .InclusiveBetween(-180.0, 180.0).WithMessage("Довгота — від -180 до 180.");
+
+            RuleFor(x => x.City)
+                .MaximumLength(100).WithMessage("Назва міста — до 100 символів.");
         }
     }
 }

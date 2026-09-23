@@ -23,5 +23,13 @@ namespace EchoMatch.Domain.Entities
 
         public bool IsExpired(DateTime utcNow) =>
             Direction == SwipeDirection.Dislike && DecidedAt <= utcNow - DislikeExpiry;
+
+        // Скасування: рядок лишається в базі, але перестає враховуватись —
+        // людина повертається в стрічку, а унікальний індекс звільняє пару
+        public void Undo(DateTime utcNow)
+        {
+            IsDeleted = true;
+            DeletedAt = utcNow;
+        }
     }
 }

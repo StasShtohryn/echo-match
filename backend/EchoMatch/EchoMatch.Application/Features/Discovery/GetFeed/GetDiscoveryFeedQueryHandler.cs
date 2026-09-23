@@ -48,7 +48,7 @@ namespace EchoMatch.Application.Features.Discovery.GetFeed
 
             var preferences = me.Preferences!;
 
-            if (preferences.MaxDistanceKm is not null && me.Location is null)
+            if (me.Location is null)
             {
                 return DiscoveryFeedDto.Empty(DiscoveryStatus.LocationRequired);
             }
@@ -63,8 +63,7 @@ namespace EchoMatch.Application.Features.Discovery.GetFeed
                 earliest,
                 latest,
                 me.Age,
-                me.Location is not null,
-                preferences.MaxDistanceKm is { } radiusKm ? me.Location!.BoundingBox(radiusKm) : null,
+                preferences.MaxDistanceKm is { } radiusKm ? me.Location.BoundingBox(radiusKm) : null,
                 now - Swipe.DislikeExpiry);
 
             var found = await _discoveryRepository
@@ -74,7 +73,7 @@ namespace EchoMatch.Application.Features.Discovery.GetFeed
 
             foreach (var candidate in found)
             {
-                double? distance = me.Location is not null && candidate.Latitude is not null
+                double? distance = candidate.Latitude is not null
                     ? me.Location.DistanceKmTo(new GeoLocation(candidate.Latitude.Value, candidate.Longitude!.Value))
                     : null;
 

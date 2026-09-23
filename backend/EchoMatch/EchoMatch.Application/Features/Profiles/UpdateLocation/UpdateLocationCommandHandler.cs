@@ -27,6 +27,14 @@ namespace EchoMatch.Application.Features.Profiles.UpdateLocation
             profile.Location = new GeoLocation(request.Latitude!.Value, request.Longitude!.Value);
             profile.LastLocationUpdatedAt = DateTime.UtcNow;
 
+            // Порожнє місто означає «геокодування не спрацювало», а не «зітри місто»:
+            // координати ми маємо, і втрачати через збій стороннього сервісу
+            // те, що користувач міг вписати руками, не варто
+            if (!string.IsNullOrWhiteSpace(request.City))
+            {
+                profile.City = request.City.Trim();
+            }
+
             await _profileRepository.SaveChangesAsync(cancellationToken);
 
             return Unit.Value;
