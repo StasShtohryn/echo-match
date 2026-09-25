@@ -11,6 +11,7 @@ import NotFoundPage from "./pages/not-found-page.tsx"
 import ProfileEditPage from "./pages/profile-edit-page.tsx"
 import ProfileSettingsPage from "./pages/profile-settings-page.tsx"
 import { useAuthStore } from "@/store/useAuthStore"
+import TestPage from "./pages/steps/test-page.tsx"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -24,6 +25,7 @@ function App() {
       <Routes>
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/tests" element={<TestPage />} />
           <Route path="/quiz" element={<PsychologicQuizPage />} />
           <Route path="/me" element={<ProfilePage />} />
           <Route path="/me/edit" element={<ProfileEditPage />} />
