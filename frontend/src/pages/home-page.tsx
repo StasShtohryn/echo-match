@@ -8,7 +8,7 @@ import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { getMyProfile, updateMyPreferences, type DiscoveryPreferences, type DiscoveryStatus, type UpdatePreferencesRequest } from "@/services/auth-service"
 import { useDiscoveryFeed } from "@/hooks/use-discovery-feed"
-import { useMatches } from "@/hooks/use-matches.tsx"
+import { useMatches } from "@/hooks/use-matches"
 
 const statusContent: Record<DiscoveryStatus, { title: string; description: string; action?: string }> = {
   Ready: { title: "Шукаємо пару", description: "Завантажуємо анкети для вас." },

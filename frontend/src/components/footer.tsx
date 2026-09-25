@@ -27,7 +27,7 @@ const Footer = () => {
     <footer className="border-t bg-background px-6 py-2">
       <div className="mx-auto w-full max-w-screen-2xl divide-y">
         <div className="flex flex-col items-center justify-between gap-4 px-2 pt-3 pb-5 sm:flex-row">
-          <Link className="flex items-center gap-2" to="/">
+          <Link className="flex items-center gap-2" to="/tests">
             <Heart />
             <span className="font-medium text-xl">EchoMatch</span>
           </Link>

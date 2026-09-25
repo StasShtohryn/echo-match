@@ -36,18 +36,19 @@ export default function Header() {
 
       <DropdownMenu>
         <DropdownMenuTrigger
+          nativeButton={false}
           render={
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar className="h-10 w-10 cursor-pointer">
-                <AvatarImage
-                  src={user?.picture ?? undefined}
-                  alt={user?.name ?? user?.email ?? "User"}
-                />
-                <AvatarFallback>
-                  {(user?.name ?? user?.email ?? "ME").slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+
+            <Avatar className="h-10 w-10 cursor-pointer">
+              <AvatarImage
+                src={user?.picture ?? undefined}
+                alt={user?.name ?? user?.email ?? "User"}
+              />
+              <AvatarFallback>
+                {(user?.name ?? user?.email ?? "ME").slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+
           }
         />
         <DropdownMenuContent align="center" className="min-w-max">
