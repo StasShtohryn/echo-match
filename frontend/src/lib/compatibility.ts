@@ -381,6 +381,8 @@ export function calculateTotalScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
 ): number {
+    console.log("ПОЧАТОК ОБРАХУВАННЯ")
+
     // 1. Отримуємо коефіцієнти (s_i від 0.0 до 1.0)
     const sGender = calculateGenderScore(myProfile, candidateProfile)
     const sOrientation = calculateOrientationScore(myProfile, candidateProfile)
@@ -436,121 +438,4 @@ export function calculateTotalScore(
     console.log(result)
 
     return result
-}
-
-
-
-
-
-
-export function debugCompareProfiles(
-    myProfile: PublicProfile | null,
-    candidate: DiscoveryCandidate | null
-): ProfilesComparisonData | null {
-
-    if (!myProfile) {
-        console.warn("[Compatibility] Неможливо порівняти: ваш профіль ще не завантажено.")
-        return null
-    }
-
-    if (!candidate || !candidate.profile) {
-        console.warn("[Compatibility] Неможливо порівняти: кандидат відсутній.")
-        return null
-    }
-
-    const candidateProfile = candidate.profile
-
-    // Виводимо структурований порівняльний звіт у консоль
-    console.group(`🔮 Порівняння анкет: ${myProfile.displayName} ⟷ ${candidateProfile.displayName}`)
-
-    console.log("👤 Мій профіль:", myProfile)
-    console.log("🎯 Профіль кандидата:", candidateProfile)
-    console.log("📍 Відстань (км):", candidate.distanceKm)
-
-    console.table({
-        "Параметр": {
-            "Я": myProfile.displayName,
-            "Кандидат": candidateProfile.displayName,
-        },
-        "Вік": {
-            "Я": myProfile.age,
-            "Кандидат": candidateProfile.age,
-        },
-        "Гендер": {
-            "Я": myProfile.gender,
-            "Кандидат": candidateProfile.gender,
-        },
-        "Знак зодіаку": {
-            "Я": myProfile.zodiac,
-            "Кандидат": candidateProfile.zodiac,
-        },
-        "Мета (lookingFor)": {
-            "Я": myProfile.lookingFor,
-            "Кандидат": candidateProfile.lookingFor,
-        },
-        "Спорт (workout)": {
-            "Я": myProfile.workout,
-            "Кандидат": candidateProfile.workout,
-        },
-        "Діти (familyPlans)": {
-            "Я": myProfile.familyPlans,
-            "Кандидат": candidateProfile.familyPlans,
-        },
-        "Спілкування (communication)": {
-            "Я": myProfile.communication,
-            "Кандидат": candidateProfile.communication,
-        },
-        "Мова кохання (loveLanguage)": {
-            "Я": myProfile.loveLanguage,
-            "Кандидат": candidateProfile.loveLanguage,
-        },
-        "Тварини (pets)": {
-            "Я": myProfile.pets,
-            "Кандидат": candidateProfile.pets,
-        },
-        "Алкоголь (drinking)": {
-            "Я": myProfile.drinking,
-            "Кандидат": candidateProfile.drinking,
-        },
-        "Куріння (smoking)": {
-            "Я": myProfile.smoking,
-            "Кандидат": candidateProfile.smoking,
-        },
-        "Кількість інтересів": {
-            "Я": myProfile.interests?.length ?? 0,
-            "Кандидат": candidateProfile.interests?.length ?? 0,
-        },
-        "Кількість спільних мов": {
-            "Я": myProfile.languages?.length ?? 0,
-            "Кандидат": candidateProfile.languages?.length ?? 0,
-        },
-    })
-
-    // Перевірка перетину списків (інтереси та мови)
-    const myInterestIds = new Set(myProfile.interests?.map((i) => i.id) ?? [])
-    const commonInterests = (candidateProfile.interests ?? []).filter((i) =>
-        myInterestIds.has(i.id)
-    )
-
-    const myLanguageIds = new Set(myProfile.languages?.map((l) => l.id) ?? [])
-    const commonLanguages = (candidateProfile.languages ?? []).filter((l) =>
-        myLanguageIds.has(l.id)
-    )
-
-    console.log("Спільні інтереси:", commonInterests)
-    console.log("Спільні мови:", commonLanguages)
-    console.groupEnd()
-
-
-
-    const result = calculateTotalScore(myProfile, candidate.profile)
-    const compatibilityPercent = Math.round((result / 340) * 100)
-    console.log(result)
-
-    return {
-        myProfile,
-        candidateProfile,
-        distanceKm: candidate.distanceKm,
-        compatibilityPercent,
-    }
 }

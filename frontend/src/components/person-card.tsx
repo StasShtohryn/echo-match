@@ -113,6 +113,7 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
     setDragOffset(0)
   }
 
+
   const cardRotation = Math.max(-12, Math.min(12, dragOffset / 18))
 
   return (
@@ -182,8 +183,8 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
 
           </CardAction>
           <CardTitle>
-          <p className="text-lg">{profile.displayName}, {profile.age}</p>
-          <p className="text-sm text-muted-foreground">{candidate.distanceKm === null ? "Відстань не вказана" : `${candidate.distanceKm} км від вас`}</p>
+            <p className="text-lg">{profile.displayName}, {profile.age}</p>
+            <p className="text-sm text-muted-foreground">{candidate.distanceKm === null ? "Відстань не вказана" : `${candidate.distanceKm} км від вас`}</p>
           </CardTitle>
           <CardDescription>
             {profile.bio ?? "Користувач ще не додав опис профілю."}

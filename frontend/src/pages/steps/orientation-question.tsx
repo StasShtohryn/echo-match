@@ -9,7 +9,6 @@ interface Props {
     value: string | null
     onChange: (val: SexualOrientation) => void
     onNext: () => void
-    onBack?: () => void
 }
 
 const orientationOptions: { id: SexualOrientation; label: string }[] = [
@@ -30,7 +29,6 @@ export default function OrientationStep({
     value,
     onChange,
     onNext,
-    onBack,
 }: Props) {
     return (
         <TestPage
@@ -39,7 +37,6 @@ export default function OrientationStep({
             title="Моя сексуальна орієнтація"
             canContinue={Boolean(value)}
             onNext={onNext}
-            onBack={onBack}
         >
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {orientationOptions.map((opt) => {
