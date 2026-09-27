@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router"
-import { updateMyProfile } from "@/services/auth-service"
-import type { UpdateProfileRequest } from "@/services/auth-service"
+import { updateMyInterests, updateMyLanguages, updateMyProfile, updateMyPrompts } from "@/services/auth-service"
+import type { PromptAnswerInput, UpdateProfileRequest } from "@/services/auth-service"
 import { useAuthStore } from "@/store/useAuthStore"
 
 import GenderStep from "./gender-question"
@@ -18,7 +18,11 @@ import LoveLanguageStep from "./love-language-step"
 import PetsStep from "./pet-question"
 import DrinkingStep from "./drink-question"
 import SmokingStep from "./smoking-question"
-
+import InterestsStep from "./interests-question"
+import PromptsStep from "./prompts-question"
+import LanguagesStep from "./languages-question"
+import { updateMyPreferences, type UpdatePreferencesRequest } from "@/services/auth-service"
+import FilterStep from "./filters-question"
 
 
 const stepsConfig = [
@@ -80,6 +84,23 @@ const stepsConfig = [
         component: SmokingStep
     },
     {
+        field: "interests" as const,
+        component: InterestsStep
+    },
+    {
+        field: "languages" as const,
+        component: LanguagesStep
+    },
+
+    {
+        field: "prompts" as const,
+        component: PromptsStep
+    },
+    {
+        field: "preferences" as const,
+        component: FilterStep
+    },
+    {
         field: "bio" as const,
         component: BioStep,
     },
@@ -126,40 +147,61 @@ export default function TestsPage() {
         setProfileData((prev) => ({ ...prev, [field]: val }))
     }
 
-
-
     const nextStep = () => setCurrentStep((prev) => prev + 1)
     const prevStep = () => setCurrentStep((prev) => prev - 1)
-
-    const handleFinalSubmit = async () => {
-        try {
-            setIsLoading(true)
-            await updateMyProfile(profileData)
-            navigate("/")
-        } catch (error) {
-            console.error("Помилка збереження відповідей тесту:", error)
-            alert("Не вдалося зберегти профіль. Спробуйте ще раз.")
-        } finally {
-            setIsLoading(false)
-        }
-    }
 
     const currentStepConfig = stepsConfig[currentStep - 1]
     const StepComponent = currentStepConfig.component
 
+    const [selectedInterestIds, setSelectedInterestIds] = useState<number[]>([])
+    const [promptAnswers, setPromptAnswers] = useState<PromptAnswerInput[]>([])
+    const [selectedLanguageIds, setSelectedLanguageIds] = useState<number[]>([])
+
+
+
+    const [preferences, setPreferences] = useState<UpdatePreferencesRequest>({
+        showMe: "Women",
+        minAge: 18,
+        maxAge: 50,
+        maxDistanceKm: 50,
+    })
+
     const getCurrentValue = () => {
+        if (currentStepConfig.field === "preferences") {
+            return preferences
+        }
+        if (currentStepConfig.field === "languages") {
+            return selectedLanguageIds
+        }
         if (currentStepConfig.field === "lifestyle") {
             return {
                 heightCm: profileData.heightCm,
                 workout: profileData.workout,
             } as LifestyleValue
         }
+        if (currentStepConfig.field === "interests") {
+            return selectedInterestIds
+        }
+        if (currentStepConfig.field === "prompts") {
+            return promptAnswers
+        }
         return profileData[currentStepConfig.field as keyof UpdateProfileRequest]
     }
 
-    // Оновлюємо значення: якщо це lifestyle, розгортаємо його в heightCm та workout
     const handleStepChange = (val: any) => {
-        if (currentStepConfig.field === "lifestyle") {
+        if (currentStepConfig.field === "preferences") {
+            setPreferences(val)
+        }
+        else if (currentStepConfig.field === "languages") {
+            setSelectedLanguageIds(val)
+        }
+        else if (currentStepConfig.field === "prompts") {
+            setPromptAnswers(val)
+        }
+        else if (currentStepConfig.field === "interests") {
+            setSelectedInterestIds(val)
+        }
+        else if (currentStepConfig.field === "lifestyle") {
             const lifestyle = val as LifestyleValue
             setProfileData((prev) => ({
                 ...prev,
@@ -168,6 +210,44 @@ export default function TestsPage() {
             }))
         } else {
             updateField(currentStepConfig.field as keyof UpdateProfileRequest, val)
+        }
+    }
+
+
+    const handleFinalSubmit = async () => {
+        try {
+            setIsLoading(true)
+
+            // 1. Оновлюємо основний профіль
+            const payload: UpdateProfileRequest = {
+                ...profileData,
+                displayName: profileData.displayName.trim() || user?.name || "Користувач",
+            }
+            await updateMyProfile(payload)
+
+            // 2. Зберігаємо налаштування пошуку (preferences)
+            await updateMyPreferences(preferences)
+
+            // 2. Якщо користувач обрав інтереси — надсилаємо окремий запит
+            if (selectedInterestIds.length > 0) {
+                await updateMyInterests(selectedInterestIds)
+            }
+            // 3. Зберігаємо мови
+            if (selectedLanguageIds.length > 0) {
+                await updateMyLanguages(selectedLanguageIds)
+            }
+            // 3. Зберігаємо відповіді на промпти (тільки непорожні)
+            const validAnswers = promptAnswers.filter((a) => a.answer.trim().length > 0)
+            if (validAnswers.length > 0) {
+                await updateMyPrompts(validAnswers)
+            }
+
+            navigate("/")
+        } catch (error) {
+            console.error("Помилка збереження відповідей тесту:", error)
+            alert("Не вдалося зберегти профіль. Спробуйте ще раз.")
+        } finally {
+            setIsLoading(false)
         }
     }
 

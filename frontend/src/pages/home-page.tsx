@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useNavigate } from "react-router"
 import PersonCard from "@/components/person-card"
 import { FilterMatchPanel } from "@/components/filter-match-panel"
@@ -6,9 +6,11 @@ import { InfoPanel } from "@/components/info-panel"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { getMyProfile, updateMyPreferences, type DiscoveryPreferences, type DiscoveryStatus, type UpdatePreferencesRequest } from "@/services/auth-service"
+import { getMyProfile, updateMyPreferences, type DiscoveryPreferences, type DiscoveryStatus, type PublicProfile, type UpdatePreferencesRequest } from "@/services/auth-service"
 import { useDiscoveryFeed } from "@/hooks/use-discovery-feed"
 import { useMatches } from "@/hooks/use-matches"
+
+import { debugCompareProfiles } from "@/lib/compatibility"
 
 const statusContent: Record<DiscoveryStatus, { title: string; description: string; action?: string }> = {
   Ready: { title: "Шукаємо пару", description: "Завантажуємо анкети для вас." },
@@ -23,14 +25,36 @@ export default function HomePage() {
   const navigate = useNavigate()
   const [isSavingFilters, setIsSavingFilters] = useState(false)
   const [preferences, setPreferences] = useState<DiscoveryPreferences | null>(null)
+  const [myProfile, setMyProfile] = useState<PublicProfile | null>(null)
+
   const { currentCandidate, status, isLoading, isSwiping, error, lastSwipe, swipe, refresh, dismissSwipeResult } = useDiscoveryFeed()
   const { matches, isLoading: isMatchesLoading, refresh: refreshMatches } = useMatches()
 
+  const lastAnalyzedCandidateId = useRef<string | null>(null)
+
   useEffect(() => {
-    getMyProfile().then((profile) => {
-      setPreferences(profile.preferences)
-      if (profile.preferences) void refresh()
-    }).catch(() => undefined)
+    if (!myProfile || !currentCandidate) return
+
+    if (lastAnalyzedCandidateId.current === currentCandidate.profile.id) {
+      return
+    }
+
+    lastAnalyzedCandidateId.current = currentCandidate.profile.id
+    debugCompareProfiles(myProfile, currentCandidate)
+  }, [myProfile, currentCandidate?.profile?.id])
+
+
+  useEffect(() => {
+    getMyProfile()
+      .then((profile) => {
+        console.log("✅ Мій профіль успішно завантажено:", profile)
+        setMyProfile(profile)
+        setPreferences(profile.preferences)
+        if (profile.preferences) void refresh()
+      })
+      .catch((err) => {
+        console.error("❌ Помилка завантаження мого профілю:", err)
+      })
   }, [refresh])
 
   useEffect(() => {
@@ -62,7 +86,7 @@ export default function HomePage() {
             <h2 className="text-xl font-semibold">{isLoading ? "Завантаження..." : currentStatus.title}</h2>
             {!isLoading && <p className="text-sm text-muted-foreground">{currentStatus.description}</p>}
             {!isLoading && currentStatus.action && <Button onClick={() => navigate(status === "PhotoRequired" ? "/me" : "/settings")}>{currentStatus.action}</Button>}
-            {error && <p className="text-sm text-destructive">{getApiErrorMessage(error, "Не вдалося завантажити анкети.")}</p>}
+            {/* {error && <p className="text-sm text-destructive">{getApiErrorMessage(error, "Не вдалося завантажити анкети.")}</p>} */}
           </div>
         ) : (
           <PersonCard candidate={currentCandidate} isSwiping={isSwiping} onSwipe={(direction) => void swipe(direction)} />

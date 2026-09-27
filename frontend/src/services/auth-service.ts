@@ -25,6 +25,30 @@ export interface LookupItem {
   name: string
 }
 
+export interface LookupsResponse {
+  interests: LookupItem[]
+  languages: LookupItem[]
+  prompts: LookupItem[]
+  options: {
+    gender: string[]
+    orientation: string[]
+    showMe: string[]
+    lookingFor: string[]
+    familyPlans: string[]
+    communication: string[]
+    loveLanguage: string[]
+    pets: string[]
+    drinking: string[]
+    smoking: string[]
+    workout: string[]
+  }
+}
+
+export interface PromptAnswerInput {
+  promptId: number
+  answer: string
+}
+
 export interface PromptAnswer {
   promptId: number
   code: string
@@ -224,6 +248,7 @@ export async function getLookups(): Promise<Lookups> {
   const response = await api.get<Lookups>("/lookups")
   return response.data
 }
+
 
 export async function updateMyProfile(
   profile: UpdateProfileRequest,
