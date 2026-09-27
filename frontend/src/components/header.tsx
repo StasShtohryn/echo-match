@@ -1,4 +1,4 @@
-import { BellIcon, Heart, LogOutIcon, Settings, User } from "lucide-react";
+import { BellIcon, Heart, LogOutIcon, Monitor, Moon, Settings, Sun, User } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -10,14 +10,20 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore";
-
+import { useTheme } from "@/components/theme-provider"
 export default function Header() {
   const { user, logout } = useAuthStore();
+  const { theme, setTheme } = useTheme()
 
   return (
     <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none">
@@ -72,6 +78,23 @@ export default function Header() {
               </DropdownMenuItem>
             </Link>
           </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              {theme === "dark" ? <Moon /> : theme === "system" ? <Monitor /> : <Sun />}
+              Тема
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuRadioGroup
+                value={theme}
+                onValueChange={(value) => setTheme(value as typeof theme)}
+              >
+                <DropdownMenuRadioItem value="light">Світла</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="dark">Темна</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="system">Системна</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">
             <LogOutIcon />
