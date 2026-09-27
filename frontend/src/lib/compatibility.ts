@@ -7,7 +7,7 @@ export interface ProfilesComparisonData {
 
 
 // Стать
-const WEIGHT_GENDER = 30
+const WEIGHT_GENDER = 15
 export function calculateGenderScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
@@ -25,7 +25,7 @@ export function calculateGenderScore(
 
 
 // Сексуальна орієнтація
-const WEIGHT_ORIENTATION = 50
+const WEIGHT_ORIENTATION = 30
 function calculateOrientationScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
@@ -64,7 +64,7 @@ function calculateOrientationScore(
 
 
 // Кого шукаю?
-const WEIGHT_LOOKING_FOR = 50
+const WEIGHT_LOOKING_FOR = 30
 function calculateLookingForScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
@@ -106,7 +106,7 @@ function calculateLookingForScore(
 
 
 // Плани на сім'ю
-const WEIGHT_FAMILY_PLANS = 50
+const WEIGHT_FAMILY_PLANS = 35
 function calculateFamilyScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
@@ -189,6 +189,7 @@ export function calculatePetsScore(
     return 0.6
 }
 
+
 // Куріння
 const WEIGHT_SMOKING = 20
 function calculateSmokingScore(
@@ -257,7 +258,7 @@ export function calculateLanguagesScore(
 
 
 // Інтереси
-const WEIGHT_INTERESTS = 20
+const WEIGHT_INTERESTS = 25
 function calculateInterestsScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
@@ -289,7 +290,7 @@ function calculateInterestsScore(
 
 
 // Спорт
-const WEIGHT_WORKOUT = 20
+const WEIGHT_WORKOUT = 15
 function calculateWorkoutScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
@@ -310,7 +311,7 @@ function calculateWorkoutScore(
 
 
 // Стиль спілкування
-const WEIGHT_COMMUNICATION = 20
+const WEIGHT_COMMUNICATION = 25
 function calculateCommunicationScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
@@ -332,7 +333,7 @@ function calculateCommunicationScore(
 
 
 // Мова кохання
-const WEIGHT_LOVE_LANGUAGE = 20
+const WEIGHT_LOVE_LANGUAGE = 25
 function calculateLoveLanguageScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
@@ -393,26 +394,47 @@ export function calculateTotalScore(
     const sLoveLanguage = calculateLoveLanguageScore(myProfile, candidateProfile)
     const sDrinking = calculateDrinkingScore(myProfile, candidateProfile)
 
+    // 2. Накопичуємо бали ТІЛЬКИ якщо значення не null
+    let earnedScore = 0
+    let activeWeight = 0
 
-    // 2. Рахуємо бали: вага * коефіцієнт
-    const scoreGender = WEIGHT_GENDER * sGender
-    const scoreOrientation = WEIGHT_ORIENTATION * sOrientation
-    const scoreLookingFor = WEIGHT_LOOKING_FOR * sLookingFor
-    const scoreFamilyPlans = WEIGHT_FAMILY_PLANS * sFamilyPlans
-    const scorePets = WEIGHT_PETS * sPets
-    const scoreSmoking = WEIGHT_SMOKING * sSmoking
-    const scoreLanguages = WEIGHT_LANGUAGES * sLanguages
-    const scoreInterests = WEIGHT_INTERESTS * sInterests
-    const scoreWorkout = WEIGHT_WORKOUT * sWorkout
-    const scoreCommunication = WEIGHT_COMMUNICATION * sCommunication
-    const scoreLoveLanguage = WEIGHT_LOVE_LANGUAGE * sLoveLanguage
-    const scoreDrinking = WEIGHT_DRINKING * sDrinking
+    function addFactor(score: number | null, weight: number) {
+        if (score !== null) {
+            earnedScore += score * weight
+            activeWeight += weight
+        }
+    }
 
+    // 3. Проганяємо всі поля через помічник:
+    addFactor(sGender, WEIGHT_GENDER)
+    addFactor(sOrientation, WEIGHT_ORIENTATION)
+    addFactor(sLookingFor, WEIGHT_LOOKING_FOR)
+    addFactor(sFamilyPlans, WEIGHT_FAMILY_PLANS)
+    addFactor(sPets, WEIGHT_PETS)
+    addFactor(sSmoking, WEIGHT_SMOKING)
+    addFactor(sLanguages, WEIGHT_LANGUAGES)
+    addFactor(sInterests, WEIGHT_INTERESTS)
+    addFactor(sWorkout, WEIGHT_WORKOUT)
+    addFactor(sCommunication, WEIGHT_COMMUNICATION)
+    addFactor(sLoveLanguage, WEIGHT_LOVE_LANGUAGE)
+    addFactor(sDrinking, WEIGHT_DRINKING)
 
-    // 3. Загальна сума балів
-    const totalScore = scoreGender + scoreLookingFor + scoreOrientation + scoreFamilyPlans + scorePets + scoreSmoking + scoreLanguages + scoreInterests + scoreWorkout + scoreCommunication + scoreLoveLanguage + scoreDrinking
+    // 3. Розрахунок К
+    const total_weight = WEIGHT_WORKOUT + WEIGHT_SMOKING + WEIGHT_PETS + WEIGHT_ORIENTATION + WEIGHT_LOVE_LANGUAGE + WEIGHT_LOOKING_FOR + WEIGHT_LANGUAGES + WEIGHT_INTERESTS + WEIGHT_GENDER + WEIGHT_FAMILY_PLANS + WEIGHT_DRINKING + WEIGHT_COMMUNICATION
+    console.log(total_weight)
 
-    return totalScore
+    const K1 = total_weight * 0.2
+    const K2 = total_weight * 0.25
+
+    const K = (K1 + K2) / 2
+    console.log(K)
+
+    console.log(earnedScore)
+
+    const result = ((earnedScore + K * 0.5) / (activeWeight + K)) * 100
+    console.log(result)
+
+    return result
 }
 
 
@@ -522,6 +544,7 @@ export function debugCompareProfiles(
 
     const result = calculateTotalScore(myProfile, candidate.profile)
     console.log(result)
+
     return {
         myProfile,
         candidateProfile,
