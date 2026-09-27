@@ -26,6 +26,7 @@ export default function HomePage() {
   const [isSavingFilters, setIsSavingFilters] = useState(false)
   const [preferences, setPreferences] = useState<DiscoveryPreferences | null>(null)
   const [myProfile, setMyProfile] = useState<PublicProfile | null>(null)
+  const [compatibilityPercent, setCompatibilityPercent] = useState<number | null>(null)
 
   const { currentCandidate, status, isLoading, isSwiping, error, lastSwipe, swipe, refresh, dismissSwipeResult } = useDiscoveryFeed()
   const { matches, isLoading: isMatchesLoading, refresh: refreshMatches } = useMatches()
@@ -40,7 +41,8 @@ export default function HomePage() {
     }
 
     lastAnalyzedCandidateId.current = currentCandidate.profile.id
-    debugCompareProfiles(myProfile, currentCandidate)
+    const comparison = debugCompareProfiles(myProfile, currentCandidate)
+    setCompatibilityPercent(comparison?.compatibilityPercent ?? null)
   }, [myProfile, currentCandidate?.profile?.id])
 
 
@@ -92,7 +94,7 @@ export default function HomePage() {
           <PersonCard candidate={currentCandidate} isSwiping={isSwiping} onSwipe={(direction) => void swipe(direction)} />
         )}
       </main>
-      <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} distanceKm={currentCandidate?.distanceKm ?? null} />
+      <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} distanceKm={currentCandidate?.distanceKm ?? null} compatibilityPercent={compatibilityPercent} />
       {lastSwipe?.isMatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm space-y-4 rounded-2xl bg-background p-6 text-center shadow-xl">

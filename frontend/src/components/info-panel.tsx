@@ -9,6 +9,7 @@ export interface ProfileDetailsProps {
     idealSaturday?: string;
     lookingFor?: string;
     distanceKm: number | null;
+    compatibilityPercent: number | null;
 }
 
 export const InfoPanel: FC<ProfileDetailsProps> = ({
@@ -18,6 +19,7 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
     idealSaturday,
     lookingFor,
     distanceKm,
+    compatibilityPercent,
 }) => {
     return (
         <ScrollArea className="flex h-full w-80 shrink-0 flex-col justify-between border-l border-border/80 bg-card/55 p-6 font-sans select-none">
@@ -39,6 +41,20 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
                 <p className="text-xs leading-relaxed text-foreground">
                     {bio ?? "Користувач ще не додав опис профілю."}
                 </p>
+
+                {compatibilityPercent !== null && (
+                    <>
+                        <Separator />
+                        <div>
+                            <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
+                                Сумісність
+                            </h2>
+                            <p className="text-2xl font-black tracking-tight text-foreground">
+                                {compatibilityPercent}%
+                            </p>
+                        </div>
+                    </>
+                )}
 
                 {/* Секція: Ідеальна субота */}
                 {idealSaturday && (

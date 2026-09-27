@@ -32,7 +32,7 @@ export function FilterMatchPanel({
   return (
     <ScrollArea viewportRef={viewportRef} className="flex h-screen w-80 shrink-0 flex-col border-r border-border/80 bg-card/55 p-5 font-sans select-none">
       <Accordion
-        defaultValue={[]}
+        defaultValue={["filters"]}
         className="w-full overflow-visible rounded-none border-0"
       >
         <AccordionItem value="filters" className="border-0 bg-transparent">
