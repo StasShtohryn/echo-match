@@ -36,6 +36,11 @@ export default function Header() {
 
       <Link to="/messenger">
         <Button variant="link" className="cursor-pointer">
+          Події
+        </Button>
+      </Link>
+      <Link to="/messenger">
+        <Button variant="link" className="cursor-pointer">
           Месенджер
         </Button>
       </Link>
@@ -71,7 +76,7 @@ export default function Header() {
                 Профіль
               </DropdownMenuItem>
             </Link>
-            <Link to="/">
+            <Link to="/me/edit">
               <DropdownMenuItem className="cursor-pointer">
                 <Settings />
                 Налаштування

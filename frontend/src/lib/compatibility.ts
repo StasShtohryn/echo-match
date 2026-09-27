@@ -3,6 +3,7 @@ export interface ProfilesComparisonData {
     myProfile: PublicProfile
     candidateProfile: PublicProfile
     distanceKm: number | null
+    compatibilityPercent: number
 }
 
 
@@ -521,10 +522,12 @@ export function debugCompareProfiles(
 
 
     const result = calculateTotalScore(myProfile, candidate.profile)
+    const compatibilityPercent = Math.round((result / 340) * 100)
     console.log(result)
     return {
         myProfile,
         candidateProfile,
         distanceKm: candidate.distanceKm,
+        compatibilityPercent,
     }
 }

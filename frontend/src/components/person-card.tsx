@@ -13,6 +13,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Dialog } from "@base-ui/react/dialog"
+import {
+  type CarouselApi,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 import { BadgeCheck, Star, Heart, Undo2, X } from "lucide-react"
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import type { DiscoveryCandidate, SwipeDirection } from "@/services/auth-service"
@@ -28,22 +37,42 @@ interface PersonCardProps {
 export default function PersonCard({ candidate, isSwiping = false, onSwipe }: PersonCardProps) {
   const [dragOffset, setDragOffset] = useState(0)
   const [exitDirection, setExitDirection] = useState<SwipeDirection | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [lightboxCurrentIndex, setLightboxCurrentIndex] = useState(0)
+  const [lightboxCarouselApi, setLightboxCarouselApi] = useState<CarouselApi | null>(null)
   const dragStart = useRef<number | null>(null)
   const isDragging = useRef(false)
   const { profile } = candidate
-  const photo = [...profile.photos].sort((left, right) => {
+  const photos = [...profile.photos].sort((left, right) => {
     if (left.isMain !== right.isMain) return left.isMain ? -1 : 1
     return left.order - right.order
-  })[0]
+  })
 
   useEffect(() => {
     setDragOffset(0)
     setExitDirection(null)
+    setLightboxIndex(null)
     dragStart.current = null
     isDragging.current = false
   }, [candidate.profile.id])
 
+  useEffect(() => {
+    if (!lightboxCarouselApi || lightboxIndex === null) return
+    const carouselApi = lightboxCarouselApi
+
+    function handleLightboxSelect() {
+      setLightboxCurrentIndex(carouselApi.selectedScrollSnap())
+    }
+
+    handleLightboxSelect()
+    carouselApi.on("select", handleLightboxSelect)
+    return () => {
+      carouselApi.off("select", handleLightboxSelect)
+    }
+  }, [lightboxCarouselApi, lightboxIndex])
+
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.target instanceof Element && event.target.closest('[data-slot="carousel"]')) return
     if (isSwiping || exitDirection) return
     dragStart.current = event.clientX
     isDragging.current = false
@@ -100,12 +129,38 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
       >
-        <div className="absolute inset-0 z-30 aspect-video bg-black/35" />
-        {photo ? <img
-          src={photo.url}
-          alt={profile.displayName}
-          className="relative z-20 aspect-video w-full object-cover"
-        /> : <div className="relative z-20 flex aspect-video w-full items-center justify-center bg-muted text-5xl font-bold text-muted-foreground">
+        <div className="absolute z-30" />
+        {photos.length > 0 ? (
+          <Carousel opts={{ loop: photos.length > 1 }} className="w-full">
+            <CarouselContent className="ml-0">
+              {photos.map((photo, index) => (
+                <CarouselItem key={photo.id} className="pl-0">
+                  <button
+                    type="button"
+                    className="block w-full cursor-zoom-in"
+                    aria-label={`Збільшити фото ${index + 1} профілю ${profile.displayName}`}
+                    onClick={() => {
+                      setLightboxCurrentIndex(index)
+                      setLightboxIndex(index)
+                    }}
+                  >
+                    <img
+                      src={photo.url}
+                      alt={`${profile.displayName}, фото ${index + 1}`}
+                      className="h-60 w-full object-cover"
+                    />
+                  </button>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {photos.length > 1 && (
+              <>
+                <CarouselPrevious className="left-2 backdrop-blur-lg" />
+                <CarouselNext className="right-2 backdrop-blur-lg" />
+              </>
+            )}
+          </Carousel>
+        ) : <div className="relative z-20 flex h-60 w-full items-center justify-center bg-muted text-5xl font-bold text-muted-foreground">
           {profile.displayName.charAt(0)}
         </div>}
         <CardHeader>
@@ -156,6 +211,68 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
           </Button>
         </Card>
       </div>
+      <Dialog.Root
+        open={lightboxIndex !== null}
+        onOpenChange={(open) => {
+          if (!open) setLightboxIndex(null)
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs" />
+          <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4 text-white outline-none">
+            <Dialog.Title className="sr-only">
+              Фотографії профілю {profile.displayName}
+            </Dialog.Title>
+            {lightboxIndex !== null && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-lg"
+                  className="absolute top-4 right-4 z-20 border border-white/25 bg-neutral-950/75 text-white shadow-lg hover:bg-neutral-800 hover:text-white"
+                  aria-label="Закрити перегляд фотографій"
+                  onClick={() => setLightboxIndex(null)}
+                >
+                  <X />
+                </Button>
+                <Carousel
+                  setApi={setLightboxCarouselApi}
+                  opts={{
+                    startIndex: lightboxIndex,
+                    loop: photos.length > 1,
+                  }}
+                  className="w-full max-w-5xl"
+                >
+                  <CarouselContent className="ml-0">
+                    {photos.map((photo, index) => (
+                      <CarouselItem key={photo.id} className="pl-0">
+                        <img
+                          src={photo.url}
+                          alt={`${profile.displayName}, фото ${index + 1}`}
+                          className="mx-auto h-[80vh] max-h-225 w-full object-contain"
+                        />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  {photos.length > 1 && (
+                    <>
+                      <CarouselPrevious className="left-2 size-11 rounded-full border border-white/25 bg-neutral-950/75 text-white shadow-lg backdrop-blur-sm hover:bg-neutral-800 hover:text-white sm:left-4" />
+                      <CarouselNext className="right-2 size-11 rounded-full border border-white/25 bg-neutral-950/75 text-white shadow-lg backdrop-blur-sm hover:bg-neutral-800 hover:text-white sm:right-4" />
+                    </>
+                  )}
+                </Carousel>
+                <div
+                  className="absolute bottom-5 left-1/2 -translate-x-1/2 text-sm text-white"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {lightboxCurrentIndex + 1} / {photos.length}
+                </div>
+              </>
+            )}
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   )
 }
