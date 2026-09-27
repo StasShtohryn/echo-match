@@ -7,7 +7,7 @@ interface Props {
     totalSteps: number
     value: string | null
     onChange: (val: string | null) => void
-    onSubmit: () => void
+    onNext: () => void
     onBack?: () => void
     isLoading?: boolean
 }
@@ -20,7 +20,7 @@ export default function BioStep({
     value,
     onChange,
     onBack,
-    onSubmit,
+    onNext,
     isLoading = false,
 }: Props) {
     const currentText = value ?? ""
@@ -39,7 +39,7 @@ export default function BioStep({
             totalSteps={totalSteps}
             title="Розкажіть про себе"
             canContinue={true} // Щоб піти далі без біо
-            onNext={onSubmit}
+            onNext={onNext}
             onBack={onBack}
             isLoading={isLoading}
             nextButtonText={currentText.trim().length === 0 ? "Пропустити" : "Далі"}

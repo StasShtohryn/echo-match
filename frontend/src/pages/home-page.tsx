@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useNavigate } from "react-router"
 import PersonCard from "@/components/person-card"
 import { FilterMatchPanel } from "@/components/filter-match-panel"
@@ -10,7 +10,7 @@ import { getMyProfile, updateMyPreferences, type DiscoveryPreferences, type Disc
 import { useDiscoveryFeed } from "@/hooks/use-discovery-feed"
 import { useMatches } from "@/hooks/use-matches"
 
-import { debugCompareProfiles } from "@/lib/compatibility"
+import { calculateTotalScore } from "@/lib/compatibility"
 
 const statusContent: Record<DiscoveryStatus, { title: string; description: string; action?: string }> = {
   Ready: { title: "Шукаємо пару", description: "Завантажуємо анкети для вас." },
@@ -26,42 +26,63 @@ export default function HomePage() {
   const [isSavingFilters, setIsSavingFilters] = useState(false)
   const [preferences, setPreferences] = useState<DiscoveryPreferences | null>(null)
   const [myProfile, setMyProfile] = useState<PublicProfile | null>(null)
-  const [compatibilityPercent, setCompatibilityPercent] = useState<number | null>(null)
 
   const { currentCandidate, status, isLoading, isSwiping, error, lastSwipe, swipe, refresh, dismissSwipeResult } = useDiscoveryFeed()
   const { matches, isLoading: isMatchesLoading, refresh: refreshMatches } = useMatches()
 
-  const lastAnalyzedCandidateId = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!myProfile || !currentCandidate) return
+    let isMounted = true
 
-    if (lastAnalyzedCandidateId.current === currentCandidate.profile.id) {
-      return
+    async function loadProfile() {
+      try {
+        const profile = await getMyProfile()
+        if (isMounted) {
+          setMyProfile(profile)
+        }
+      } catch (err) {
+        console.error("Не вдалося завантажити свій профіль:", err)
+      }
     }
 
-    lastAnalyzedCandidateId.current = currentCandidate.profile.id
-    const comparison = debugCompareProfiles(myProfile, currentCandidate)
-    setCompatibilityPercent(comparison?.compatibilityPercent ?? null)
-  }, [myProfile, currentCandidate?.profile?.id])
+    void loadProfile()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
 
-  useEffect(() => {
-    getMyProfile()
-      .then((profile) => {
-        console.log("✅ Мій профіль успішно завантажено:", profile)
-        setMyProfile(profile)
-        setPreferences(profile.preferences)
-        if (profile.preferences) void refresh()
-      })
-      .catch((err) => {
-        console.error("❌ Помилка завантаження мого профілю:", err)
-      })
-  }, [refresh])
+  const cacheRef = useRef<{ pairKey: string; score: number | null }>({
+    pairKey: "",
+    score: null,
+  })
+
+  const compatibilityScore = useMemo(() => {
+    if (!myProfile || !currentCandidate?.profile) {
+      return null
+    }
+    const pairKey = `${myProfile.id}_${currentCandidate.profile.id}`
+
+    // Якщо для цієї пари вже рахували — повертаємо готовий результат без виклику функції та логів
+    if (cacheRef.current.pairKey === pairKey) {
+      return cacheRef.current.score
+    }
+
+    const score = Math.round(calculateTotalScore(myProfile, currentCandidate.profile))
+
+    // Зберігаємо в кеш
+    cacheRef.current = { pairKey, score }
+    return score
+  }, [myProfile?.id, currentCandidate?.profile?.id])
+
+
 
   useEffect(() => {
     if (lastSwipe?.isMatch) void refreshMatches()
   }, [lastSwipe, refreshMatches])
+
+
 
   async function applyFilters(preferences: UpdatePreferencesRequest) {
     setIsSavingFilters(true)
@@ -79,6 +100,7 @@ export default function HomePage() {
   const currentStatus = statusContent[status]
   const showStatus = isLoading || !currentCandidate || status !== "Ready"
 
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <FilterMatchPanel matches={matches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
@@ -94,7 +116,7 @@ export default function HomePage() {
           <PersonCard candidate={currentCandidate} isSwiping={isSwiping} onSwipe={(direction) => void swipe(direction)} />
         )}
       </main>
-      <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} distanceKm={currentCandidate?.distanceKm ?? null} compatibilityPercent={compatibilityPercent} />
+      <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} distanceKm={currentCandidate?.distanceKm ?? null} compatibilityPercent={compatibilityScore} />
       {lastSwipe?.isMatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm space-y-4 rounded-2xl bg-background p-6 text-center shadow-xl">

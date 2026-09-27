@@ -49,7 +49,7 @@ export default function OccupationStep({
                     <Textarea
                         value={currentText}
                         onChange={handleChange}
-                        placeholder="Розкажіть про свій професійний досвід чи навчання..."
+                        placeholder="Розкажіть про свій рід занять, яким займаєтесь по життю..."
                         rows={5}
                         className="w-full resize-none rounded-xl border border-[#FFD2B2] bg-white p-4 text-[#2A2B2E] placeholder:text-[#6A7178]/60 focus-visible:border-[#FF8A3D] focus-visible:ring-1 focus-visible:ring-[#FF8A3D] shadow-xs"
                     />

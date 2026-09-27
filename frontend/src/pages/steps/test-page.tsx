@@ -1,10 +1,9 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
-import { updateMyInterests, updateMyLanguages, updateMyProfile, updateMyPrompts } from "@/services/auth-service"
+import { getMyProfile, updateMyInterests, updateMyLanguages, updateMyProfile, updateMyPrompts } from "@/services/auth-service"
 import type { PromptAnswerInput, UpdateProfileRequest } from "@/services/auth-service"
 import { useAuthStore } from "@/store/useAuthStore"
 
-import GenderStep from "./gender-question"
 import OrientationStep from "./orientation-question"
 import GoalsStep from "./goal-question"
 import BioStep from "./bio-question"
@@ -27,10 +26,6 @@ import FilterStep from "./filters-question"
 
 const stepsConfig = [
     {
-        field: "gender" as const,
-        component: GenderStep,
-    },
-    {
         field: "orientation" as const,
         component: OrientationStep,
     },
@@ -38,30 +33,13 @@ const stepsConfig = [
         field: "lookingFor" as const,
         component: GoalsStep,
     },
-
     {
-        field: "occupation" as const,
-        component: OccupationStep,
+        field: "preferences" as const,
+        component: FilterStep
     },
-
     {
-        field: "company" as const,
-        component: CompanyStep,
-    },
-
-    {
-        field: "school" as const,
-        component: SchoolStep,
-    },
-
-    {
-        field: "lifestyle" as const,
-        component: LifestyleStep
-    },
-
-    {
-        field: "familyPlans" as const,
-        component: FamilyPlansStep
+        field: "bio" as const,
+        component: BioStep,
     },
     {
         field: "communication" as const,
@@ -72,8 +50,34 @@ const stepsConfig = [
         component: LoveLanguageStep
     },
     {
+        field: "school" as const,
+        component: SchoolStep,
+    },
+    {
+        field: "occupation" as const,
+        component: OccupationStep,
+    },
+
+    {
+        field: "company" as const,
+        component: CompanyStep,
+    },
+    {
+        field: "familyPlans" as const,
+        component: FamilyPlansStep
+    },
+    {
         field: "pets" as const,
         component: PetsStep
+    },
+    {
+        field: "lifestyle" as const,
+        component: LifestyleStep
+    },
+
+    {
+        field: "interests" as const,
+        component: InterestsStep
     },
     {
         field: "drinking" as const,
@@ -83,10 +87,7 @@ const stepsConfig = [
         field: "smoking" as const,
         component: SmokingStep
     },
-    {
-        field: "interests" as const,
-        component: InterestsStep
-    },
+
     {
         field: "languages" as const,
         component: LanguagesStep
@@ -95,14 +96,6 @@ const stepsConfig = [
     {
         field: "prompts" as const,
         component: PromptsStep
-    },
-    {
-        field: "preferences" as const,
-        component: FilterStep
-    },
-    {
-        field: "bio" as const,
-        component: BioStep,
     },
 ]
 
@@ -118,9 +111,33 @@ export default function TestsPage() {
     const isFirstStep = currentStep === 1
     const isLastStep = currentStep === totalSteps
 
+    useEffect(() => {
+        let isMounted = true
+
+        async function loadCurrentProfile() {
+            try {
+                const current = await getMyProfile()
+                if (isMounted && current) {
+                    setProfileData((prev) => ({
+                        ...prev,
+                        gender: current.gender ?? prev.gender,
+                    }))
+                }
+            } catch (err) {
+                console.error("Не вдалося завантажити профіль:", err)
+            }
+        }
+
+        void loadCurrentProfile()
+
+        return () => {
+            isMounted = false
+        }
+    }, [])
+
     const [profileData, setProfileData] = useState<UpdateProfileRequest>({
         displayName: user?.name ?? "User",
-        gender: "",
+        gender: (user as any)?.gender ?? "",
         orientation: null,
         bio: null,
         city: null,

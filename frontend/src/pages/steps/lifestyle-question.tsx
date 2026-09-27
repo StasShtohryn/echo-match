@@ -101,19 +101,19 @@ export default function LifestyleStep({
         >
             <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-7 py-3">
                 {/* Поле 1: Зріст */}
-                <Field className="flex flex-col items-center gap-2">
-                    <FieldLabel htmlFor="height-otp" className="text-sm font-bold text-[#1E293B]">
+                <Field className="flex flex-col gap-2 w-full items-center justify-center">
+                    <FieldLabel htmlFor="height-otp" className="text-sm font-bold text-[#1E293B] justify-center">
                         Ваш зріст
                     </FieldLabel>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex w-full items-center justify-center gap-3">
                         <InputOTP
                             id="height-otp"
                             maxLength={3}
                             value={otpString}
                             onChange={handleHeightChange}
                             pattern={REGEXP_ONLY_DIGITS}
-                            className="gap-2"
+                            className="gap-2 justify-center"
                         >
                             <InputOTPGroup className="gap-2">
                                 <InputOTPSlot
@@ -145,7 +145,7 @@ export default function LifestyleStep({
                             Як часто ви тренуєтесь?
                         </h4>
                         <p className="text-xs text-[#6A7178]">
-                            Оберіть звичку, яка найкраще вам підходить
+                            Оберіть варіант, який найкраще вас описує
                         </p>
                     </div>
 
