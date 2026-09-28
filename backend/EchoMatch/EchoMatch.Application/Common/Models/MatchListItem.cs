@@ -8,5 +8,9 @@
         Guid PartnerProfileId,
         string PartnerName,
         DateOnly PartnerBirthDate,
-        string? PartnerPhotoUrl);
+        string? PartnerPhotoUrl,
+        string? LastMessageText,
+        DateTime? LastMessageSentAt,
+        Guid? LastMessageSenderProfileId,
+        int UnreadCount);
 }

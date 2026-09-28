@@ -31,6 +31,8 @@ public static class DependencyInjection
         services.AddScoped<IMatchRepository, MatchRepository>();
         services.AddScoped<IDiscoveryRepository, DiscoveryRepository>();
 
+        services.AddScoped<IMessageRepository, MessageRepository>();
+
         services.Configure<CloudinarySettings>(configuration.GetSection(CloudinarySettings.SectionName));
         services.AddSingleton<IPhotoStorage, CloudinaryPhotoStorage>();
 
