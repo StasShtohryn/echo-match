@@ -229,6 +229,42 @@ Match
   null while it is still new for that side. Two columns rather than one flag,
   because a match is shared but being seen is not. Set only through
   Match.MarkSeenBy, which keeps the first time (??=) and rejects outsiders.
+  ProfileOneLastReadAt, ProfileTwoLastReadAt: how far each side has read the
+  conversation. One mark per participant instead of a flag on every message —
+  enough for both the read ticks and an unread count, and it costs one write per
+  opened chat rather than one per message. Set through Match.MarkReadBy, which
+  moves the mark forward every time, because being read is a state, not one
+  event.
+
+Chat
+
+Message
+  MatchId, SenderProfileId, Text (max 2000), Sequence
+  The conversation is the match, so there is no Conversation table and no
+  recipient column: the other participant follows from the match.
+  Sequence is a bigint identity. History is paged by it, never by time: the
+  clock advances in steps of about 15 ms, so two quick messages share one
+  CreatedAt and a cursor built on it either skips one or stops advancing.
+  CreatedAt is the moment of sending. Unlike Swipe.DecidedAt there is no second
+  column for it, because a message is never edited in place.
+  The primary key is NONCLUSTERED and the clustered index is the unique
+  (MatchId, Sequence). A random Guid as the clustered key would place every new
+  message in the middle of the table and split pages; this way one conversation
+  lies physically together in sending order, exactly how it is read. Messages is
+  the only table with a steady insert rate, so it is the only one worth this.
+  A clustered index cannot be filtered — it is the table and holds every row,
+  soft-deleted ones included.
+  MatchId cascades: with the match gone the conversation has no meaning.
+  SenderProfileId is Restrict, like every other reference to a profile.
+
+MessageReaction
+  MessageId, ProfileId, Type (Heart | Laugh | Wow | Sad | Like | Fire)
+  Unique index on (MessageId, ProfileId) filtered to IsDeleted = 0: one active
+  reaction per person per message. Replacing updates that row, removing marks it
+  deleted and frees the pair, exactly as an undone swipe does.
+  One row per person rather than a column on Message, so a conversation of more
+  than two people would need no schema change — only a different response shape.
+  MessageId cascades with the message; ProfileId is Restrict.
 
 Required profile fields
 

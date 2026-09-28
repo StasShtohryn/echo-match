@@ -385,6 +385,97 @@ Opening is a separate POST rather than a side effect of GET: a GET may be
 prefetched, retried or called for a badge, and each of those would silently
 mark matches as read.
 
+Chat Endpoints
+
+A conversation is the match itself. There is no separate resource: without a
+match nobody can be written to, and ending the match ends the conversation with
+it. Every endpoint below answers 404 when the caller is not part of the match
+or the partner's profile is gone — a conversation with nobody left is closed,
+and a stranger learns nothing about a match that exists.
+
+GET /api/matches/{matchId}/messages?before=&limit=30
+
+{ items: [ { id, sequence, senderProfileId, isMine, text, sentAt,
+             myReaction, partnerReaction } ],
+  partnerLastReadAt }
+
+Newest first, limit 1..100, default 30.
+
+sequence is a number the database assigns to every message, and it is the
+cursor: the client asks for the next page with before set to the sequence of
+the oldest message it holds. Paging by time does not work — the clock advances
+in steps of about 15 ms, so two quick messages share one sentAt, and a cursor
+built on it either loses the second one or stops moving and the client loops.
+
+The numbering is table-wide, so one conversation sees gaps. Only the order
+inside a conversation matters, and that holds. It does leak how many messages
+the whole app carries, which an opaque cursor would hide if that ever matters.
+
+partnerLastReadAt renders the read ticks: a message is read when its sentAt is
+not later than that mark. It belongs to the other participant, so each side
+sees the other's progress and never its own.
+
+POST /api/matches/{matchId}/messages
+
+Body: { text } — required, trimmed, up to 2000 characters. 201 Created with the
+stored message, whose sequence the client keeps as its newest cursor.
+
+POST /api/matches/{matchId}/messages/read
+
+Moves the caller's read mark to now, so everything already in the conversation
+counts as read. 204. Unlike the match's seen mark, this one advances on every
+call: being read is a state, not one event.
+
+Nothing marks messages read implicitly — neither sending nor fetching a page.
+A GET may be prefetched or retried, and a client that opened the screen without
+the user looking at it would report reading that never happened.
+
+PUT    /api/matches/{matchId}/messages/{messageId}/reaction
+DELETE /api/matches/{matchId}/messages/{messageId}/reaction
+
+Body of the PUT: { type } — Heart, Laugh, Wow, Sad, Like or Fire. Required: an
+omitted value would read as Heart, the first enum member, and silently set a
+reaction nobody picked. 204 for both.
+
+One reaction per person per message. Sending another type replaces it in the
+same row; DELETE marks the row deleted and frees the pair, so reacting again
+later starts a new row — the same shape as an undone swipe. PUT rather than
+POST because the result is a state, not an event: reacting twice with the same
+type leaves the same thing.
+
+A message a page shows carries at most two reactions, myReaction and
+partnerReaction, because a conversation has two participants. Group chats, if
+they ever arrive with events, would need a list instead; the table already
+stores one row per person, so only the response shape would change.
+
+A message from another conversation answers 404 like a foreign match, so the
+endpoint cannot be used to probe which message ids exist elsewhere.
+
+Live Updates
+
+The hub lives at /hubs/chat. The token travels in the query string
+(?access_token=…) because a browser WebSocket cannot carry an Authorization
+header; the server accepts it there only for paths under /hubs.
+
+Server to client, each carrying a single object:
+
+  MessageReceived   { matchId, id, sequence, senderProfileId, text, sentAt }
+  MessagesRead      { matchId, readerProfileId, readAt }
+  ReactionChanged   { matchId, messageId, profileId, type }   type null = removed
+  PartnerTyping     { matchId, profileId }
+
+Client to server:
+
+  JoinMatch(matchId)   subscribe to a match created during the connection
+  Typing(matchId)      relayed to the other participant, never stored
+
+MessageReceived carries no isMine: one event serves both sides, and each client
+compares senderProfileId with its own profile id.
+
+Everything that matters is written through REST first and only then announced,
+so a lost connection costs immediacy, never data. The hub delivers nothing on
+its own: a client that never connects still sees every message through GET.
+
 Development Endpoints
 
 POST   /api/dev/seed?count=30&likeEmail=…
