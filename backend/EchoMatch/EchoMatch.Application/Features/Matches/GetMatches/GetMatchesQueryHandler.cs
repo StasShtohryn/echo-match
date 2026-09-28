@@ -31,7 +31,12 @@ namespace EchoMatch.Application.Features.Matches.GetMatches
             var matches = await _matchRepository.GetForProfileAsync(myProfileId, cancellationToken);
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
+            // Порядок — за останньою активністю, а не за датою метчу: це список
+            // чатів, і розмова, у якій щойно написали, має бути зверху.
+            // Сортування в пам'яті, бо список усіх метчів людини й так невеликий
             return matches
+                .OrderByDescending(m => m.LastMessageSentAt ?? m.CreatedAt)
+                .ThenByDescending(m => m.CreatedAt)
                 .Select(m => new MatchDto(
                     m.Id,
                     DateTime.SpecifyKind(m.CreatedAt, DateTimeKind.Utc),
@@ -40,8 +45,16 @@ namespace EchoMatch.Application.Features.Matches.GetMatches
                         m.PartnerProfileId,
                         m.PartnerName,
                         UserProfile.AgeOn(m.PartnerBirthDate, today),
-                        m.PartnerPhotoUrl)))
+                        m.PartnerPhotoUrl),
+                    m.LastMessageText is null || m.LastMessageSentAt is null
+                        ? null
+                        : new MatchLastMessageDto(
+                            m.LastMessageText,
+                            DateTime.SpecifyKind(m.LastMessageSentAt.Value, DateTimeKind.Utc),
+                            m.LastMessageSenderProfileId == myProfileId),
+                    m.UnreadCount))
                 .ToList();
+
         }
     }
 }

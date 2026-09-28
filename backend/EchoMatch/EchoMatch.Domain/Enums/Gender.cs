@@ -59,3 +59,5 @@ public enum ZodiacSign
 public enum SwipeDirection { Like, Dislike }
 
 public enum ProfileReadiness { Ready, Hidden, PhotoRequired, PreferencesRequired }
+
+public enum ReactionType { Heart, Laugh, Wow, Sad, Like, Fire }

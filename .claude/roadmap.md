@@ -92,8 +92,20 @@ impressions.
 
 ## Chat
 
-- [ ] SignalR
-- [ ] Read Status
+- [x] Messages over REST (send, paged history, read mark). The conversation is
+      the match; the cursor is a database-assigned sequence, not a timestamp.
+- [x] SignalR (hub at /hubs/chat, one group per match, token in the query
+      string; REST writes first and the hub only announces)
+- [x] Read Status (one mark per participant on the match, not a flag per
+      message: it carries both the ticks and the unread count)
+- [x] Typing Indicator (relayed, never stored; the receiver hides it on a timer
+      because a "stopped typing" event can be lost)
+- [x] Message reactions (one per person per message, fixed set of six)
+- [x] Chat list: last message and unread count on GET /api/matches
+- [ ] after= cursor for GET messages, to catch up after a long disconnect;
+      until then a client refetches the newest page and drops known ids
+- [ ] Backplane (Redis or Azure SignalR) before running more than one instance:
+      groups live in the memory of one process
 - [ ] Delivered Status
 - [ ] Typing Indicator
 - [ ] Notifications

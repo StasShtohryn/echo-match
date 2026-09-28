@@ -1,4 +1,5 @@
-﻿using EchoMatch.Api.Middleware;
+﻿using EchoMatch.Api.Hubs;
+using EchoMatch.Api.Middleware;
 using EchoMatch.Api.Services;
 using EchoMatch.Application;
 using EchoMatch.Application.Common.Interfaces;
@@ -62,11 +63,14 @@ namespace EchoMatch.Api
                 options.AddPolicy(corsPolicy, policy => policy
                     .WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
-                    .AllowAnyMethod());
+                    .AllowAnyMethod()
+                    .AllowCredentials());
             });
 
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+            builder.Services.AddSignalR();
+            builder.Services.AddScoped<IChatNotifier, SignalRChatNotifier>();
 
             builder.Services.AddScoped<DevDataSeeder>();
 
@@ -90,6 +94,23 @@ namespace EchoMatch.Api
                         ValidIssuer = jwtSettings.Issuer,
                         ValidAudience = jwtSettings.Audience,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
+                    };
+                    // WebSocket не дає надіслати заголовок Authorization, тому
+                    // для хабів токен приймається з рядка запиту
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+
+                            if (!string.IsNullOrEmpty(accessToken)
+                                && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                            {
+                                context.Token = accessToken;
+                            }
+
+                            return Task.CompletedTask;
+                        }
                     };
                 });
 
@@ -160,6 +181,7 @@ namespace EchoMatch.Api
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHub<ChatHub>("/hubs/chat");
 
             app.Run();
         }

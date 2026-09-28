@@ -21,6 +21,9 @@ public class AppDbContext : DbContext
     public DbSet<ProfilePromptAnswer> ProfilePromptAnswers => Set<ProfilePromptAnswer>();
     public DbSet<Swipe> Swipes => Set<Swipe>();
     public DbSet<Match> Matches => Set<Match>();
+    public DbSet<Message> Messages => Set<Message>();
+
+    public DbSet<MessageReaction> MessageReactions => Set<MessageReaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
