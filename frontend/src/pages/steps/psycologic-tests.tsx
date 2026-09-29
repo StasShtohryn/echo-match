@@ -6,7 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/components/ui/toast"
 
-import { QUIZ_OPTIONS, QUIZ_QUESTIONS } from "@/types/quiz"
+import { QUIZ_OPTIONS, QUIZ_QUESTIONS } from "@/lib/quiz"
 
 
 export default function PsychologicalQuizPage() {
