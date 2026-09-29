@@ -14,6 +14,13 @@ interface Option {
     title: string
 }
 
+const drinkingOptions: Option[] = [
+    { value: "NotForMe", title: "Не для мене" },
+    { value: "SoberCurious", title: "Намагаюся не пити" },
+    { value: "OnSpecialOccasions", title: "П'ю з особливої нагоди" },
+    { value: "SociallyOnWeekends", title: "П'ю в компанії на вихідних" },
+    { value: "MostNights", title: "Майже кожного вечора" },
+]
 
 interface Props {
     currentStep: number

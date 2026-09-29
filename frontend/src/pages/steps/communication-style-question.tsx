@@ -1,9 +1,6 @@
 import { TestPage } from "./test-page-layout"
 import { cn } from "@/lib/utils"
 
-import { communicationOptions } from "@/lib/some-lookups"
-
-
 export type CommunicationStyle =
     | "BigTimeTexter"
     | "PhoneCaller"
@@ -11,14 +8,33 @@ export type CommunicationStyle =
     | "BadTexter"
     | "BetterInPerson"
 
-
-
 interface Option {
     value: CommunicationStyle
     title: string
 }
 
-
+const communicationOptions: Option[] = [
+    {
+        value: "BigTimeTexter",
+        title: "Багато переписуюсь",
+    },
+    {
+        value: "PhoneCaller",
+        title: "Краще по телефону",
+    },
+    {
+        value: "VideoChatter",
+        title: "У відеочаті",
+    },
+    {
+        value: "BadTexter",
+        title: "Рідко переписуюсь",
+    },
+    {
+        value: "BetterInPerson",
+        title: "Краще зустрітись особисто",
+    },
+]
 
 interface Props {
     currentStep: number
@@ -29,7 +45,6 @@ interface Props {
     onBack?: () => void
     isLoading?: boolean
 }
-
 
 export default function CommunicationStep({
     currentStep,
