@@ -22,7 +22,7 @@ import PromptsStep from "./prompts-question"
 import LanguagesStep from "./languages-question"
 import { updateMyPreferences, type UpdatePreferencesRequest } from "@/services/auth-service"
 import FilterStep from "./filters-question"
-
+import { QuizOnboardingDialog } from "@/components/quizz-question-window"
 
 const stepsConfig = [
     {
@@ -101,7 +101,7 @@ const stepsConfig = [
 
 
 export default function TestsPage() {
-    const navigate = useNavigate()
+
     const user = useAuthStore((state) => state.user)
 
     const [currentStep, setCurrentStep] = useState(1)
@@ -110,6 +110,8 @@ export default function TestsPage() {
     const totalSteps = stepsConfig.length
     const isFirstStep = currentStep === 1
     const isLastStep = currentStep === totalSteps
+
+    const [showQuizModal, setShowQuizModal] = useState(false)
 
     useEffect(() => {
         let isMounted = true
@@ -259,7 +261,7 @@ export default function TestsPage() {
                 await updateMyPrompts(validAnswers)
             }
 
-            navigate("/")
+            setShowQuizModal(true)
         } catch (error) {
             console.error("Помилка збереження відповідей тесту:", error)
             alert("Не вдалося зберегти профіль. Спробуйте ще раз.")
@@ -269,16 +271,23 @@ export default function TestsPage() {
     }
 
     return (
-        <StepComponent
-            currentStep={currentStep}
-            totalSteps={totalSteps}
-            value={getCurrentValue() as any as any}
-            onChange={handleStepChange}
+        <>
+            <StepComponent
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                value={getCurrentValue() as any as any}
+                onChange={handleStepChange}
 
-            onNext={isLastStep ? handleFinalSubmit : nextStep}
-            onSubmit={handleFinalSubmit}
-            onBack={!isFirstStep ? prevStep : undefined}
-            isLoading={isLoading}
-        />
+                onNext={isLastStep ? handleFinalSubmit : nextStep}
+                onSubmit={handleFinalSubmit}
+                onBack={!isFirstStep ? prevStep : undefined}
+                isLoading={isLoading}
+            />
+            <QuizOnboardingDialog
+                isOpen={showQuizModal}
+                targetRoute="/quiz"
+                targetCancel="/me"
+            />
+        </>
     )
 }

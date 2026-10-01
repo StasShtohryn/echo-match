@@ -1,6 +1,5 @@
-import { Heart } from "lucide-react"
 import { LoginForm } from "@/components/login-form"
-import { Link } from "react-router"
+import logo from "@/media/logo.svg"
 import animationVideo from "../media/animation.mp4";
 
 export default function LoginPage() {
@@ -19,13 +18,12 @@ export default function LoginPage() {
         />
       </div>
       <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <Link to="/" className="flex items-center gap-2 font-medium">
-            <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Heart className="size-4" />
-            </div>
-            EchoMatch
-          </Link>
+        <div className="flex items-center justify-center">
+          <img
+            src={logo}
+            alt="EchoMatch Logo"
+            className="h-13 w-auto object-contain"
+          />
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
