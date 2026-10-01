@@ -21,6 +21,10 @@ import {
 import { Link } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTheme } from "@/components/theme-provider"
+
+import logo from "@/media/logo.svg"
+
+
 export default function Header() {
   const { user, logout } = useAuthStore();
   const { theme, setTheme } = useTheme()
@@ -28,10 +32,13 @@ export default function Header() {
   return (
     <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none">
       <Link to="/" className="flex items-center gap-2 text-[16px] font-medium">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Heart className="size-4" />
+        <div className="flex">
+          <img
+            src={logo}
+            alt="EchoMatch Logo"
+            className="h-10 w-auto object-contain"
+          />
         </div>
-        EchoMatch
       </Link>
 
       <Link to="/messenger">

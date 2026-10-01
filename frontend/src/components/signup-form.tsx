@@ -41,6 +41,7 @@ import {
   QuestionnaireSubmit,
   QuestionnaireTitle,
 } from "@/components/ui/questionnaire"
+import { WelcomeOnboardingDialog } from "./welcome-component"
 
 type RegistrationStep = "account" | "profile"
 
@@ -171,14 +172,16 @@ export function SignupForm({
   const profileErrors = getProfileErrors(formData)
   const [showProfileErrors, setShowProfileErrors] = useState(false)
 
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
+
   useEffect(() => {
     if (isOnboarding) {
       setStep("profile")
     }
   }, [isOnboarding])
 
-  if (isAuthenticated && !isOnboarding) {
-    return <Navigate to="/me" replace />
+  if (isAuthenticated && !isOnboarding && !showWelcomeModal) {
+    return <Navigate to="/tests" replace />
   }
 
   async function handleGoogleLogin(cred: CredentialResponse) {
@@ -285,7 +288,7 @@ export function SignupForm({
         picture: uploadedPhoto.url,
         provider: user.provider,
       })
-      navigate("/me")
+      setShowWelcomeModal(true)
     } catch (error: unknown) {
       toast.add({
         type: "error",
@@ -307,257 +310,265 @@ export function SignupForm({
   }
 
   return (
-    <Questionnaire
-      item={step}
-      items={questionnaireItems}
-      noValidate
-      onItemChange={(item) => setStep(item as RegistrationStep)}
-      className={cn("flex flex-col gap-6", className)}
-      {...props}
-      onSubmit={handleSubmit}
-    >
-      <QuestionnaireProgress
-        className="w-full"
-        render={(props, state) => (
-          <div {...props}>
-            <div className="mb-2 flex gap-1.5" aria-hidden="true">
-              {Array.from({ length: state.total }, (_, index) => (
-                <span
-                  key={index}
-                  className={
-                    index < state.current
-                      ? "h-1.5 flex-1 rounded-full bg-primary"
-                      : "h-1.5 flex-1 rounded-full bg-muted"
-                  }
-                />
-              ))}
+    <>
+      <Questionnaire
+        item={step}
+        items={questionnaireItems}
+        noValidate
+        onItemChange={(item) => setStep(item as RegistrationStep)}
+        className={cn("flex flex-col gap-6", className)}
+        {...props}
+        onSubmit={handleSubmit}
+      >
+        <QuestionnaireProgress
+          className="w-full"
+          render={(props, state) => (
+            <div {...props}>
+              <div className="mb-2 flex gap-1.5" aria-hidden="true">
+                {Array.from({ length: state.total }, (_, index) => (
+                  <span
+                    key={index}
+                    className={
+                      index < state.current
+                        ? "h-1.5 flex-1 rounded-full bg-primary"
+                        : "h-1.5 flex-1 rounded-full bg-muted"
+                    }
+                  />
+                ))}
+              </div>
+              <span>
+                Крок {state.current} з {state.total}
+              </span>
             </div>
-            <span>
-              Крок {state.current} з {state.total}
-            </span>
-          </div>
+          )}
+        />
+        {!isOnboarding && (
+          <QuestionnaireItem name="account" required>
+            <QuestionnaireTitle>Створіть обліковий запис</QuestionnaireTitle>
+            <QuestionnaireDescription>
+              Спочатку введіть email і пароль.
+            </QuestionnaireDescription>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="email">Електронна пошта</FieldLabel>
+                <QuestionnaireInput
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={(event) =>
+                    setFormData({ ...formData, email: event.target.value })
+                  }
+                  aria-invalid={showAccountErrors && !!accountErrors.email}
+                  className={cn(
+                    "bg-card shadow-sm",
+                    showAccountErrors && accountErrors.email &&
+                    "border-destructive ring-3 ring-destructive/20"
+                  )}
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="password">Пароль</FieldLabel>
+                <QuestionnaireInput
+                  id="password"
+                  type="password"
+                  minLength={8}
+                  value={formData.password}
+                  onChange={(event) =>
+                    setFormData({ ...formData, password: event.target.value })
+                  }
+                  aria-invalid={showAccountErrors && !!accountErrors.password}
+                  className={cn(
+                    "bg-card shadow-sm",
+                    showAccountErrors && accountErrors.password &&
+                    "border-destructive ring-3 ring-destructive/20"
+                  )}
+                  required
+                />
+                <FieldDescription>
+                  8+ символів, велика і мала літери та цифра.
+                </FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="confirm-password">Підтвердіть пароль</FieldLabel>
+                <QuestionnaireInput
+                  id="confirm-password"
+                  type="password"
+                  minLength={8}
+                  value={formData.confirmPassword}
+                  onChange={(event) =>
+                    setFormData({ ...formData, confirmPassword: event.target.value })
+                  }
+                  aria-invalid={showAccountErrors && !!accountErrors.confirmPassword}
+                  className={cn(
+                    "bg-card shadow-sm",
+                    showAccountErrors && accountErrors.confirmPassword &&
+                    "border-destructive ring-3 ring-destructive/20"
+                  )}
+                  required
+                />
+              </Field>
+            </FieldGroup>
+            <QuestionnaireError />
+          </QuestionnaireItem>
         )}
-      />
-      {!isOnboarding && (
-        <QuestionnaireItem name="account" required>
-          <QuestionnaireTitle>Створіть обліковий запис</QuestionnaireTitle>
+
+        <QuestionnaireItem name="profile" required>
+          <QuestionnaireTitle>Заповніть профіль</QuestionnaireTitle>
           <QuestionnaireDescription>
-            Спочатку введіть email і пароль.
+            Додайте дані про себе, щоб завершити реєстрацію.
           </QuestionnaireDescription>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="email">Електронна пошта</FieldLabel>
+              <FieldLabel htmlFor="name">Ім'я</FieldLabel>
               <QuestionnaireInput
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
-                autoComplete="email"
-                value={formData.email}
+                id="name"
+                value={formData.name}
                 onChange={(event) =>
-                  setFormData({ ...formData, email: event.target.value })
+                  setFormData({ ...formData, name: event.target.value })
                 }
-                aria-invalid={showAccountErrors && !!accountErrors.email}
+                aria-invalid={showProfileErrors && !!profileErrors.name}
                 className={cn(
                   "bg-card shadow-sm",
-                  showAccountErrors && accountErrors.email &&
+                  showProfileErrors && profileErrors.name &&
                   "border-destructive ring-3 ring-destructive/20"
                 )}
                 required
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="password">Пароль</FieldLabel>
-              <QuestionnaireInput
-                id="password"
-                type="password"
-                minLength={8}
-                value={formData.password}
+              <FieldLabel htmlFor="birthDate">Дата народження</FieldLabel>
+              <Input
+                id="birthDate"
+                type="date"
+                value={formData.birthDate}
                 onChange={(event) =>
-                  setFormData({ ...formData, password: event.target.value })
+                  setFormData({ ...formData, birthDate: event.target.value })
                 }
-                aria-invalid={showAccountErrors && !!accountErrors.password}
+                aria-invalid={showProfileErrors && !!profileErrors.birthDate}
                 className={cn(
                   "bg-card shadow-sm",
-                  showAccountErrors && accountErrors.password &&
+                  showProfileErrors && profileErrors.birthDate &&
                   "border-destructive ring-3 ring-destructive/20"
                 )}
                 required
               />
               <FieldDescription>
-                8+ символів, велика і мала літери та цифра.
+                Вам має бути щонайменше 18 років.
               </FieldDescription>
             </Field>
             <Field>
-              <FieldLabel htmlFor="confirm-password">Підтвердіть пароль</FieldLabel>
-              <QuestionnaireInput
-                id="confirm-password"
-                type="password"
-                minLength={8}
-                value={formData.confirmPassword}
-                onChange={(event) =>
-                  setFormData({ ...formData, confirmPassword: event.target.value })
+              <FieldLabel htmlFor="gender">Стать</FieldLabel>
+              <Select
+                value={formData.gender}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, gender: value ?? "" })
                 }
-                aria-invalid={showAccountErrors && !!accountErrors.confirmPassword}
-                className={cn(
-                  "bg-card shadow-sm",
-                  showAccountErrors && accountErrors.confirmPassword &&
-                  "border-destructive ring-3 ring-destructive/20"
-                )}
+              >
+                <SelectTrigger
+                  id="gender"
+                  aria-required="true"
+                  aria-invalid={showProfileErrors && !!profileErrors.gender}
+                  className={cn(
+                    "bg-card",
+                    "shadow-sm",
+                    "w-full",
+                    showProfileErrors && profileErrors.gender &&
+                    "border-destructive ring-3 ring-destructive/20"
+                  )}
+                >
+                  <SelectValue placeholder="Оберіть стать" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Male">Чоловік</SelectItem>
+                  <SelectItem value="Female">Жінка</SelectItem>
+                  <SelectItem value="Other">Інше</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="avatar">Аватарка</FieldLabel>
+              <Input
+                id="avatar"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="border-border bg-card shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1 file:text-primary-foreground"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (!file) return
+                  setFormData((previous) => ({
+                    ...previous,
+                    avatarFile: file,
+                    avatarUrl: URL.createObjectURL(file),
+                  }))
+                }}
+                aria-invalid={showProfileErrors && !!profileErrors.avatarFile}
                 required
               />
+              {formData.avatarUrl && (
+                <img
+                  src={formData.avatarUrl}
+                  alt="Попередній перегляд аватарки"
+                  className="size-20 rounded-full object-cover"
+                />
+              )}
+              {showProfileErrors && profileErrors.avatarFile && (
+                <p className="text-sm text-destructive">{profileErrors.avatarFile}</p>
+              )}
             </Field>
           </FieldGroup>
           <QuestionnaireError />
         </QuestionnaireItem>
-      )}
 
-      <QuestionnaireItem name="profile" required>
-        <QuestionnaireTitle>Заповніть профіль</QuestionnaireTitle>
-        <QuestionnaireDescription>
-          Додайте дані про себе, щоб завершити реєстрацію.
-        </QuestionnaireDescription>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="name">Ім'я</FieldLabel>
-            <QuestionnaireInput
-              id="name"
-              value={formData.name}
-              onChange={(event) =>
-                setFormData({ ...formData, name: event.target.value })
-              }
-              aria-invalid={showProfileErrors && !!profileErrors.name}
-              className={cn(
-                "bg-card shadow-sm",
-                showProfileErrors && profileErrors.name &&
-                "border-destructive ring-3 ring-destructive/20"
-              )}
-              required
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="birthDate">Дата народження</FieldLabel>
-            <Input
-              id="birthDate"
-              type="date"
-              value={formData.birthDate}
-              onChange={(event) =>
-                setFormData({ ...formData, birthDate: event.target.value })
-              }
-              aria-invalid={showProfileErrors && !!profileErrors.birthDate}
-              className={cn(
-                "bg-card shadow-sm",
-                showProfileErrors && profileErrors.birthDate &&
-                "border-destructive ring-3 ring-destructive/20"
-              )}
-              required
-            />
-            <FieldDescription>
-              Вам має бути щонайменше 18 років.
-            </FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="gender">Стать</FieldLabel>
-            <Select
-              value={formData.gender}
-              onValueChange={(value) =>
-                setFormData({ ...formData, gender: value ?? "" })
-              }
-            >
-              <SelectTrigger
-                id="gender"
-                aria-required="true"
-                aria-invalid={showProfileErrors && !!profileErrors.gender}
-                className={cn(
-                  "bg-card",
-                  "shadow-sm",
-                  "w-full",
-                  showProfileErrors && profileErrors.gender &&
-                  "border-destructive ring-3 ring-destructive/20"
-                )}
-              >
-                <SelectValue placeholder="Оберіть стать" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Male">Чоловік</SelectItem>
-                <SelectItem value="Female">Жінка</SelectItem>
-                <SelectItem value="Other">Інше</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="avatar">Аватарка</FieldLabel>
-            <Input
-              id="avatar"
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="border-border bg-card shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1 file:text-primary-foreground"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (!file) return
-                setFormData((previous) => ({
-                  ...previous,
-                  avatarFile: file,
-                  avatarUrl: URL.createObjectURL(file),
-                }))
+        <QuestionnaireActions>
+          {!isOnboarding && <QuestionnairePrevious>Назад</QuestionnairePrevious>}
+          {step === "account" ? (
+            <QuestionnaireNext
+              onClick={(event) => {
+                event.preventDefault()
+                void createAccount()
               }}
-              aria-invalid={showProfileErrors && !!profileErrors.avatarFile}
-              required
+              disabled={isSubmitting}
+            >
+              Далі
+            </QuestionnaireNext>
+          ) : (
+            <QuestionnaireSubmit disabled={isSubmitting}>
+              Завершити
+            </QuestionnaireSubmit>
+          )}
+        </QuestionnaireActions>
+
+
+        {!isOnboarding && step === "account" && (
+          <>
+            <FieldSeparator>Або продовжити за допомогою</FieldSeparator>
+            <GoogleLogin
+              shape="pill"
+              size="medium"
+              onSuccess={handleGoogleLogin}
+              onError={() =>
+                toast.add({
+                  type: "error",
+                  title: "Не вдалося зареєструватися через Google",
+                  description: "Спробуйте ще раз.",
+                })
+              }
             />
-            {formData.avatarUrl && (
-              <img
-                src={formData.avatarUrl}
-                alt="Попередній перегляд аватарки"
-                className="size-20 rounded-full object-cover"
-              />
-            )}
-            {showProfileErrors && profileErrors.avatarFile && (
-              <p className="text-sm text-destructive">{profileErrors.avatarFile}</p>
-            )}
-          </Field>
-        </FieldGroup>
-        <QuestionnaireError />
-      </QuestionnaireItem>
-
-      <QuestionnaireActions>
-        {!isOnboarding && <QuestionnairePrevious>Назад</QuestionnairePrevious>}
-        {step === "account" ? (
-          <QuestionnaireNext
-            onClick={(event) => {
-              event.preventDefault()
-              void createAccount()
-            }}
-            disabled={isSubmitting}
-          >
-            Далі
-          </QuestionnaireNext>
-        ) : (
-          <QuestionnaireSubmit disabled={isSubmitting}>
-            Завершити
-          </QuestionnaireSubmit>
+            <FieldDescription className="text-center">
+              Вже маєте обліковий запис? <Link to="/login">Увійти</Link>
+            </FieldDescription>
+          </>
         )}
-      </QuestionnaireActions>
 
-      {!isOnboarding && step === "account" && (
-        <>
-          <FieldSeparator>Або продовжити за допомогою</FieldSeparator>
-          <GoogleLogin
-            shape="pill"
-            size="medium"
-            onSuccess={handleGoogleLogin}
-            onError={() =>
-              toast.add({
-                type: "error",
-                title: "Не вдалося зареєструватися через Google",
-                description: "Спробуйте ще раз.",
-              })
-            }
-          />
-          <FieldDescription className="text-center">
-            Вже маєте обліковий запис? <Link to="/login">Увійти</Link>
-          </FieldDescription>
-        </>
-      )}
-    </Questionnaire>
+      </Questionnaire>
+      <WelcomeOnboardingDialog
+        isOpen={showWelcomeModal}
+        targetRoute="/tests"
+      />
+    </>
   )
 }
