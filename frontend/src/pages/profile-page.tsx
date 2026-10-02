@@ -103,7 +103,7 @@ export default function ProfilePage() {
 
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full flex-1 flex-col">
+    <div className="mx-auto flex h-full min-h-0 w-full flex-1 flex-col ">
       <ScrollArea className="h-full min-h-0 flex-1">
         <div className="container mx-auto px-4 py-6 md:px-6 2xl:max-w-350">
           <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row">

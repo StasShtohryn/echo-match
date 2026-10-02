@@ -23,22 +23,19 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
 }) => {
     return (
         <ScrollArea className="flex h-full w-80 shrink-0 flex-col justify-between border-l border-border/80 bg-card/55 p-6 font-sans select-none">
-            {/* Верхня частина з анкетою */}
             <div className="space-y-4">
-                {/* Заголовок блоку та ім'я */}
                 <div>
-                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    <span className="font-[family-name:var(--font-family)] text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                         Про анкету
                     </span>
-                    <h1 className="mt-1 text-2xl font-black tracking-tight text-foreground">
+                    <h1 className="font-[family-name:var(--font-family)] mt-1 text-2xl font-black tracking-tight text-foreground">
                         {displayName} &nbsp;{age}
                     </h1>
                 </div>
 
                 <Separator />
 
-                {/* Біографія */}
-                <p className="text-xs leading-relaxed text-foreground">
+                <p className="font-[family-name:var(--font-family)] text-xs leading-relaxed text-foreground">
                     {bio ?? "Користувач ще не додав опис профілю."}
                 </p>
 
@@ -46,10 +43,10 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
                     <>
                         <Separator />
                         <div>
-                            <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
+                            <h2 className="font-[family-name:var(--font-family)] mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
                                 Сумісність
                             </h2>
-                            <p className="text-2xl font-black tracking-tight text-foreground">
+                            <p className="font-[family-name:var(--font-family)] text-2xl font-black tracking-tight text-foreground">
                                 {compatibilityPercent}%
                             </p>
                         </div>
@@ -61,10 +58,10 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
                     <>
                         <Separator />
                         <div>
-                            <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
+                            <h2 className="font-[family-name:var(--font-family)] mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
                                 Ідеальна субота
                             </h2>
-                            <p className="text-xs leading-relaxed text-muted-foreground">
+                            <p className="font-[family-name:var(--font3)] text-xs leading-relaxed text-muted-foreground">
                                 {idealSaturday}
                             </p>
                         </div>
@@ -76,10 +73,10 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
                     <>
                         <Separator />
                         <div>
-                            <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
+                            <h2 className="font-[family-name:var(--font-family)] mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
                                 Шукаю
                             </h2>
-                            <p className="text-xs leading-relaxed text-muted-foreground">
+                            <p className="font-[family-name:var(--font3)] text-xs leading-relaxed text-muted-foreground">
                                 {lookingFor}
                             </p>
                         </div>
@@ -91,7 +88,7 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
             <div className="pt-6 space-y-3">
                 <Separator />
 
-                <div className="text-[11px] font-semibold text-muted-foreground">
+                <div className="font-[family-name:var(--font-family)] text-[11px] font-semibold text-muted-foreground">
                     {distanceKm === null ? "Відстань не вказана" : `${distanceKm} км від вас`}
                 </div>
             </div>

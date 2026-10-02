@@ -1,10 +1,11 @@
-import type { DiscoveryPreferences, UpdatePreferencesRequest } from "@/services/auth-service";
+import { getMyProfile, type DiscoveryPreferences, type UpdatePreferencesRequest } from "@/services/auth-service";
 import React, { useEffect } from "react";
 import { useState } from "react";
 import { Slider } from "./ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Button } from "./ui/button";
 import { Minus, Plus } from "lucide-react";
+import { FilterSkeleton } from "./filter-sceleton";
 
 
 interface FilterlProps {
@@ -14,11 +15,6 @@ interface FilterlProps {
 }
 
 export function FilterPanel({ isSaving = false, initialPreferences, onApply }: FilterlProps) {
-  const [minAge, setMinAge] = useState<number>(18);
-  const [maxAge, setMaxAge] = useState<number>(99);
-
-  const [minInput, setMinInput] = useState<string>("18");
-  const [maxInput, setMaxInput] = useState<string>("99");
 
   const minLimit = 18;
   const maxLimit = 99;
@@ -26,8 +22,16 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
   const minDistanceLimit = 1;
   const maxDistanceLimit = 150;
 
-  const [lookingFor, setLookingFor] = useState("Women");
-  const [maxDistanceKm, setMaxDistanceKm] = useState<number | null>(1);
+
+  // Ініціалізація з дефолтними значеннями
+  const [minAge, setMinAge] = useState<number>(initialPreferences?.minAge ?? minLimit)
+  const [maxAge, setMaxAge] = useState<number>(initialPreferences?.maxAge ?? maxLimit)
+  const [minInput, setMinInput] = useState<string>(String(initialPreferences?.minAge ?? minLimit))
+  const [maxInput, setMaxInput] = useState<string>(String(initialPreferences?.maxAge ?? maxLimit))
+  const [lookingFor, setLookingFor] = useState<string>(initialPreferences?.showMe ?? "Women")
+  const [maxDistanceKm, setMaxDistanceKm] = useState<number | null>(
+    initialPreferences?.maxDistanceKm ?? minDistanceLimit
+  )
 
   useEffect(() => {
     if (!initialPreferences) return
@@ -39,6 +43,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
     setMaxInput(String(initialPreferences.maxAge))
     setMaxDistanceKm(initialPreferences.maxDistanceKm)
   }, [initialPreferences])
+
 
   // Оновлення повзунком
   const handleAgeSliderChange = (value: number | readonly number[]) => {
@@ -98,11 +103,18 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
     setMaxInput(String(val));
   };
 
+  // 1. Поки дані завантажуються з бекенду — показуємо скелетон
+  if (!initialPreferences) {
+    return <FilterSkeleton />
+  }
 
   return (
     <div className="space-y-4">
-      {/* Поля вводу віку */}
-      <div className="flex justify-between items-center px-1">
+      <label htmlFor="lookingFor" className="font-[family-name:var(--font-family)] block text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+        Вік
+      </label>
+      <div className=" flex justify-between items-center px-1">
+
         {/* Мінімальний вік */}
         <input
           type="text"
@@ -111,7 +123,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
           onChange={handleMinInputChange}
           onBlur={handleMinBlur}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          className="w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+          className="font-[family-name:var(--font3)] w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         />
 
         {/* Максимальний вік */}
@@ -122,7 +134,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
           onChange={handleMaxInputChange}
           onBlur={handleMaxBlur}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          className="w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+          className="font-[family-name:var(--font3)] w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         />
       </div>
 
@@ -136,14 +148,14 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
         className="w-full py-2"
       />
 
-      <label htmlFor="lookingFor" className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+      <label htmlFor="lookingFor" className="font-[family-name:var(--font-family)] block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
         Кого шукаю
       </label>
 
       <Select value={lookingFor} onValueChange={(value) => setLookingFor(value ?? "Women")}>
         <SelectTrigger
           id="lookingFor"
-          className="h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground"
+          className="font-[family-name:var(--font-family)] h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground"
         >
           <SelectValue />
         </SelectTrigger>
@@ -154,12 +166,11 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
         </SelectContent>
       </Select>
 
-      <label htmlFor="maxDistance" className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+      <label htmlFor="maxDistance" className="font-[family-name:var(--font-family)] block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
         Максимальна відстань, км
       </label>
 
-      {/* Чекбокс перемикання обмеження */}
-      <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground select-none">
+      <label className="font-[family-name:var(--font3)] flex cursor-pointer items-center gap-2 text-xs text-muted-foreground select-none">
         <input
           type="checkbox"
           checked={maxDistanceKm === null}
@@ -169,7 +180,6 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
         Без обмежень по відстані
       </label>
 
-      {/* Поле вводу рендериться лише якщо обмеження активне */}
       {maxDistanceKm !== null && (
         <div className="relative flex items-center">
           <button
@@ -209,7 +219,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
                 setMaxDistanceKm(maxDistanceLimit);
               }
             }}
-            className="h-11 w-full rounded-2xl border border-[#FFD2B2] bg-[#FFF6EE]/30 px-10 text-center text-base font-bold text-[#1E293B] outline-none focus:border-[#FF8A3D] focus:ring-2 focus:ring-[#FF8A3D]/30"
+            className="font-[family-name:var(--font3)] h-11 w-full rounded-2xl border border-[#FFD2B2] bg-[#FFF6EE]/30 px-10 text-center text-base font-bold text-[#1E293B] outline-none focus:border-[#FF8A3D] focus:ring-2 focus:ring-[#FF8A3D]/30"
           />
 
           <button
@@ -223,7 +233,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
       )}
 
       <Button
-        className="w-full"
+        className="w-full font-[family-name:var(--font-family)]"
         disabled={isSaving}
         onClick={() => onApply({ showMe: lookingFor, minAge, maxAge, maxDistanceKm })}
       >

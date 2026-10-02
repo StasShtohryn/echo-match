@@ -21,16 +21,46 @@ import {
 import { Link } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTheme } from "@/components/theme-provider"
+import { getMyProfile, type MyProfile } from "@/services/auth-service";
 
 import logo from "@/media/logo.svg"
+import { useEffect, useState } from "react";
 
 
 export default function Header() {
   const { user, logout } = useAuthStore();
   const { theme, setTheme } = useTheme()
 
+  const [profile, setProfile] = useState<MyProfile | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadUserData() {
+      try {
+        const data = await getMyProfile();
+        if (isMounted && data) {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error("Не вдалося завантажити профіль у хедері:", error);
+      }
+    }
+
+    if (user) {
+      void loadUserData();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const displayName = profile?.displayName ?? user?.name ?? "Користувач";
+  const userAge = profile?.age;
+
+
   return (
-    <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none">
+    <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none font-rounded ">
       <Link to="/" className="flex items-center gap-2 text-[16px] font-medium">
         <div className="flex">
           <img
@@ -56,16 +86,23 @@ export default function Header() {
         <DropdownMenuTrigger
           nativeButton={false}
           render={
+            <div className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-85">
+              <span className="text-sm font-bold text-[#1E293B]">
+                {displayName}
+                {userAge !== undefined && `, ${userAge}`}
+              </span>
 
-            <Avatar className="h-10 w-10 cursor-pointer">
-              <AvatarImage
-                src={user?.picture ?? undefined}
-                alt={user?.name ?? user?.email ?? "User"}
-              />
-              <AvatarFallback>
-                {(user?.name ?? user?.email ?? "ME").slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+              <Avatar className="size-10 border border-[#F3DDD0]">
+                <AvatarImage
+                  src={profile?.photos?.[0]?.url ?? user?.picture ?? undefined}
+                  alt={displayName}
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-[#FAF7F2] font-bold text-[#F37936]">
+                  {displayName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
 
           }
         />
