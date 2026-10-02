@@ -30,6 +30,7 @@ function App() {
           <Route path="/me/edit" element={<ProfileEditPage />} />
           <Route path="/settings" element={<ProfileSettingsPage />} />
           <Route path="/messenger" element={<MessengerPage />} />
+          <Route path="/messenger/:matchId" element={<MessengerPage />} />
           <Route path="/quiz" element={<PsychologicalQuizPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
