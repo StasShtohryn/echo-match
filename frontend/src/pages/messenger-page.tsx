@@ -3,7 +3,16 @@ import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/s
 import { ArrowLeft, Check, CheckCheck, LoaderCircle, Send } from "lucide-react"
 import { Link, useParams } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { BubbleReactions } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getApiErrorMessage } from "@/lib/api-error"
@@ -14,14 +23,25 @@ import {
   getChatHubUrl,
   getMessages,
   markMessagesRead,
+  removeMessageReaction,
   sendMessage,
+  setMessageReaction,
   type ChatMessage,
   type ChatMessageEvent,
   type ChatReadEvent,
   type ChatReactionEvent,
+  type ReactionType,
 } from "@/services/message-service"
 
 const PAGE_SIZE = 30
+const REACTION_OPTIONS: { type: ReactionType; emoji: string; label: string }[] = [
+  { type: "Heart", emoji: "❤️", label: "Сердце" },
+  { type: "Laugh", emoji: "😂", label: "Смех" },
+  { type: "Wow", emoji: "😮", label: "Удивление" },
+  { type: "Sad", emoji: "😢", label: "Грусть" },
+  { type: "Like", emoji: "👍", label: "Нравится" },
+  { type: "Fire", emoji: "🔥", label: "Огонь" },
+]
 
 function formatTime(value: string): string {
   return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(value))
@@ -56,6 +76,11 @@ function reactionEmoji(reaction: string): string {
     Fire: "🔥",
   }
   return emoji[reaction] ?? reaction
+}
+
+function normalizeReaction(reaction: ReactionType | number | null): ReactionType | null | undefined {
+  if (reaction === null || typeof reaction === "string") return reaction
+  return REACTION_OPTIONS[reaction]?.type
 }
 
 export default function MessengerPage() {
@@ -134,7 +159,15 @@ export default function MessengerPage() {
       try {
         const page = await getMessages(activeMatchId)
         if (cancelled) return
-        const chronological = [...page.items].reverse()
+        const chronological = [...page.items].reverse().map((message) => {
+          const myReaction = normalizeReaction(message.myReaction)
+          const partnerReaction = normalizeReaction(message.partnerReaction)
+          return {
+            ...message,
+            myReaction: myReaction ?? null,
+            partnerReaction: partnerReaction ?? null,
+          }
+        })
         setMessages(chronological)
         setLoadedMatchId(activeMatchId)
         setPartnerLastReadAt(page.partnerLastReadAt)
@@ -228,12 +261,17 @@ export default function MessengerPage() {
 
     connection.on("ReactionChanged", (event: ChatReactionEvent) => {
       if (event.matchId !== selectedMatchIdRef.current) return
+      const type = normalizeReaction(event.type)
+      if (type === undefined) {
+        console.error("SignalR sent an unknown reaction value:", event.type)
+        return
+      }
       setMessages((current) => current.map((message) => {
         if (message.id !== event.messageId) return message
         const isPartner = event.profileId === partnerProfileIdRef.current
         return isPartner
-          ? { ...message, partnerReaction: event.type }
-          : { ...message, myReaction: event.type }
+          ? { ...message, partnerReaction: type }
+          : { ...message, myReaction: type }
       }))
     })
 
@@ -332,6 +370,23 @@ export default function MessengerPage() {
     }
   }
 
+  async function handleReaction(message: ChatMessage, reaction: ReactionType) {
+    if (!matchId) return
+    const nextReaction = message.myReaction === reaction ? null : reaction
+    try {
+      if (nextReaction) {
+        await setMessageReaction(matchId, message.id, nextReaction)
+      } else {
+        await removeMessageReaction(matchId, message.id)
+      }
+      setMessages((current) => current.map((item) => (
+        item.id === message.id ? { ...item, myReaction: nextReaction } : item
+      )))
+    } catch (error: unknown) {
+      setChatError(getApiErrorMessage(error, "Не вдалося змінити реакцію."))
+    }
+  }
+
   return (
     <div className="flex min-h-0 flex-1 bg-background">
       <aside className={`${matchId ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-r border-border/80 bg-card/50 md:w-80`}>
@@ -389,7 +444,7 @@ export default function MessengerPage() {
         {selectedMatch ? (
           <>
             <header className="flex shrink-0 items-center gap-3 border-b border-border/70 px-4 py-3 md:px-6">
-              <Button render={<Link to="/messenger" />} variant="ghost" size="icon" className="md:hidden" aria-label="До списку чатів">
+              <Button nativeButton={false} render={<Link to="/messenger" />} variant="ghost" size="icon" className="md:hidden" aria-label="До списку чатів">
                 <ArrowLeft />
               </Button>
               <Avatar className="size-10 rounded-xl">
@@ -427,17 +482,59 @@ export default function MessengerPage() {
                 ) : visibleMessages.map((message) => {
                   const read = message.isMine && partnerLastReadAt !== null
                     && new Date(message.sentAt).getTime() <= new Date(partnerLastReadAt).getTime()
-                  const reactions = [message.myReaction, message.partnerReaction].filter((value): value is string => Boolean(value))
+                  const myReaction = normalizeReaction(message.myReaction) ?? null
+                  const partnerReaction = normalizeReaction(message.partnerReaction) ?? null
+                  const reactions = [myReaction, partnerReaction].filter((value): value is ReactionType => value !== null)
 
                   return (
                     <div key={message.id} className={`flex ${message.isMine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[min(78%,34rem)] rounded-2xl px-4 py-2.5 shadow-sm ${message.isMine ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border bg-card"}`}>
-                        <p className="whitespace-pre-wrap break-words text-sm">{message.text}</p>
-                        <div className={`mt-1 flex items-center justify-end gap-1.5 text-[10px] ${message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                          {reactions.length > 0 && <span aria-label="Реакції">{reactions.map(reactionEmoji).join(" ")}</span>}
-                          <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
-                          {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
-                        </div>
+                      <div className={`relative max-w-[min(78%,34rem)] ${reactions.length > 0 ? "mb-3" : ""}`}>
+                        <ContextMenu>
+                          <ContextMenuTrigger className="block w-fit max-w-full cursor-context-menu">
+                            <div className={`rounded-2xl px-4 py-2.5 shadow-sm ${message.isMine ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border bg-card"}`}>
+                              <p className="whitespace-pre-wrap break-words text-sm">{message.text}</p>
+                              <div className={`mt-1 flex items-center justify-end gap-1.5 text-[10px] ${message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
+                                {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
+                              </div>
+                            </div>
+                          </ContextMenuTrigger>
+                          <ContextMenuContent>
+                            <ContextMenuGroup>
+                              <ContextMenuLabel>Поставити реакцію</ContextMenuLabel>
+                              <div className="grid grid-cols-6 gap-0.5 px-1 pb-1">
+                                {REACTION_OPTIONS.map(({ type, emoji, label }) => (
+                                  <ContextMenuItem
+                                    key={type}
+                                    aria-label={myReaction === type ? `Убрать реакцию: ${label}` : `Поставить реакцию: ${label}`}
+                                    title={label}
+                                    className={`size-9 justify-center p-0 text-lg ${myReaction === type ? "bg-accent" : ""}`}
+                                    onClick={() => void handleReaction(message, type)}
+                                  >
+                                    {emoji}
+                                  </ContextMenuItem>
+                                ))}
+                              </div>
+                            </ContextMenuGroup>
+                          </ContextMenuContent>
+                        </ContextMenu>
+                        {reactions.length > 0 && (
+                          <BubbleReactions
+                            align={message.isMine ? "end" : "start"}
+                            aria-label="Реакції на повідомлення"
+                          >
+                            {myReaction && (
+                              <span key="mine" aria-label={`Ваша реакція: ${reactionEmoji(myReaction)}`} title="Ваша реакція">
+                                {reactionEmoji(myReaction)}
+                              </span>
+                            )}
+                            {partnerReaction && (
+                              <span key="partner" aria-label={`Реакція співрозмовника: ${reactionEmoji(partnerReaction)}`} title="Реакція співрозмовника">
+                                {reactionEmoji(partnerReaction)}
+                              </span>
+                            )}
+                          </BubbleReactions>
+                        )}
                       </div>
                     </div>
                   )
@@ -463,7 +560,7 @@ export default function MessengerPage() {
         ) : matchId ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="text-muted-foreground">{isMatchesLoading ? "Завантаження чату..." : "Цей чат не знайдено серед ваших мэтчів."}</p>
-            <Button render={<Link to="/messenger" />} variant="outline">До списку чатів</Button>
+            <Button nativeButton={false} render={<Link to="/messenger" />} variant="outline">До списку чатів</Button>
           </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
