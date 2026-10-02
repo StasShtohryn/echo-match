@@ -9,6 +9,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import type { DiscoveryPreferences, UpdatePreferencesRequest } from "@/services/auth-service"
 import type { Match } from "@/types/match.types"
 import { FilterPanel } from "./filter-panel";
+import { Link } from "react-router"
 
 
 interface FilterMatchPanelProps {
@@ -56,8 +57,9 @@ export function FilterMatchPanel({
               ) : matches.length === 0 ? (
                 <p className="px-1 py-3 text-xs text-muted-foreground">Поки що немає метчів</p>
               ) : matches.map((match) => (
-                <div
+                <Link
                   key={match.id}
+                  to={`/messenger/${match.id}`}
                   className="flex cursor-pointer items-center gap-3.5 rounded-lg px-1 py-3.5 transition-colors hover:bg-muted/60"
                 >
                   <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-lg font-semibold text-muted-foreground">
@@ -72,18 +74,20 @@ export function FilterMatchPanel({
                     )}
                   </div>
 
-                  <div className="flex flex-col">
+                  <div className="flex min-w-0 flex-1 flex-col">
                     <span className="text-sm font-bold leading-tight text-foreground">
                       {match.partner.displayName}, {match.partner.age}
                     </span>
-                    <span className="mt-0.5 text-xs text-muted-foreground">
-                      {match.isNew ? "Новий метч" : "Метч"}
+                    <span className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {match.lastMessage?.text ?? (match.isNew ? "Новий метч" : "Почніть розмову")}
                     </span>
-
                   </div>
-
-                </div>
-
+                  {match.unreadCount > 0 && (
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                      {match.unreadCount > 99 ? "99+" : match.unreadCount}
+                    </span>
+                  )}
+                </Link>
               ))}
             </div>
           </AccordionContent>
