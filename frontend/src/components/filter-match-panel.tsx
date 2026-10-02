@@ -31,13 +31,13 @@ export function FilterMatchPanel({
   const viewportRef = useRef<HTMLDivElement>(null)
 
   return (
-    <ScrollArea viewportRef={viewportRef} className="flex h-screen w-80 shrink-0 flex-col border-r border-border/80 bg-card/55 p-5 font-sans select-none">
+    <ScrollArea viewportRef={viewportRef} className="flex h-screen w-80 shrink-0 flex-col border-r border-border/80 bg-card/55 p-5 select-none font-rounded">
       <Accordion
         defaultValue={["filters"]}
-        className="w-full overflow-visible rounded-none border-0"
+        className="font-[family-name:var(--font3)] w-full overflow-visible rounded-none border-0"
       >
-        <AccordionItem value="filters" className="border-0 bg-transparent">
-          <AccordionTrigger className="mb-3 p-0 text-xs font-bold tracking-wider text-foreground uppercase hover:no-underline">
+        <AccordionItem value="filters" className="font-[family-name:var(--font3)] border-0 bg-transparent">
+          <AccordionTrigger className="font-[family-name:var(--font3)] mb-3 p-0 text-xs font-bold tracking-wider uppercase hover:no-underline">
             Фільтри
           </AccordionTrigger>
           <AccordionContent className="px-0 pb-0">
@@ -46,21 +46,21 @@ export function FilterMatchPanel({
         </AccordionItem>
 
 
-        <AccordionItem value="matches" className="border-0 bg-transparent">
-          <AccordionTrigger className="mb-3 p-0 text-xs font-bold tracking-wider text-foreground uppercase hover:no-underline">
+        <AccordionItem value="matches" className="font-[family-name:var(--font3)] border-0 bg-transparent">
+          <AccordionTrigger className="font-[family-name:var(--font3)] mb-3 p-0 text-xs font-bold tracking-wider uppercase hover:no-underline">
             Нові метчі
           </AccordionTrigger>
           <AccordionContent className="px-0 pb-0">
             <div className="overflow-y-auto">
               {isMatchesLoading ? (
-                <p className="px-1 py-3 text-xs text-muted-foreground">Завантаження...</p>
+                <p className="font-[family-name:var(--font3)]px-1 py-3 text-xs text-muted-foreground">Завантаження...</p>
               ) : matches.length === 0 ? (
-                <p className="px-1 py-3 text-xs text-muted-foreground">Поки що немає метчів</p>
+                <p className="font-[family-name:var(--font3)] px-1 py-3 text-xs text-muted-foreground">Поки що немає метчів</p>
               ) : matches.map((match) => (
                 <Link
                   key={match.id}
                   to={`/messenger/${match.id}`}
-                  className="flex cursor-pointer items-center gap-3.5 rounded-lg px-1 py-3.5 transition-colors hover:bg-muted/60"
+                  className="font-[family-name:var(--font3)] flex cursor-pointer items-center gap-3.5 rounded-lg px-1 py-3.5 transition-colors hover:bg-muted/60"
                 >
                   <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-lg font-semibold text-muted-foreground">
                     {match.partner.mainPhotoUrl ? (
@@ -75,15 +75,15 @@ export function FilterMatchPanel({
                   </div>
 
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-sm font-bold leading-tight text-foreground">
+                    <span className="font-[family-name:var(--font3)] text-sm font-bold leading-tight text-foreground">
                       {match.partner.displayName}, {match.partner.age}
                     </span>
-                    <span className="mt-0.5 truncate text-xs text-muted-foreground">
+                    <span className="font-[family-name:var(--font3)] mt-0.5 truncate text-xs text-muted-foreground">
                       {match.lastMessage?.text ?? (match.isNew ? "Новий метч" : "Почніть розмову")}
                     </span>
                   </div>
                   {match.unreadCount > 0 && (
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                    <span className="font-[family-name:var(--font3)] flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
                       {match.unreadCount > 99 ? "99+" : match.unreadCount}
                     </span>
                   )}

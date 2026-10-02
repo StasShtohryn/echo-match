@@ -64,7 +64,7 @@ export default function ProfileSettingsPage() {
   if (!profile || !lookups) return <div className="container mx-auto px-4 py-8">Налаштування недоступні.</div>
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-1 flex-col px-4 py-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-1 flex-col px-4 py-6 ">
       <ScrollArea className="h-full min-h-0 flex-1">
         <main className="space-y-6 pb-4">
           <div className="flex items-center justify-between gap-3">

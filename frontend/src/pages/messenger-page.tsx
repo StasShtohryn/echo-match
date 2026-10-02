@@ -103,7 +103,6 @@ export default function MessengerPage() {
   const [isSending, setIsSending] = useState(false)
   const [chatError, setChatError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("connecting")
-  const viewportRef = useRef<HTMLDivElement>(null)
   const connectionRef = useRef<HubConnection | null>(null)
   const selectedMatchIdRef = useRef(matchId)
   const partnerProfileIdRef = useRef<string | null>(null)
@@ -112,6 +111,32 @@ export default function MessengerPage() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const typingExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastTypingSentAtRef = useRef(0)
+
+
+  // Ref для автоматичного скролу вниз
+  const viewportRef = useRef<HTMLDivElement>(null)
+
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    // Даємо браузеру завершити рендер списку повідомлень у DOM
+    requestAnimationFrame(() => {
+      const viewport = viewportRef.current
+      if (viewport) {
+        viewport.scrollTo({
+          top: viewport.scrollHeight,
+          behavior,
+        })
+      }
+    })
+  }, [])
+
+  // Скролимо, коли повідомлення реально завантажені і відображаються
+  useEffect(() => {
+    if (loadedMatchId === matchId && !isLoadingMessages && messages.length > 0) {
+      scrollToBottom("auto")
+    }
+  }, [messages, loadedMatchId, matchId, isLoadingMessages, scrollToBottom])
 
   const selectedMatch = useMemo(
     () => matches.find((match) => match.id === matchId) ?? null,
@@ -123,6 +148,15 @@ export default function MessengerPage() {
     selectedMatchIdRef.current = matchId
     partnerProfileIdRef.current = selectedMatch?.partner.profileId ?? null
   }, [matchId, selectedMatch?.partner.profileId])
+
+
+  useEffect(() => {
+    if (loadedMatchId === matchId && !isLoadingMessages) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" })
+      })
+    }
+  }, [messages, loadedMatchId, matchId, isLoadingMessages])
 
   const refreshMatches = useCallback(async () => {
     try {
@@ -590,6 +624,7 @@ export default function MessengerPage() {
                     </div>
                   )
                 })}
+                <div ref={messagesEndRef} className="h-px w-full" />
               </div>
             </ScrollArea>
 
