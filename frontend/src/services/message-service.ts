@@ -33,6 +33,11 @@ export interface ChatReadEvent {
   readAt: string
 }
 
+export interface ChatTypingEvent {
+  matchId: string
+  profileId: string
+}
+
 export interface ChatReactionEvent {
   matchId: string
   messageId: string

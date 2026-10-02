@@ -1,9 +1,12 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function MainLayout() {
+  const { pathname } = useLocation();
+  const isMessengerPage = pathname === "/messenger" || pathname.startsWith("/messenger/");
+
   return (
     <div>
       <ScrollArea className="h-screen w-full overflow-hidden">
@@ -13,9 +16,11 @@ export default function MainLayout() {
             <Outlet />
           </main>
         </div>
-        <div>
-          <Footer />
-        </div>
+        {!isMessengerPage && (
+          <div>
+            <Footer />
+          </div>
+        )}
       </ScrollArea>
     </div>
   );

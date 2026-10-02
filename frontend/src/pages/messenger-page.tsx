@@ -14,6 +14,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import { Input } from "@/components/ui/input"
+import { Marker, MarkerContent } from "@/components/ui/marker"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -30,6 +31,7 @@ import {
   type ChatMessageEvent,
   type ChatReadEvent,
   type ChatReactionEvent,
+  type ChatTypingEvent,
   type ReactionType,
 } from "@/services/message-service"
 
@@ -93,6 +95,8 @@ export default function MessengerPage() {
   const [loadedMatchId, setLoadedMatchId] = useState<string | null>(null)
   const [partnerLastReadAt, setPartnerLastReadAt] = useState<string | null>(null)
   const [messageText, setMessageText] = useState("")
+  const [typingMatchId, setTypingMatchId] = useState<string | null>(null)
+  const [isTypingVisible, setIsTypingVisible] = useState(false)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isLoadingOlder, setIsLoadingOlder] = useState(false)
   const [hasOlderMessages, setHasOlderMessages] = useState(false)
@@ -105,6 +109,9 @@ export default function MessengerPage() {
   const partnerProfileIdRef = useRef<string | null>(null)
   const scrollToBottomRef = useRef(false)
   const previousScrollRef = useRef<{ height: number; top: number } | null>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const typingExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastTypingSentAtRef = useRef(0)
 
   const selectedMatch = useMemo(
     () => matches.find((match) => match.id === matchId) ?? null,
@@ -232,6 +239,13 @@ export default function MessengerPage() {
       }
 
       const isMine = event.senderProfileId !== partnerProfileIdRef.current
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+      if (typingExitTimeoutRef.current) clearTimeout(typingExitTimeoutRef.current)
+      setIsTypingVisible(false)
+      typingExitTimeoutRef.current = setTimeout(() => {
+        setTypingMatchId(null)
+        typingExitTimeoutRef.current = null
+      }, 300)
       const message: ChatMessage = {
         ...event,
         isMine,
@@ -257,6 +271,26 @@ export default function MessengerPage() {
         && event.readerProfileId === partnerProfileIdRef.current) {
         setPartnerLastReadAt(event.readAt)
       }
+    })
+
+    connection.on("PartnerTyping", (event: ChatTypingEvent) => {
+      if (event.matchId !== selectedMatchIdRef.current
+        || event.profileId !== partnerProfileIdRef.current) return
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+      if (typingExitTimeoutRef.current) clearTimeout(typingExitTimeoutRef.current)
+      setTypingMatchId(event.matchId)
+      setIsTypingVisible(true)
+      typingTimeoutRef.current = setTimeout(() => {
+        if (selectedMatchIdRef.current === event.matchId) {
+          setIsTypingVisible(false)
+          typingExitTimeoutRef.current = setTimeout(() => {
+            setTypingMatchId(null)
+            typingExitTimeoutRef.current = null
+          }, 300)
+        }
+        typingTimeoutRef.current = null
+      }, 2200)
     })
 
     connection.on("ReactionChanged", (event: ChatReactionEvent) => {
@@ -293,6 +327,8 @@ export default function MessengerPage() {
     void startConnection()
     return () => {
       disposed = true
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+      if (typingExitTimeoutRef.current) clearTimeout(typingExitTimeoutRef.current)
       connectionRef.current = null
       void connection.stop()
     }
@@ -368,6 +404,21 @@ export default function MessengerPage() {
     } finally {
       setIsSending(false)
     }
+  }
+
+  function handleMessageInputChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const text = event.currentTarget.value
+    setMessageText(text)
+    if (!text.trim() || !matchId) return
+
+    const now = Date.now()
+    const connection = connectionRef.current
+    if (now - lastTypingSentAtRef.current < 1000 || connection?.state !== "Connected") return
+
+    lastTypingSentAtRef.current = now
+    void connection.invoke("Typing", matchId).catch((error: unknown) => {
+      setChatError(getApiErrorMessage(error, "Не вдалося надіслати статус набору тексту."))
+    })
   }
 
   async function handleReaction(message: ChatMessage, reaction: ReactionType) {
@@ -542,20 +593,36 @@ export default function MessengerPage() {
               </div>
             </ScrollArea>
 
-            <form onSubmit={(event) => void handleSendMessage(event)} className="mx-auto flex w-full max-w-4xl shrink-0 items-center gap-2 border-t border-border/70 p-3 md:px-6 md:py-4">
-              <Input
-                value={messageText}
-                onChange={(event) => setMessageText(event.target.value)}
-                placeholder="Напишіть повідомлення..."
-                aria-label="Повідомлення"
-                maxLength={2000}
-                disabled={isSending}
-                className="h-11 flex-1 rounded-full border-border bg-card px-4"
-              />
-              <Button type="submit" size="icon" className="size-11 rounded-full" disabled={!messageText.trim() || isSending} aria-label="Надіслати повідомлення">
-                {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
-              </Button>
-            </form>
+            <div className="mx-auto w-full max-w-4xl shrink-0">
+              <div className="flex h-7 items-center px-4 md:px-6">
+                {selectedMatch && (
+                  <Marker
+                    role="status"
+                    aria-live="polite"
+                    aria-hidden={!isTypingVisible || typingMatchId !== matchId}
+                    className={`w-fit transform transition-all duration-300 ease-out motion-reduce:transition-none ${isTypingVisible && typingMatchId === matchId ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-1 opacity-0"}`}
+                  >
+                    <MarkerContent className="typing-shimmer font-medium">
+                      {selectedMatch.partner.displayName} пише...
+                    </MarkerContent>
+                  </Marker>
+                )}
+              </div>
+              <form onSubmit={(event) => void handleSendMessage(event)} className="flex w-full items-center gap-2 border-t border-border/70 p-3 md:px-6 md:py-4">
+                <Input
+                  value={messageText}
+                  onChange={handleMessageInputChange}
+                  placeholder="Напишіть повідомлення..."
+                  aria-label="Повідомлення"
+                  maxLength={2000}
+                  disabled={isSending}
+                  className="h-11 flex-1 rounded-full border-border bg-card px-4"
+                />
+                <Button type="submit" size="icon" className="size-11 rounded-full" disabled={!messageText.trim() || isSending} aria-label="Надіслати повідомлення">
+                  {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
+                </Button>
+              </form>
+            </div>
           </>
         ) : matchId ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
@@ -565,7 +632,7 @@ export default function MessengerPage() {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
             <h2 className="text-lg font-semibold">Оберіть розмову</h2>
-            <p className="text-sm text-muted-foreground">Ваші чати з мэтчами з’являться у списку ліворуч.</p>
+            <p className="text-sm text-muted-foreground">Ваші чати з метчами з’являться у списку ліворуч.</p>
           </div>
         )}
       </section>
