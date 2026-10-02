@@ -9,8 +9,8 @@ export interface ChatMessage {
   isMine: boolean
   text: string
   sentAt: string
-  myReaction: ReactionType | null
-  partnerReaction: ReactionType | null
+  myReaction: ReactionType | number | null
+  partnerReaction: ReactionType | number | null
 }
 
 export interface MessagePage {
@@ -37,7 +37,7 @@ export interface ChatReactionEvent {
   matchId: string
   messageId: string
   profileId: string
-  type: ReactionType | null
+  type: ReactionType | number | null
 }
 
 export async function getMessages(
@@ -58,6 +58,18 @@ export async function sendMessage(matchId: string, text: string): Promise<ChatMe
 
 export async function markMessagesRead(matchId: string): Promise<void> {
   await api.post(`/matches/${matchId}/messages/read`)
+}
+
+export async function setMessageReaction(
+  matchId: string,
+  messageId: string,
+  type: ReactionType,
+): Promise<void> {
+  await api.put(`/matches/${matchId}/messages/${messageId}/reaction`, { type })
+}
+
+export async function removeMessageReaction(matchId: string, messageId: string): Promise<void> {
+  await api.delete(`/matches/${matchId}/messages/${messageId}/reaction`)
 }
 
 export function getChatHubUrl(): string {
