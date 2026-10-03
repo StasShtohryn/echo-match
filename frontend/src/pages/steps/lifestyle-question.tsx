@@ -102,7 +102,7 @@ export default function LifestyleStep({
             <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-7 py-3">
                 {/* Поле 1: Зріст */}
                 <Field className="flex flex-col gap-2 w-full items-center justify-center">
-                    <FieldLabel htmlFor="height-otp" className="text-sm font-bold text-[#1E293B] justify-center">
+                    <FieldLabel htmlFor="height-otp" className="text-sm font-bold text-foreground justify-center">
                         Ваш зріст
                     </FieldLabel>
 
@@ -118,22 +118,22 @@ export default function LifestyleStep({
                             <InputOTPGroup className="gap-2">
                                 <InputOTPSlot
                                     index={0}
-                                    className="size-12 rounded-xl border border-[#FFD2B2] bg-white text-lg font-bold text-[#2A2B2E] shadow-xs focus:border-[#FF8A3D] focus:ring-2 focus:ring-[#FF8A3D]/40"
+                                    className="size-12 rounded-xl border border-input bg-card text-lg font-bold text-foreground shadow-xs focus:border-ring focus:ring-2 focus:ring-primary/40"
                                 />
                                 <InputOTPSlot
                                     index={1}
-                                    className="size-12 rounded-xl border border-[#FFD2B2] bg-white text-lg font-bold text-[#2A2B2E] shadow-xs focus:border-[#FF8A3D] focus:ring-2 focus:ring-[#FF8A3D]/40"
+                                    className="size-12 rounded-xl border border-input bg-card text-lg font-bold text-foreground shadow-xs focus:border-ring focus:ring-2 focus:ring-primary/40"
                                 />
                                 <InputOTPSlot
                                     index={2}
-                                    className="size-12 rounded-xl border border-[#FFD2B2] bg-white text-lg font-bold text-[#2A2B2E] shadow-xs focus:border-[#FF8A3D] focus:ring-2 focus:ring-[#FF8A3D]/40"
+                                    className="size-12 rounded-xl border border-input bg-card text-lg font-bold text-foreground shadow-xs focus:border-ring focus:ring-2 focus:ring-primary/40"
                                 />
                             </InputOTPGroup>
                         </InputOTP>
-                        <span className="text-sm font-semibold text-[#6A7178]">см</span>
+                        <span className="text-sm font-semibold text-muted-foreground">см</span>
                     </div>
 
-                    <FieldDescription className="text-center text-xs text-[#6A7178]">
+                    <FieldDescription className="text-center text-xs text-muted-foreground">
                         Введіть 3 цифри (наприклад, 175)
                     </FieldDescription>
                 </Field>
@@ -141,10 +141,10 @@ export default function LifestyleStep({
                 {/* Поле 2: Спорт / Тренування */}
                 <div className="flex w-full flex-col gap-3">
                     <div className="text-center">
-                        <h4 className="text-sm font-bold text-[#1E293B]">
+                        <h4 className="text-sm font-bold text-foreground">
                             Як часто ви тренуєтесь?
                         </h4>
-                        <p className="text-xs text-[#6A7178]">
+                        <p className="text-xs text-muted-foreground">
                             Оберіть варіант, який найкраще вас описує
                         </p>
                     </div>
@@ -162,16 +162,16 @@ export default function LifestyleStep({
                                     className={cn(
                                         "group relative flex items-center gap-3.5 rounded-2xl border p-3.5 text-left transition-all duration-200 cursor-pointer shadow-xs",
                                         isSelected
-                                            ? "border-[#FF8A3D] bg-[#FFF6EE] ring-2 ring-[#FF8A3D]/30"
-                                            : "border-[#FFD2B2]/60 bg-white hover:border-[#FF8A3D]/60 hover:bg-[#FFF6EE]/40"
+                                            ? "border-primary bg-accent ring-2 ring-primary/30"
+                                            : "border-border bg-card hover:border-primary/60 hover:bg-accent/40"
                                     )}
                                 >
                                     <div
                                         className={cn(
                                             "flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors",
                                             isSelected
-                                                ? "bg-[#FF8A3D] text-white"
-                                                : "bg-[#FFF6EE] text-[#FF8A3D] group-hover:bg-[#FF8A3D] group-hover:text-white"
+                                                ? "bg-primary text-primary-foreground"
+                                                : "bg-accent text-primary group-hover:bg-primary group-hover:text-primary-foreground"
                                         )}
                                     >
                                         <Icon className="size-5" />
@@ -181,12 +181,12 @@ export default function LifestyleStep({
                                         <span
                                             className={cn(
                                                 "text-sm font-semibold transition-colors",
-                                                isSelected ? "text-[#FF8A3D]" : "text-[#2A2B2E]"
+                                                isSelected ? "text-primary" : "text-foreground"
                                             )}
                                         >
                                             {opt.title}
                                         </span>
-                                        <span className="text-xs text-[#6A7178]">
+                                        <span className="text-xs text-muted-foreground">
                                             {opt.description}
                                         </span>
                                     </div>

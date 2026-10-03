@@ -81,10 +81,10 @@ export default function LanguagesStep({
             nextButtonText={selectedIds.length === 0 ? "Пропустити" : "Далі"}
         >
             <div className="mx-auto flex w-full max-w-xl flex-col gap-4 py-3">
-                <div className="flex items-center justify-between px-1 text-xs text-[#6A7178]">
+                <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
                     <span>Оберіть усі мови, які знаєте</span>
                     {selectedIds.length > 0 && (
-                        <span className="font-semibold text-[#FF8A3D]">
+                        <span className="font-semibold text-primary">
                             Обрано: {selectedIds.length}
                         </span>
                     )}
@@ -92,7 +92,7 @@ export default function LanguagesStep({
 
                 {isFetching ? (
                     <div className="flex h-44 w-full items-center justify-center">
-                        <Loader2 className="size-8 animate-spin text-[#FF8A3D]" />
+                        <Loader2 className="size-8 animate-spin text-primary" />
                     </div>
                 ) : fetchError ? (
                     <div className="p-4 text-center text-xs text-destructive">
@@ -111,8 +111,8 @@ export default function LanguagesStep({
                                     className={cn(
                                         "flex items-center justify-between rounded-2xl border p-3.5 transition-all duration-200 cursor-pointer shadow-xs",
                                         isChecked
-                                            ? "border-[#FF8A3D] bg-[#FFF6EE] ring-1 ring-[#FF8A3D]/40"
-                                            : "border-[#FFD2B2]/60 bg-white hover:border-[#FF8A3D]/60 hover:bg-[#FFF6EE]/30"
+                                            ? "border-primary bg-accent ring-1 ring-primary/40"
+                                            : "border-border bg-card hover:border-primary/60 hover:bg-accent/30"
                                     )}
                                 >
                                     <div className="flex items-center gap-3">
@@ -120,8 +120,8 @@ export default function LanguagesStep({
                                             className={cn(
                                                 "flex size-9 items-center justify-center rounded-xl transition-colors",
                                                 isChecked
-                                                    ? "bg-[#FF8A3D] text-white"
-                                                    : "bg-[#FFF6EE] text-[#FF8A3D]"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "bg-accent text-primary"
                                             )}
                                         >
                                             <Globe className="size-4" />
@@ -131,7 +131,7 @@ export default function LanguagesStep({
                                             htmlFor={switchId}
                                             className={cn(
                                                 "cursor-pointer text-sm font-semibold transition-colors",
-                                                isChecked ? "text-[#FF8A3D]" : "text-[#2A2B2E]"
+                                                isChecked ? "text-primary" : "text-foreground"
                                             )}
                                             onClick={(e) => e.stopPropagation()}
                                         >
@@ -144,7 +144,7 @@ export default function LanguagesStep({
                                             id={switchId}
                                             checked={isChecked}
                                             onCheckedChange={() => handleToggle(lang.id)}
-                                            className="data-[state=checked]:bg-[#FF8A3D]"
+                                            className="data-[state=checked]:bg-primary"
                                         />
                                     </div>
                                 </div>

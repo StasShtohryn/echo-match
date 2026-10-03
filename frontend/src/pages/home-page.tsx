@@ -9,7 +9,7 @@ import { getApiErrorMessage } from "@/lib/api-error"
 import { getMyProfile, updateMyPreferences, type DiscoveryPreferences, type DiscoveryStatus, type PublicProfile, type UpdatePreferencesRequest } from "@/services/auth-service"
 import { useDiscoveryFeed } from "@/hooks/use-discovery-feed"
 import { useMatches } from "@/hooks/use-matches"
-
+import { Heart } from "lucide-react"
 import { calculateTotalScore } from "@/lib/compatibility"
 
 const statusContent: Record<DiscoveryStatus, { title: string; description: string; action?: string }> = {
@@ -125,10 +125,13 @@ export default function HomePage() {
       </main>
       <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} distanceKm={currentCandidate?.distanceKm ?? null} compatibilityPercent={compatibilityScore} />
       {lastSwipe?.isMatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm space-y-4 rounded-2xl bg-background p-6 text-center shadow-xl">
-            <h2 className="text-2xl font-bold">У вас метч!</h2>
-            <p className="text-sm text-muted-foreground">Ви сподобалися одне одному.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm space-y-4 rounded-2xl bg-background p-6 outline text-center shadow-xl">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+              <Heart className="size-8" fill="red" color="pink"/>
+            </div>
+            <h2 className="font-heading text-2xl font-bold">У вас метч!</h2>
+            <p className="text-xs text-muted-foreground">Ви сподобалися одне одному.</p>
             <Button onClick={dismissSwipeResult}>Продовжити</Button>
           </div>
         </div>

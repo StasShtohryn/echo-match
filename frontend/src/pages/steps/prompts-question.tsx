@@ -113,12 +113,12 @@ export default function PromptsStep({
       nextButtonText={filledCount === 0 ? "Пропустити" : "Далі"}
     >
       <div className="mx-auto flex w-full max-w-xl flex-col gap-4 py-2">
-        <div className="flex items-center justify-between px-1 text-xs text-[#6A7178]">
+        <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
           <span>Оберіть до {MAX_PROMPTS} запитань і дайте коротку відповідь:</span>
           <span
             className={cn(
               "font-bold",
-              filledCount === MAX_PROMPTS ? "text-[#FF8A3D]" : "text-[#1E293B]"
+              filledCount === MAX_PROMPTS ? "text-primary" : "text-foreground"
             )}
           >
             {filledCount} / {MAX_PROMPTS} заповнено
@@ -127,7 +127,7 @@ export default function PromptsStep({
 
         {isFetching ? (
           <div className="flex h-44 w-full items-center justify-center">
-            <Loader2 className="size-8 animate-spin text-[#FF8A3D]" />
+            <Loader2 className="size-8 animate-spin text-primary" />
           </div>
         ) : fetchError ? (
           <div className="p-4 text-center text-xs text-destructive">
@@ -147,14 +147,14 @@ export default function PromptsStep({
                   className={cn(
                     "rounded-2xl border px-4 transition-all duration-200 shadow-xs",
                     hasAnswer
-                      ? "border-[#FF8A3D] bg-[#FFF6EE]/40 ring-1 ring-[#FF8A3D]/40"
-                      : "border-[#FFD2B2]/60 bg-white hover:border-[#FF8A3D]/60"
+                      ? "border-primary bg-accent/40 ring-1 ring-primary/40"
+                      : "border-border bg-card hover:border-primary/60"
                   )}
                 >
                   <AccordionTrigger className="cursor-pointer py-3.5 hover:no-underline">
-                    <div className="flex items-center gap-2.5 text-left text-sm font-semibold text-[#1E293B]">
+                    <div className="flex items-center gap-2.5 text-left text-sm font-semibold text-foreground">
                       {hasAnswer && (
-                        <CheckCircle2 className="size-4 shrink-0 text-[#FF8A3D]" />
+                        <CheckCircle2 className="size-4 shrink-0 text-primary" />
                       )}
                       <span>{item.name}</span>
                     </div>
@@ -171,10 +171,10 @@ export default function PromptsStep({
                             : "Напишіть вашу відповідь тут..."
                         }
                         onChange={(e) => handleAnswerChange(item.id, e.target.value)}
-                        className="h-11 rounded-xl border border-[#FFD2B2] bg-white px-3.5 text-sm text-[#2A2B2E] placeholder:text-[#6A7178]/60 focus-visible:border-[#FF8A3D] focus-visible:ring-1 focus-visible:ring-[#FF8A3D]"
+                        className="h-11 rounded-xl border border-input bg-card px-3.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
                       />
                       {isLimitReached && (
-                        <p className="text-[11px] text-[#6A7178]">
+                        <p className="text-[11px] text-muted-foreground">
                           Очистіть відповідь в іншому питанні, щоб дати відповідь на це.
                         </p>
                       )}

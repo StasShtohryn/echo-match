@@ -79,16 +79,16 @@ export default function LoveLanguageStep({
                                 className={cn(
                                     "group relative flex items-center gap-3.5 rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer shadow-xs",
                                     isSelected
-                                        ? "border-[#FF8A3D] bg-[#FFF6EE] ring-2 ring-[#FF8A3D]/30"
-                                        : "border-[#FFD2B2]/60 bg-white hover:border-[#FF8A3D]/60 hover:bg-[#FFF6EE]/40"
+                                        ? "border-primary bg-accent ring-2 ring-primary/30"
+                                        : "border-border bg-card hover:border-primary/60 hover:bg-accent/40"
                                 )}
                             >
                                 <div
                                     className={cn(
                                         "flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors",
                                         isSelected
-                                            ? "bg-[#FF8A3D] text-white"
-                                            : "bg-[#FFF6EE] text-[#FF8A3D] group-hover:bg-[#FF8A3D] group-hover:text-white"
+                                            ? "bg-primary text-primary-foreground"
+                                            : "bg-accent text-primary group-hover:bg-primary group-hover:text-primary-foreground"
                                     )}
                                 >
                                 </div>
@@ -97,7 +97,7 @@ export default function LoveLanguageStep({
                                     <span
                                         className={cn(
                                             "text-sm font-semibold transition-colors",
-                                            isSelected ? "text-[#FF8A3D]" : "text-[#2A2B2E]"
+                                            isSelected ? "text-primary" : "text-foreground"
                                         )}
                                     >
                                         {opt.title}

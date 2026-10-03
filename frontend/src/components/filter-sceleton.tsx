@@ -2,35 +2,35 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function FilterSkeleton() {
     return (
-        <div className="w-full rounded-3xl border border-[#FFD2B2]/40 bg-[#FAF7F2] p-5 space-y-5">
-            <div className="flex items-center justify-between">
-                <Skeleton className="h-6 w-24 rounded-lg bg-[#FFD2B2]/40" />
-                <Skeleton className="size-4 rounded-md bg-[#FFD2B2]/30" />
-            </div>
+        <div className="w-full space-y-4" aria-hidden="true">
             <div className="space-y-3">
-                <Skeleton className="h-5 w-12 rounded bg-[#FFD2B2]/30" />
-                <div className="flex items-center justify-between gap-3">
-                    <Skeleton className="h-11 flex-1 rounded-2xl bg-white border border-[#FFD2B2]/50" />
-                    <Skeleton className="h-11 flex-1 rounded-2xl bg-white border border-[#FFD2B2]/50" />
+                <Skeleton className="h-3 w-12 rounded bg-muted-foreground/20" />
+                <div className="flex items-center justify-between px-1">
+                    <Skeleton className="h-9 w-20 rounded-xl bg-muted" />
+                    <Skeleton className="h-9 w-20 rounded-xl bg-muted" />
                 </div>
-                <Skeleton className="h-2 w-full rounded-full bg-[#FFD2B2]/40" />
+                <Skeleton className="h-2 w-full rounded-full bg-muted-foreground/20" />
             </div>
 
             <div className="space-y-2">
-                <Skeleton className="h-3 w-28 rounded bg-[#FFD2B2]/30" />
-                <Skeleton className="h-11 w-full rounded-2xl bg-white border border-[#FFD2B2]/50" />
+                <Skeleton className="h-3 w-20 rounded bg-muted-foreground/20" />
+                <Skeleton className="h-9 w-full rounded-xl bg-muted" />
             </div>
 
             <div className="space-y-3">
-                <Skeleton className="h-3 w-44 rounded bg-[#FFD2B2]/30" />
+                <Skeleton className="h-3 w-36 rounded bg-muted-foreground/20" />
                 <div className="flex items-center gap-2">
-                    <Skeleton className="size-5 rounded-md bg-white border border-[#FFD2B2]/60" />
-                    <Skeleton className="h-4 w-40 rounded bg-[#FFD2B2]/30" />
+                    <Skeleton className="size-5 rounded-md bg-muted" />
+                    <Skeleton className="h-4 w-40 rounded bg-muted-foreground/20" />
                 </div>
-                <Skeleton className="h-12 w-full rounded-2xl bg-white border border-[#FFD2B2]/60" />
+                <div className="relative flex h-11 items-center justify-between rounded-2xl border border-border bg-background/50 px-2">
+                    <Skeleton className="size-7 rounded-xl bg-muted" />
+                    <Skeleton className="h-4 w-8 rounded bg-muted-foreground/20" />
+                    <Skeleton className="size-7 rounded-xl bg-muted" />
+                </div>
             </div>
 
-            <Skeleton className="h-12 w-full rounded-2xl bg-[#E87A38]/50" />
+            <Skeleton className="h-8 w-full rounded-2xl bg-primary/30" />
         </div>
     )
 }

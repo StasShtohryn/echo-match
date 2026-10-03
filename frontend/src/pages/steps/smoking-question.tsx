@@ -65,14 +65,14 @@ export default function SmokingStep({
                                 className={cn(
                                     "flex items-center justify-center rounded-2xl border p-4 text-center transition-all duration-200 cursor-pointer shadow-xs",
                                     isSelected
-                                        ? "border-[#FF8A3D] bg-[#FFF6EE] ring-2 ring-[#FF8A3D]/30"
-                                        : "border-[#FFD2B2]/60 bg-white hover:border-[#FF8A3D]/60 hover:bg-[#FFF6EE]/40"
+                                        ? "border-primary bg-accent ring-2 ring-primary/30"
+                                        : "border-border bg-card hover:border-primary/60 hover:bg-accent/40"
                                 )}
                             >
                                 <span
                                     className={cn(
                                         "text-sm font-semibold transition-colors",
-                                        isSelected ? "text-[#FF8A3D]" : "text-[#2A2B2E]"
+                                        isSelected ? "text-primary" : "text-foreground"
                                     )}
                                 >
                                     {opt.title}

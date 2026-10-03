@@ -39,7 +39,7 @@ export default function PsychologicalQuizPage() {
   const viewportRef = useRef<HTMLDivElement>(null)
 
   return (
-    <div className="flex h-screen w-full flex-col bg-background text-foreground">
+    <div className="flex h-screen w-full flex-col bg-background text-foreground gap-4">
       {/* Верхня панель з прогресом */}
       <header className="flex flex-col gap-3 border-b border-border/60 bg-card/60 px-6 py-4 backdrop-blur-md">
         <div className="flex items-center justify-between">
