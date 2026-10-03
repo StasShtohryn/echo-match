@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Slider } from "./ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
+import { Input } from "./ui/input";
 import { Minus, Plus } from "lucide-react";
 import { FilterSkeleton } from "./filter-sceleton";
 
@@ -110,7 +112,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
 
   return (
     <div className="space-y-4">
-      <label htmlFor="lookingFor" className="font-[family-name:var(--font-family)] block text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+      <label htmlFor="lookingFor" className="block text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
         Вік
       </label>
       <div className=" flex justify-between items-center px-1">
@@ -148,14 +150,14 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
         className="w-full py-2"
       />
 
-      <label htmlFor="lookingFor" className="font-[family-name:var(--font-family)] block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+      <label htmlFor="lookingFor" className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
         Кого шукаю
       </label>
 
       <Select value={lookingFor} onValueChange={(value) => setLookingFor(value ?? "Women")}>
         <SelectTrigger
           id="lookingFor"
-          className="font-[family-name:var(--font-family)] h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground"
+          className="h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground"
         >
           <SelectValue />
         </SelectTrigger>
@@ -166,31 +168,35 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
         </SelectContent>
       </Select>
 
-      <label htmlFor="maxDistance" className="font-[family-name:var(--font-family)] block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+      <label htmlFor="maxDistance" className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
         Максимальна відстань, км
       </label>
 
-      <label className="font-[family-name:var(--font3)] flex cursor-pointer items-center gap-2 text-xs text-muted-foreground select-none">
-        <input
-          type="checkbox"
+      <div className="font-[family-name:var(--font3)] flex items-center gap-2 text-xs text-muted-foreground select-none">
+        <Checkbox
+          id="unlimitedDistance"
           checked={maxDistanceKm === null}
-          onChange={(event) => setMaxDistanceKm(event.target.checked ? null : 150)}
-          className="size-4 rounded border-input text-[#FF8A3D] focus:ring-[#FF8A3D]"
+          onCheckedChange={(checked) => setMaxDistanceKm(checked === true ? null : 150)}
         />
-        Без обмежень по відстані
-      </label>
+        <label htmlFor="unlimitedDistance" className="cursor-pointer">
+          Без обмежень по відстані
+        </label>
+      </div>
 
       {maxDistanceKm !== null && (
         <div className="relative flex items-center">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon-sm"
             disabled={(maxDistanceKm ?? 50) <= 1}
             onClick={() => setMaxDistanceKm((prev) => Math.max(1, (prev ?? 50) - 5))}
-            className="absolute left-2 flex size-7 items-center justify-center rounded-xl bg-white text-[#FF8A3D] border border-[#FFD2B2] hover:bg-[#FFF6EE] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"          >
+            className="absolute left-2 rounded-xl border-border bg-background text-primary hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed"
+          >
             <Minus className="size-3.5" />
-          </button>
+          </Button>
 
-          <input
+          <Input
             id="maxDistance"
             type="text"
             inputMode="numeric"
@@ -219,21 +225,24 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
                 setMaxDistanceKm(maxDistanceLimit);
               }
             }}
-            className="font-[family-name:var(--font3)] h-11 w-full rounded-2xl border border-[#FFD2B2] bg-[#FFF6EE]/30 px-10 text-center text-base font-bold text-[#1E293B] outline-none focus:border-[#FF8A3D] focus:ring-2 focus:ring-[#FF8A3D]/30"
+            className="h-11 w-full rounded-2xl border-input bg-background px-10 text-center text-base font-bold text-foreground focus-visible:border-ring focus-visible:ring-ring/30"
           />
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon-sm"
             disabled={(maxDistanceKm ?? 50) >= 150}
             onClick={() => setMaxDistanceKm((prev) => Math.min(150, (prev ?? 50) + 5))}
-            className="absolute right-2 flex size-7 items-center justify-center rounded-xl bg-white text-[#FF8A3D] border border-[#FFD2B2] hover:bg-[#FFF6EE] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"          >
+            className="absolute right-2 rounded-xl border-border bg-background text-primary hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed"
+          >
             <Plus className="size-3.5" />
-          </button>
+          </Button>
         </div>
       )}
 
       <Button
-        className="w-full font-[family-name:var(--font-family)]"
+        className="w-full"
         disabled={isSaving}
         onClick={() => onApply({ showMe: lookingFor, minAge, maxAge, maxDistanceKm })}
       >
@@ -243,4 +252,3 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
     </div>
   )
 }
-
