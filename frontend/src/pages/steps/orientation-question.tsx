@@ -46,9 +46,9 @@ export default function OrientationStep({
                             key={opt.id}
                             pressed={isSelected}
                             onPressedChange={() => onChange(opt.id)}
-                            className={`h-12 w-full rounded-xl bg-white text-sm font-semibold transition-all ${isSelected
-                                ? "border-2 border-[#FF8A3D] text-[#FF8A3D] shadow-sm aria-pressed:bg-white"
-                                : "border border-[#FFD2B2] text-[#2A2B2E] hover:border-[#FF8A3D]/60 hover:bg-white"
+                            className={`h-12 w-full rounded-xl bg-card text-sm font-semibold transition-all ${isSelected
+                                ? "border-2 border-primary text-primary shadow-sm aria-pressed:bg-card"
+                                : "border border-input text-foreground hover:border-primary/60 hover:bg-card"
                                 }`}
                         >
                             {opt.label}

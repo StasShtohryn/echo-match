@@ -51,14 +51,14 @@ export default function CompanyStep({
                         onChange={handleChange}
                         placeholder="Розкажіть в якій компанії чи установі Ви працюєте..."
                         rows={5}
-                        className="w-full resize-none rounded-xl border border-[#FFD2B2] bg-white p-4 text-[#2A2B2E] placeholder:text-[#6A7178]/60 focus-visible:border-[#FF8A3D] focus-visible:ring-1 focus-visible:ring-[#FF8A3D] shadow-xs"
+                        className="w-full resize-none rounded-xl border border-input bg-card p-4 text-foreground placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring shadow-xs"
                     />
-                    <div className="mt-1.5 flex justify-end text-xs font-medium text-[#6A7178]">
+                    <div className="mt-1.5 flex justify-end text-xs font-medium text-muted-foreground">
                         <span>{charsLeft} симв. залишилось</span>
                     </div>
                 </div>
 
-                <p className="text-center text-xs text-[#6A7178]">
+                <p className="text-center text-xs text-muted-foreground">
                     Цей опис допоможе іншим краще вас пізнати. Ви завжди зможете змінити його в налаштуваннях профілю.
                 </p>
             </div>

@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
+import { Progress } from "./ui/progress";
 
 export interface ProfileDetailsProps {
     displayName: string;
@@ -43,12 +44,19 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
                     <>
                         <Separator />
                         <div>
-                            <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
-                                Сумісність
-                            </h2>
-                            <p className="text-2xl font-black tracking-tight text-foreground">
-                                {compatibilityPercent}%
-                            </p>
+                            <div className="mb-2 flex items-center justify-between">
+                                <h2 className="text-xs font-bold tracking-wider text-foreground uppercase">
+                                    Сумісність
+                                </h2>
+                                <span className="text-sm font-semibold tabular-nums text-foreground">
+                                    {compatibilityPercent}%
+                                </span>
+                            </div>
+                            <Progress
+                                value={Math.min(100, Math.max(0, compatibilityPercent))}
+                                aria-label="Сумісність"
+                                className="gap-0"
+                            />
                         </div>
                     </>
                 )}

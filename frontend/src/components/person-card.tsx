@@ -183,10 +183,10 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
 
           </CardAction>
           <CardTitle>
-            <p className="text-lg">{profile.displayName}, {profile.age}</p>
-            <p className="text-sm text-muted-foreground">{candidate.distanceKm === null ? "Відстань не вказана" : `${candidate.distanceKm} км від вас`}</p>
+            <p className="text-2xl">{profile.displayName}, {profile.age}</p>
+            <p className="text-md text-muted-foreground">{candidate.distanceKm === null ? "Відстань не вказана" : `${candidate.distanceKm} км від вас`}</p>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs">
             {profile.bio ?? "Користувач ще не додав опис профілю."}
           </CardDescription>
         </CardHeader>

@@ -83,10 +83,10 @@ export default function InterestsStep({
             nextButtonText={selectedIds.length === 0 ? "Пропустити" : "Далі"}
         >
             <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-4 py-2">
-                <p className="text-center text-xs text-[#6A7178]">
+                <p className="text-center text-xs text-muted-foreground">
                     Оберіть від 1 до {MAX_INTERESTS} захоплень
                     {selectedIds.length > 0 && (
-                        <span className="ml-1 font-semibold text-[#FF8A3D]">
+                        <span className="ml-1 font-semibold text-primary">
                             ({selectedIds.length} / {MAX_INTERESTS})
                         </span>
                     )}
@@ -94,7 +94,7 @@ export default function InterestsStep({
 
                 {isFetching ? (
                     <div className="flex h-44 w-full items-center justify-center">
-                        <Loader2 className="size-8 animate-spin text-[#FF8A3D]" />
+                        <Loader2 className="size-8 animate-spin text-primary" />
                     </div>
                 ) : fetchError ? (
                     <div className="p-4 text-center text-xs text-destructive">
@@ -114,8 +114,8 @@ export default function InterestsStep({
                                     className={cn(
                                         "cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 shadow-xs",
                                         isSelected
-                                            ? "border-[#FF8A3D] bg-[#FFF6EE] text-[#FF8A3D] ring-2 ring-[#FF8A3D]/30"
-                                            : "border-[#FFD2B2]/70 bg-white text-[#2A2B2E] hover:border-[#FF8A3D]/70 hover:bg-[#FFF6EE]/40"
+                                            ? "border-primary bg-accent text-primary ring-2 ring-primary/30"
+                                            : "border-border bg-card text-foreground hover:border-primary/70 hover:bg-accent/40"
                                     )}
                                 >
                                     {interest.name}

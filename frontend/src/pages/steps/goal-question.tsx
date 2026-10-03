@@ -49,9 +49,9 @@ export default function GoalsStep({
                             key={opt.id}
                             pressed={isSelected}
                             onPressedChange={() => onChange(opt.id)}
-                            className={`flex h-14 w-full items-center justify-start gap-4 rounded-xl bg-white px-5 text-left text-sm font-semibold transition-all sm:text-base ${isSelected
-                                ? "border-2 border-[#FF8A3D] text-[#FF8A3D] shadow-sm aria-pressed:bg-white"
-                                : "border border-[#FFD2B2] text-[#2A2B2E] hover:border-[#FF8A3D]/60 hover:bg-white"
+                            className={`flex h-14 w-full items-center justify-start gap-4 rounded-xl bg-card px-5 text-left text-sm font-semibold transition-all sm:text-base ${isSelected
+                                ? "border-2 border-primary text-primary shadow-sm aria-pressed:bg-card"
+                                : "border border-input text-foreground hover:border-primary/60 hover:bg-card"
                                 }`}
                         >
                             <span>{opt.label}</span>
