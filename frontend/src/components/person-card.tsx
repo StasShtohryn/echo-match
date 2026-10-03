@@ -119,7 +119,7 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
   return (
     <div className="flex flex-col gap-4">
       <Card
-        className="relative mx-auto w-full max-w-sm touch-pan-y overflow-hidden pt-0 select-none"
+        className="relative mx-auto w-95 max-w-sm touch-pan-y overflow-hidden pt-0 select-none"
         style={{
           transform: `translateX(${dragOffset}px) rotate(${cardRotation}deg)`,
           transition: dragStart.current === null ? "transform 220ms ease-out" : "none",
@@ -148,7 +148,7 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
                     <img
                       src={photo.url}
                       alt={`${profile.displayName}, фото ${index + 1}`}
-                      className="h-60 w-full object-cover"
+                      className="h-90 w-full object-cover"
                     />
                   </button>
                 </CarouselItem>

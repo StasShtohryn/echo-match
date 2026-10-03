@@ -87,7 +87,7 @@ export default function Header() {
           nativeButton={false}
           render={
             <div className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-85">
-              <span className="text-sm font-bold text-[#1E293B]">
+              <span className="text-sm font-bold">
                 {displayName}
                 {userAge !== undefined && `, ${userAge}`}
               </span>
