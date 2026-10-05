@@ -111,7 +111,7 @@ export default function MessengerPage() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const typingExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastTypingSentAtRef = useRef(0)
-
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // Ref для автоматичного скролу вниз
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -130,6 +130,16 @@ export default function MessengerPage() {
       }
     })
   }, [])
+
+
+  useEffect(() => {
+    if (matchId && !isLoadingMessages) {
+      // Невелика затримка через requestAnimationFrame гарантує, що DOM готовий до фокусу
+      requestAnimationFrame(() => {
+        inputRef.current?.focus()
+      })
+    }
+  }, [matchId, isLoadingMessages])
 
   // Скролимо, коли повідомлення реально завантажені і відображаються
   useEffect(() => {
@@ -437,6 +447,9 @@ export default function MessengerPage() {
       setChatError(getApiErrorMessage(error, "Не вдалося надіслати повідомлення."))
     } finally {
       setIsSending(false)
+      requestAnimationFrame(() => {
+        inputRef.current?.focus()
+      })
     }
   }
 
@@ -645,6 +658,8 @@ export default function MessengerPage() {
               </div>
               <form onSubmit={(event) => void handleSendMessage(event)} className="flex w-full items-center gap-2 border-t border-border/70 p-3 md:px-6 md:py-4">
                 <Input
+                  ref={inputRef}
+                  autoFocus
                   value={messageText}
                   onChange={handleMessageInputChange}
                   placeholder="Напишіть повідомлення..."

@@ -1,4 +1,4 @@
-import { BellIcon, Heart, LogOutIcon, Monitor, Moon, Settings, Sun, User } from "lucide-react";
+import { BellIcon, LogOutIcon, Monitor, Moon, Settings, Sun, User } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -18,7 +18,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTheme } from "@/components/theme-provider"
 import { getMyProfile, type MyProfile } from "@/services/auth-service";
@@ -32,6 +32,7 @@ export default function Header() {
   const { theme, setTheme } = useTheme()
 
   const [profile, setProfile] = useState<MyProfile | null>(null);
+  const location = useLocation();
 
   useEffect(() => {
     let isMounted = true;
@@ -58,9 +59,15 @@ export default function Header() {
   const displayName = profile?.displayName ?? user?.name ?? "Користувач";
   const userAge = profile?.age;
 
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
 
   return (
-    <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none font-rounded ">
+    <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none">
       <Link to="/" className="flex items-center gap-2 text-[16px] font-medium">
         <div className="flex">
           <img
@@ -71,16 +78,40 @@ export default function Header() {
         </div>
       </Link>
 
-      <Link to="/messenger">
-        <Button variant="link" className="cursor-pointer">
-          Події
-        </Button>
-      </Link>
-      <Link to="/messenger">
-        <Button variant="link" className="cursor-pointer">
-          Месенджер
-        </Button>
-      </Link>
+      <nav className="flex justify-between gap-10 ">
+        <Link to="/">
+          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/")
+            ? "text-[#F37936] font-semibold dark: text-[#18B7A0]"
+            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+            }`}>
+            Свайпи
+          </Button>
+        </Link>
+        <Link to="/events">
+          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/events")
+            ? "text-[#F37936] font-semibold dark: text-[#18B7A0]"
+            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+            }`}>
+            Події
+          </Button>
+        </Link>
+        <Link to="/messenger">
+          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/messenger")
+            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+            }`}>
+            Чати
+          </Button>
+        </Link>
+        <Link to="/me">
+          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/me")
+            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+            }`}>
+            Профіль
+          </Button>
+        </Link>
+      </nav>
 
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -151,6 +182,6 @@ export default function Header() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </header>
+    </header >
   );
 }
