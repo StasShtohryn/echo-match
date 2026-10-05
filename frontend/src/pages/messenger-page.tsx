@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/signalr"
-import { ArrowLeft, Check, CheckCheck, LoaderCircle, Send } from "lucide-react"
+import { ArrowLeft, Camera, Check, CheckCheck, FileText, ImageIcon, LoaderCircle, Paperclip, Send } from "lucide-react"
 import { Link, useParams } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BubbleReactions } from "@/components/ui/bubble"
+import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
 import {
   ContextMenu,
@@ -13,9 +13,15 @@ import {
   ContextMenuLabel,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Marker, MarkerContent } from "@/components/ui/marker"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Textarea } from "@/components/ui/textarea"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { useAuthStore } from "@/store/useAuthStore"
 import type { Match } from "@/types/match.types"
@@ -104,6 +110,7 @@ export default function MessengerPage() {
   const [chatError, setChatError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("connecting")
   const connectionRef = useRef<HubConnection | null>(null)
+  const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const selectedMatchIdRef = useRef(matchId)
   const partnerProfileIdRef = useRef<string | null>(null)
   const scrollToBottomRef = useRef(false)
@@ -144,6 +151,19 @@ export default function MessengerPage() {
   )
   const visibleMessages = loadedMatchId === matchId ? messages : []
 
+  const notifyTyping = useCallback((text: string) => {
+    if (!text.trim() || !matchId) return
+
+    const now = Date.now()
+    const connection = connectionRef.current
+    if (now - lastTypingSentAtRef.current < 1000 || connection?.state !== "Connected") return
+
+    lastTypingSentAtRef.current = now
+    void connection.invoke("Typing", matchId).catch((error: unknown) => {
+      setChatError(getApiErrorMessage(error, "Не вдалося надіслати статус набору тексту."))
+    })
+  }, [matchId])
+
   useEffect(() => {
     selectedMatchIdRef.current = matchId
     partnerProfileIdRef.current = selectedMatch?.partner.profileId ?? null
@@ -157,6 +177,43 @@ export default function MessengerPage() {
       })
     }
   }, [messages, loadedMatchId, matchId, isLoadingMessages])
+
+  useEffect(() => {
+    if (!matchId) return
+
+    function handleGlobalKeyDown(event: KeyboardEvent) {
+      const input = messageInputRef.current
+      if (
+        !input
+        || isSending
+        || event.defaultPrevented
+        || event.isComposing
+        || event.key.length !== 1
+        || event.ctrlKey
+        || event.metaKey
+        || event.altKey
+        || (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true'], [role='textbox']"))
+      ) return
+
+      event.preventDefault()
+      const start = input.selectionStart ?? input.value.length
+      const end = input.selectionEnd ?? start
+      const nextText = input.value.slice(0, start) + event.key + input.value.slice(end)
+      if (nextText.length <= input.maxLength) {
+        setMessageText(nextText)
+        notifyTyping(nextText)
+        requestAnimationFrame(() => {
+          input.focus()
+          input.setSelectionRange(start + event.key.length, start + event.key.length)
+        })
+      } else {
+        input.focus()
+      }
+    }
+
+    window.addEventListener("keydown", handleGlobalKeyDown)
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown)
+  }, [isSending, matchId, notifyTyping])
 
   const refreshMatches = useCallback(async () => {
     try {
@@ -440,19 +497,10 @@ export default function MessengerPage() {
     }
   }
 
-  function handleMessageInputChange(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleMessageInputChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
     const text = event.currentTarget.value
     setMessageText(text)
-    if (!text.trim() || !matchId) return
-
-    const now = Date.now()
-    const connection = connectionRef.current
-    if (now - lastTypingSentAtRef.current < 1000 || connection?.state !== "Connected") return
-
-    lastTypingSentAtRef.current = now
-    void connection.invoke("Typing", matchId).catch((error: unknown) => {
-      setChatError(getApiErrorMessage(error, "Не вдалося надіслати статус набору тексту."))
-    })
+    notifyTyping(text)
   }
 
   async function handleReaction(message: ChatMessage, reaction: ReactionType) {
@@ -576,13 +624,21 @@ export default function MessengerPage() {
                       <div className={`relative max-w-[min(78%,34rem)] ${reactions.length > 0 ? "mb-3" : ""}`}>
                         <ContextMenu>
                           <ContextMenuTrigger className="block w-fit max-w-full cursor-context-menu">
-                            <div className={`rounded-2xl px-4 py-2.5 shadow-sm ${message.isMine ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border bg-card"}`}>
-                              <p className="whitespace-pre-wrap break-words text-sm">{message.text}</p>
-                              <div className={`mt-1 flex items-center justify-end gap-1.5 text-[10px] ${message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
-                                {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
-                              </div>
-                            </div>
+                            <Bubble
+                              align={message.isMine ? "end" : "start"}
+                              variant={message.isMine ? "default" : "muted"}
+                              className="max-w-full"
+                            >
+                              <BubbleContent className={`rounded-2xl px-3 py-1.5 ${message.isMine ? "rounded-br-xs" : "rounded-bl-xs border-border bg-card text-card-foreground!"}`}>
+                                <div className="flex flex-wrap items-end justify-between gap-x-2.5 gap-y-0.5">
+                                  <p className="min-w-0 flex-1 whitespace-pre-wrap break-all text-[14px] leading-snug">{message.text}</p>
+                                  <div className={`ml-auto inline-flex shrink-0 select-none items-center gap-1 self-end text-[10px] tabular-nums ${message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                  <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
+                                  {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
+                                  </div>
+                                </div>
+                              </BubbleContent>
+                            </Bubble>
                           </ContextMenuTrigger>
                           <ContextMenuContent>
                             <ContextMenuGroup>
@@ -644,16 +700,52 @@ export default function MessengerPage() {
                 )}
               </div>
               <form onSubmit={(event) => void handleSendMessage(event)} className="flex w-full items-center gap-2 border-t border-border/70 p-3 md:px-6 md:py-4">
-                <Input
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 border-border bg-card shadow-sm hover:bg-muted"
+                        aria-label="Додати вкладення"
+                      >
+                        <Paperclip />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-52">
+                    <DropdownMenuItem>
+                      <ImageIcon />
+                      Зображення
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <FileText />
+                      Файл
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Camera />
+                      Камера
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Textarea
+                  ref={messageInputRef}
                   value={messageText}
                   onChange={handleMessageInputChange}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault()
+                      event.currentTarget.form?.requestSubmit()
+                    }
+                  }}
                   placeholder="Напишіть повідомлення..."
                   aria-label="Повідомлення"
                   maxLength={2000}
                   disabled={isSending}
-                  className="h-11 flex-1 rounded-full border-border bg-card px-4"
+                  className="min-h-10 max-h-32 flex-1 overflow-y-auto rounded-xl border-border bg-card px-3 py-2 text-sm shadow-sm"
                 />
-                <Button type="submit" size="icon" className="size-11 rounded-full" disabled={!messageText.trim() || isSending} aria-label="Надіслати повідомлення">
+                <Button type="submit" size="icon" className="h-10 w-10 shrink-0 shadow-sm" disabled={!messageText.trim() || isSending} aria-label="Надіслати повідомлення">
                   {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
                 </Button>
               </form>
