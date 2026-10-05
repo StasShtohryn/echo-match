@@ -69,7 +69,7 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
                             <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
                                 Ідеальна субота
                             </h2>
-                            <p className="font-[family-name:var(--font3)] text-xs leading-relaxed text-muted-foreground">
+                            <p className="text-xs leading-relaxed text-muted-foreground">
                                 {idealSaturday}
                             </p>
                         </div>
@@ -84,7 +84,7 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
                             <h2 className="mb-1 text-xs font-bold tracking-wider text-foreground uppercase">
                                 Шукаю
                             </h2>
-                            <p className="font-[family-name:var(--font3)] text-xs leading-relaxed text-muted-foreground">
+                            <p className="text-xs leading-relaxed text-muted-foreground">
                                 {lookingFor}
                             </p>
                         </div>

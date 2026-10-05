@@ -24,6 +24,7 @@ import { useTheme } from "@/components/theme-provider"
 import { getMyProfile, type MyProfile } from "@/services/auth-service";
 
 import logo from "@/media/logo.svg"
+import logoDark from "@/media/logo_dark.svg"
 import { useEffect, useState } from "react";
 
 
@@ -33,6 +34,37 @@ export default function Header() {
 
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const location = useLocation();
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+
+    if (theme === "dark") return true;
+    if (theme === "light") return false;
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  useEffect(() => {
+    const updateDarkMode = () => {
+      const shouldUseDarkMode =
+        theme === "dark" ||
+        (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+      setIsDarkMode(shouldUseDarkMode);
+    };
+
+    updateDarkMode();
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => updateDarkMode();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, [theme]);
 
   useEffect(() => {
     let isMounted = true;
@@ -71,7 +103,7 @@ export default function Header() {
       <Link to="/" className="flex items-center gap-2 text-[16px] font-medium">
         <div className="flex">
           <img
-            src={logo}
+            src={isDarkMode ? logoDark : logo}
             alt="EchoMatch Logo"
             className="h-10 w-auto object-contain"
           />

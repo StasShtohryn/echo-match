@@ -109,12 +109,12 @@ export default function HomePage() {
 
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
       <FilterMatchPanel matches={matches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
-      <main className="flex min-h-0 flex-1 items-center justify-center bg-muted/20 p-4">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-between overflow-hidden bg-muted/20 px-2 py-4">
         {showStatus ? (
-          <div className="font-[family-name:var(--font-family)] flex max-w-sm flex-col items-center gap-4 text-center">
-            <h2 className="font-[family-name:var(--font-family)] text-xl font-semibold">{isLoading ? "Завантаження..." : currentStatus.title}</h2>
+          <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+            <h2 className="text-xl font-semibold">{isLoading ? "Завантаження..." : currentStatus.title}</h2>
             {!isLoading && <p className="text-sm text-muted-foreground">{currentStatus.description}</p>}
             {!isLoading && currentStatus.action && <Button onClick={() => navigate(status === "PhotoRequired" ? "/me" : "/settings")}>{currentStatus.action}</Button>}
             {/* {error && <p className="text-sm text-destructive">{getApiErrorMessage(error, "Не вдалося завантажити анкети.")}</p>} */}

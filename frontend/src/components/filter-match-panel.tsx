@@ -31,7 +31,7 @@ export function FilterMatchPanel({
   const viewportRef = useRef<HTMLDivElement>(null)
 
   return (
-    <ScrollArea viewportRef={viewportRef} className="flex h-screen w-80 shrink-0 flex-col border-r border-border/80 bg-card/55 p-5 select-none font-rounded">
+    <ScrollArea viewportRef={viewportRef} className="flex h-screen w-80 shrink-0 flex-col border-r border-border/80 bg-card/55 p-5 select-none">
       <Accordion
         defaultValue={["filters"]}
         className="w-full overflow-visible rounded-none border-0"
