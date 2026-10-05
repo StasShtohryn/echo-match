@@ -38,9 +38,6 @@
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap');
 
 :root {
-  --font-family: 'M PLUS 1p', sans-serif;
-  --font3: 'M PLUS Rounded 1c', sans-serif;
-
   --background: #FFF6EE;
   --foreground: oklch(0.28 0.055 240);
   --card: oklch(1 0 0);
@@ -110,7 +107,7 @@
 }
 
 @theme inline {
-  --font-sans: 'Instrument Sans Variable', sans-serif;
+  --font-sans: 'M PLUS Rounded 1c', sans-serif;
   --font-heading: 'Instrument Serif', serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -152,11 +149,6 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --font-serif: 'Playfair Display Variable', serif;
 }
-
-.font-rounded {
-  font-family: var(--font3) !important;
-}
-
 
 @layer base {
   * {
