@@ -60,7 +60,7 @@ export default function Header() {
 
 
   return (
-    <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none font-rounded ">
+    <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none">
       <Link to="/" className="flex items-center gap-2 text-[16px] font-medium">
         <div className="flex">
           <img

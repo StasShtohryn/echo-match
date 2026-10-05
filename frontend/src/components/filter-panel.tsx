@@ -125,7 +125,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
           onChange={handleMinInputChange}
           onBlur={handleMinBlur}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          className="font-[family-name:var(--font3)] w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+          className="w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         />
 
         {/* Максимальний вік */}
@@ -136,7 +136,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
           onChange={handleMaxInputChange}
           onBlur={handleMaxBlur}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          className="font-[family-name:var(--font3)] w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+          className="w-20 rounded-xl border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         />
       </div>
 
@@ -172,7 +172,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
         Максимальна відстань, км
       </label>
 
-      <div className="font-[family-name:var(--font3)] flex items-center gap-2 text-xs text-muted-foreground select-none">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground select-none">
         <Checkbox
           id="unlimitedDistance"
           checked={maxDistanceKm === null}

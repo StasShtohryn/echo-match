@@ -217,7 +217,7 @@ export default function ProfileEditPage() {
   if (!profile || !lookups) return <div className="container mx-auto px-4 py-8">Профіль недоступний.</div>
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col font-rounded">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col">
       <ScrollArea className="h-full min-h-0 flex-1 px-4">
         <main className="space-y-6 py-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
