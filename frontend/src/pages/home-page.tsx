@@ -111,9 +111,9 @@ export default function HomePage() {
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
       <FilterMatchPanel matches={matches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-between overflow-hidden bg-muted/20 px-2 py-4">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-between overflow-hidden bg-muted/20 px-2 py-4">
         {showStatus ? (
-          <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+          <div className="flex max-w-sm flex-1 flex-col justify-center items-center gap-4 text-center">
             <h2 className="text-xl font-semibold">{isLoading ? "Завантаження..." : currentStatus.title}</h2>
             {!isLoading && <p className="text-sm text-muted-foreground">{currentStatus.description}</p>}
             {!isLoading && currentStatus.action && <Button onClick={() => navigate(status === "PhotoRequired" ? "/me" : "/settings")}>{currentStatus.action}</Button>}
@@ -128,7 +128,7 @@ export default function HomePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-sm space-y-4 rounded-2xl bg-background p-6 outline text-center shadow-xl">
             <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-              <Heart className="size-8" fill="red" color="pink"/>
+              <Heart className="size-8" fill="red" color="pink" />
             </div>
             <h2 className="font-heading text-2xl font-bold">У вас метч!</h2>
             <p className="text-xs text-muted-foreground">Ви сподобалися одне одному.</p>

@@ -113,7 +113,7 @@ export default function Header() {
       <nav className="flex justify-between gap-10 ">
         <Link to="/">
           <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/")
-            ? "text-[#F37936] font-semibold dark: text-[#18B7A0]"
+            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
             : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
             }`}>
             Свайпи
@@ -121,7 +121,7 @@ export default function Header() {
         </Link>
         <Link to="/events">
           <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/events")
-            ? "text-[#F37936] font-semibold dark: text-[#18B7A0]"
+            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
             : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
             }`}>
             Події

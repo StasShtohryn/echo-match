@@ -40,6 +40,7 @@ import {
   type ChatTypingEvent,
   type ReactionType,
 } from "@/services/message-service"
+import { Input } from "@base-ui/react/input"
 
 const PAGE_SIZE = 30
 const REACTION_OPTIONS: { type: ReactionType; emoji: string; label: string }[] = [
@@ -646,8 +647,8 @@ export default function MessengerPage() {
                                 <div className="flex flex-wrap items-end justify-between gap-x-2.5 gap-y-0.5">
                                   <p className="min-w-0 flex-1 whitespace-pre-wrap break-all text-[14px] leading-snug">{message.text}</p>
                                   <div className={`ml-auto inline-flex shrink-0 select-none items-center gap-1 self-end text-[10px] tabular-nums ${message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                  <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
-                                  {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
+                                    <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
+                                    {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
                                   </div>
                                 </div>
                               </BubbleContent>
@@ -713,9 +714,6 @@ export default function MessengerPage() {
                 )}
               </div>
               <form onSubmit={(event) => void handleSendMessage(event)} className="flex w-full items-center gap-2 border-t border-border/70 p-3 md:px-6 md:py-4">
-                <Input
-                  ref={inputRef}
-                  autoFocus
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
@@ -745,7 +743,9 @@ export default function MessengerPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
                 <Textarea
+                  autoFocus
                   ref={messageInputRef}
                   value={messageText}
                   onChange={handleMessageInputChange}
@@ -766,6 +766,7 @@ export default function MessengerPage() {
                 </Button>
               </form>
             </div>
+
           </>
         ) : matchId ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">

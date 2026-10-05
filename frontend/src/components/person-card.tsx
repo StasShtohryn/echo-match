@@ -117,9 +117,9 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
   const cardRotation = Math.max(-12, Math.min(12, dragOffset / 18))
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full max-h-[calc(100vh-100px)] w-full max-w-[360px] flex-col gap-4 justify-between py-1 select-none">
       <Card
-        className="relative mx-auto w-95 max-w-sm touch-pan-y overflow-hidden pt-0 select-none"
+        className="relative flex flex-1 flex-col touch-pan-y overflow-hidden pt-0 select-none"
         style={{
           transform: `translateX(${dragOffset}px) rotate(${cardRotation}deg)`,
           transition: dragStart.current === null ? "transform 220ms ease-out" : "none",
@@ -132,13 +132,13 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
       >
         <div className="absolute z-30" />
         {photos.length > 0 ? (
-          <Carousel opts={{ loop: photos.length > 1 }} className="w-full">
-            <CarouselContent className="ml-0">
+          <Carousel opts={{ loop: photos.length > 1 }} className="relative w-full aspect-[7/6] max-h-[380px] shrink-0 overflow-hidden">
+            <CarouselContent className="ml-0 h-full">
               {photos.map((photo, index) => (
-                <CarouselItem key={photo.id} className="pl-0">
+                <CarouselItem key={photo.id} className="h-full pl-0">
                   <button
                     type="button"
-                    className="block w-full cursor-zoom-in"
+                    className="block size-full cursor-zoom-in"
                     aria-label={`Збільшити фото ${index + 1} профілю ${profile.displayName}`}
                     onClick={() => {
                       setLightboxCurrentIndex(index)
@@ -148,7 +148,7 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
                     <img
                       src={photo.url}
                       alt={`${profile.displayName}, фото ${index + 1}`}
-                      className="h-90 w-full object-cover"
+                      className="size-full object-cover object-[center_65%]"
                     />
                   </button>
                 </CarouselItem>
@@ -156,15 +156,17 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
             </CarouselContent>
             {photos.length > 1 && (
               <>
-                <CarouselPrevious className="left-2 backdrop-blur-lg" />
-                <CarouselNext className="right-2 backdrop-blur-lg" />
+                <CarouselPrevious className="left-2 size-8 backdrop-blur-lg" />
+                <CarouselNext className="right-2 size-8 backdrop-blur-lg" />
               </>
             )}
           </Carousel>
-        ) : <div className="relative z-20 flex h-60 w-full items-center justify-center bg-muted text-5xl font-bold text-muted-foreground">
+        ) : <div className="relative z-20 flex flex-1 min-h-40 w-full items-center justify-center bg-muted text-5xl font-bold text-muted-foreground">
           {profile.displayName.charAt(0)}
         </div>}
-        <CardHeader>
+
+
+        <CardHeader className="shrink-0 px-4 pt-2.5 pb-1">
           <CardAction>
             {profile.isFaceVerified ? (
               <Tooltip>
@@ -180,8 +182,9 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
             ) : (
               ""
             )}
-
           </CardAction>
+
+
           <CardTitle>
             <p className="text-2xl">{profile.displayName}, {profile.age}</p>
             <p className="text-md text-muted-foreground">{candidate.distanceKm === null ? "Відстань не вказана" : `${candidate.distanceKm} км від вас`}</p>
@@ -196,6 +199,9 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
           ))}
         </CardFooter>
       </Card>
+
+
+
       <div className="flex flex-row gap-4 justify-center items-center" >
         <Card className="flex flex-row items-center gap-4 py-2 px-7">
           <Button variant={"outline"} size={"icon-lg"} className="h-11 w-11 cursor-pointer" disabled>
