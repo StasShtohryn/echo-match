@@ -36,5 +36,13 @@ namespace EchoMatch.Api.Services
                 .Group(ChatHub.GroupFor(reaction.MatchId))
                 .SendAsync("ReactionChanged", reaction, cancellationToken);
         }
+
+        public Task UnmatchedAsync(ChatUnmatchedEvent unmatched, CancellationToken cancellationToken)
+        {
+            // Остання подія цієї групи: після неї метчу не існує
+            return _hub.Clients
+                .Group(ChatHub.GroupFor(unmatched.MatchId))
+                .SendAsync("Unmatched", unmatched, cancellationToken);
+        }
     }
 }

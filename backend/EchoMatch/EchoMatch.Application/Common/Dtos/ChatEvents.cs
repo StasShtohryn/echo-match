@@ -18,4 +18,7 @@ namespace EchoMatch.Application.Common.Dtos
 
     // Type == null означає, що реакцію зняли
     public record ChatReactionEvent(Guid MatchId, Guid MessageId, Guid ProfileId, ReactionType? Type);
+
+    // ProfileId — хто розірвав; другий учасник має закрити відкриту розмову
+    public record ChatUnmatchedEvent(Guid MatchId, Guid ProfileId);
 }

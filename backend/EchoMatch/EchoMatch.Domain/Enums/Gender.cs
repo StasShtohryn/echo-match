@@ -61,3 +61,7 @@ public enum SwipeDirection { Like, Dislike }
 public enum ProfileReadiness { Ready, Hidden, PhotoRequired, PreferencesRequired }
 
 public enum ReactionType { Heart, Laugh, Wow, Sad, Like, Fire }
+
+public enum AiSuggestionKind { FirstMessage, Reply, Rewrite, Grammar }
+
+public enum MessageTone { Friendly, Playful, Flirty, Sincere }
