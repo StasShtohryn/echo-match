@@ -46,6 +46,24 @@ namespace EchoMatch.Domain.Entities
             profileId == ProfileOneId || profileId == ProfileTwoId;
 
 
+        // Фраза про сумісність, згенерована один раз на метч: обом учасникам
+        // показується та сама, бо перетин інтересів симетричний
+        public string? CompatibilitySummary { get; private set; }
+
+        public void SetCompatibilitySummary(string summary)
+        {
+            CompatibilitySummary = summary;
+        }
+
+        // Розрив: рядок лишається в базі, але перестає враховуватись — метч
+        // зникає зі списків, а листування стає недоступним разом із ним.
+        // Свайпи при цьому чинні, тож пара більше не побачить одне одного
+        public void Unmatch(DateTime utcNow)
+        {
+            IsDeleted = true;
+            DeletedAt = utcNow;
+        }
+
         public DateTime? LastReadAtBy(Guid profileId) =>
     profileId == ProfileOneId ? ProfileOneLastReadAt : ProfileTwoLastReadAt;
 

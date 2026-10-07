@@ -10,5 +10,6 @@ namespace EchoMatch.Application.Common.Interfaces
 
         Task MessagesReadAsync(ChatReadEvent read, CancellationToken cancellationToken);
         Task ReactionChangedAsync(ChatReactionEvent reaction, CancellationToken cancellationToken);
+        Task UnmatchedAsync(ChatUnmatchedEvent unmatched, CancellationToken cancellationToken);
     }
 }
