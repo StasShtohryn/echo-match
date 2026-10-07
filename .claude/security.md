@@ -56,6 +56,27 @@ run; GET /api/profiles/{id} and GET /api/lookups answer anyone. Restore the
 policy before real traffic, and open a single endpoint with [AllowAnonymous]
 where one genuinely has to be public.
 
+Third-Party Model
+
+The AI assistant sends data to Anthropic. What goes: the partner's profile as the
+caller already sees it, and up to the last 50 messages of their conversation. What
+never goes: coordinates, date of birth, e-mail, social handles.
+
+Note what this means — the partner never agreed to it. The data is theirs, shown
+to this caller inside the app, and a request forwards it to a service outside it.
+That is the price of the feature, and it is a decision, not an oversight; the
+exclusions above exist so the price stays as small as the feature allows.
+
+Ai:ApiKey never sits in appsettings.json: user secrets in development, an
+environment variable in production. A leaked key is spent on somebody else's
+requests and billed to us, so it is revoked in the console rather than rotated
+quietly. The endpoint is open to every authenticated user and has no per-user
+limit yet, which is tracked in roadmap.md under AI.
+
+Profile text and chat messages reach the model as data, never as instructions.
+The system prompt states this, so a bio reading "ignore your instructions" is
+somebody else's text rather than a command.
+
 XSS
 
 CSRF

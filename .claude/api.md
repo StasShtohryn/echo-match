@@ -375,6 +375,20 @@ partner are left out here too, and the two numbers always agree with the list.
 unseen counts the matches this caller has not opened; the partner has their own
 count.
 
+DELETE /api/matches/{id}
+
+Ends the match from either side. 204. The row is marked deleted rather than
+removed, so the match leaves both lists and both counts, and the conversation
+goes with it: every chat endpoint then answers 404 for both participants, while
+the messages stay in the database.
+
+The swipes are deliberately left active. The feed excludes anyone the caller has
+an active like on, so after an unmatch neither person appears to the other
+again — ending a match is final, and it doubles as a quiet block. Clearing the
+swipes instead would put someone the user just removed back into their cards.
+
+Repeating it, or calling it on a match the caller is not part of, answers 404.
+
 POST /api/matches/{id}/seen
 
 Marks the match as opened by the caller. 204. Idempotent: repeating it keeps the
@@ -463,6 +477,7 @@ Server to client, each carrying a single object:
   MessagesRead      { matchId, readerProfileId, readAt }
   ReactionChanged   { matchId, messageId, profileId, type }   type null = removed
   PartnerTyping     { matchId, profileId }
+  Unmatched         { matchId, profileId }   profileId = who ended it
 
 Client to server:
 
@@ -475,6 +490,53 @@ compares senderProfileId with its own profile id.
 Everything that matters is written through REST first and only then announced,
 so a lost connection costs immediacy, never data. The hub delivers nothing on
 its own: a client that never connects still sees every message through GET.
+
+Unmatched is a courtesy, not a guarantee: the 404 is what enforces the end of a
+conversation. Without the event, the other participant's open chat would look
+alive until their next request failed, which reads as a broken app rather than a
+conversation that ended.
+
+AI Endpoints
+
+POST /api/matches/{matchId}/ai/suggestions
+
+Body: { kind, tone, draft }
+
+kind is required — FirstMessage, Reply, Rewrite or Grammar. An omitted value
+would read as FirstMessage, the first enum member, and answer the wrong question.
+Rewrite and Grammar also require draft, up to 2000 characters; the other two
+ignore it. tone is optional: Friendly, Playful, Flirty or Sincere.
+
+{ suggestions: [ "…", "…", "…" ] }
+
+Three variants, deliberately different in approach rather than three rewordings
+of one. The server keeps nothing: the suggestion exists while the client shows
+it, and sending it is a separate ordinary POST, so the assistant can never send
+anything on the user's behalf.
+
+Context sent to the model: the partner's profile as this caller already sees it
+and up to the last 50 messages. Coordinates, date of birth, e-mail and social
+handles are never included, and the history is capped because the whole of it
+would neither fit the context window nor be worth paying for on every call.
+
+400  no kind, unknown tone, Rewrite or Grammar without a draft
+404  no profile, or a match the caller is not part of
+503  the model refused or was unreachable — AiUnavailableException
+
+GET /api/matches/{id}/compatibility
+
+{ sharedInterests: [...], sharedLanguages: [...], sharedGoal, distanceKm,
+  summary }
+
+The overlaps are computed from the database; the model only turns them into one
+sentence. That sentence is stored on the match, so both participants read the
+same line and reopening the screen costs no request. A profile edited afterwards
+leaves the line slightly stale, which is the price of not regenerating it.
+
+distanceKm follows the feed's rule — whole kilometres, never below one. The
+percentage in the feed is the client's own calculation and is unrelated to this.
+
+404  a match the caller is not part of, or one already ended
 
 Development Endpoints
 

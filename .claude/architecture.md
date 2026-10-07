@@ -82,6 +82,25 @@ than a person, and both participants receive the same call. Membership lives in
 the memory of one process, which is what a backplane would have to replace
 before a second instance is started.
 
+AI Assistant
+
+The same shape as SignalR, for the same reason. Application depends on
+IAiAssistant and knows only that something turns a context into text;
+Infrastructure holds ClaudeAiAssistant, the SDK client, the prompts and the
+parsing of what comes back.
+
+    Handler ──► IAiAssistant ──► ClaudeAiAssistant ──► Anthropic SDK ──► model
+    (Application)  (Application)    (Infrastructure)
+
+What the model is asked stays in Infrastructure; what the model is asked *about*
+is assembled by the handler, which decides what may leave the server. The split
+matters when it is time to argue about privacy: there is one file to read.
+
+Arithmetic is never delegated to the model. Compatibility overlaps are computed
+from the database and the model only phrases them, because a number a model
+invents is not reproducible, not comparable between pairs, and cannot be
+explained to the person it describes.
+
 Principles
 
 Business logic never belongs inside Controllers.

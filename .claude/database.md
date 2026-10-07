@@ -229,6 +229,17 @@ Match
   null while it is still new for that side. Two columns rather than one flag,
   because a match is shared but being seen is not. Set only through
   Match.MarkSeenBy, which keeps the first time (??=) and rejects outsiders.
+  CompatibilitySummary: the one sentence the model writes about what the pair has
+  in common, generated on the first request for that match and reused after. One
+  column rather than one per participant, because the overlaps are symmetric and
+  the wording addresses both. It goes stale if a profile changes later, which is
+  the price of not regenerating it on every open.
+  Unmatch marks the row deleted (Match.Unmatch), which hides the match and its
+  whole conversation behind the query filter while the messages stay. The swipes
+  are left active on purpose: the feed excludes anyone with an active like, so
+  the pair never resurfaces to each other. The filtered unique index would still
+  allow a fresh match for that pair, which is what makes the rule a property of
+  the swipes rather than of the schema.
   ProfileOneLastReadAt, ProfileTwoLastReadAt: how far each side has read the
   conversation. One mark per participant instead of a flag on every message —
   enough for both the read ticks and an unread count, and it costs one write per

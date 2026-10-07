@@ -12,6 +12,9 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
 
             builder.HasKey(m => m.Id);
 
+            builder.Property(m => m.CompatibilitySummary)
+                .HasMaxLength(300);
+
             builder.HasOne(m => m.ProfileOne)
                 .WithMany()
                 .HasForeignKey(m => m.ProfileOneId)

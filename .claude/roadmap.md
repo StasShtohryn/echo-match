@@ -85,8 +85,8 @@ impressions.
 - [x] Matches list (new until each side opens it)
 - [x] Match counts for a badge (total and unseen, one aggregate query)
 - [x] Undo a swipe (soft delete frees the pair; refused once the pair matched)
-- [ ] Unmatch — ending a match the pair already has. Needed before chat, since
-      a conversation must be closable from either side.
+- [x] Unmatch (soft delete; the conversation goes 404 for both, swipes stay
+      active so the pair never resurfaces in each other's feed)
 
 ---
 
@@ -107,7 +107,6 @@ impressions.
 - [ ] Backplane (Redis or Azure SignalR) before running more than one instance:
       groups live in the memory of one process
 - [ ] Delivered Status
-- [ ] Typing Indicator
 - [ ] Notifications
 
 ---
@@ -125,10 +124,18 @@ impressions.
 
 ## AI
 
-- [ ] Generate First Message
-- [ ] Rewrite Message
-- [ ] Continue Conversation
-- [ ] Tone Adjustment
+- [x] Generate First Message
+- [x] Rewrite Message
+- [x] Continue Conversation
+- [x] Tone Adjustment
+- [x] Grammar fix (same endpoint, kind = Grammar)
+- [x] Compatibility sentence on the match screen (overlaps computed here, the
+      model only phrases them; stored on the match and reused)
+- [ ] Daily per-user limit on AI calls. The key is ours and the endpoint is
+      open to every authenticated user; a counter per user per day would cap
+      what a loop in a client can spend.
+- [ ] Move the compatibility percentage from the client to the server, so the
+      app shows one number and it cannot be edited from a browser console.
 
 ---
 
@@ -147,6 +154,6 @@ impressions.
 - [ ] SQL Server
 - [ ] HTTPS
 - [ ] CI/CD
-- [ ] Restore the authorization FallbackPolicy, disabled in commit 863a556.
+- [x] Authorization FallbackPolicy restored in commit f49e627.
 - [ ] Before a public launch: remove /api/dev/seed and turn off public Swagger.
       Both are open without login on purpose while the app has no real users.
