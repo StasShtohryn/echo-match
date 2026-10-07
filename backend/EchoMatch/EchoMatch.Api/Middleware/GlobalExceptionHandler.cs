@@ -27,6 +27,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             NotFoundException => (StatusCodes.Status404NotFound, "Not found", true),
             ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden", true),
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized", true),
+            AiUnavailableException => (StatusCodes.Status503ServiceUnavailable, "AI assistant unavailable", true),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", false)
         };
 
