@@ -117,9 +117,9 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
   const cardRotation = Math.max(-12, Math.min(12, dragOffset / 18))
 
   return (
-    <div className="flex h-full max-h-[calc(100vh-100px)] w-full max-w-[360px] flex-col gap-4 justify-between py-1 select-none">
+    <div className="my-auto flex w-full max-w-[360px] shrink-0 flex-col gap-4 py-1 select-none">
       <Card
-        className="relative flex flex-1 flex-col touch-pan-y overflow-hidden pt-0 select-none"
+        className="relative flex flex-col touch-pan-y overflow-hidden pt-0 select-none"
         style={{
           transform: `translateX(${dragOffset}px) rotate(${cardRotation}deg)`,
           transition: dragStart.current === null ? "transform 220ms ease-out" : "none",
@@ -132,7 +132,7 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
       >
         <div className="absolute z-30" />
         {photos.length > 0 ? (
-          <Carousel opts={{ loop: photos.length > 1 }} className="relative w-full aspect-[7/6] max-h-[380px] shrink-0 overflow-hidden">
+          <Carousel opts={{ loop: photos.length > 1 }} className="relative w-full aspect-[7/6] max-h-[min(380px,max(120px,calc(100dvh-24rem)))] shrink-0 overflow-hidden">
             <CarouselContent className="ml-0 h-full">
               {photos.map((photo, index) => (
                 <CarouselItem key={photo.id} className="h-full pl-0">
@@ -161,12 +161,12 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
               </>
             )}
           </Carousel>
-        ) : <div className="relative z-20 flex flex-1 min-h-40 w-full items-center justify-center bg-muted text-5xl font-bold text-muted-foreground">
+        ) : <div className="relative z-20 flex aspect-[7/6] max-h-[min(380px,max(120px,calc(100dvh-24rem)))] w-full shrink-0 items-center justify-center bg-muted text-5xl font-bold text-muted-foreground">
           {profile.displayName.charAt(0)}
         </div>}
 
 
-        <CardHeader className="shrink-0 px-4 pt-2.5 pb-1">
+        <CardHeader className="shrink-0">
           <CardAction>
             {profile.isFaceVerified ? (
               <Tooltip>
@@ -203,7 +203,7 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
 
 
       <div className="flex flex-row gap-4 justify-center items-center" >
-        <Card className="flex flex-row items-center gap-4 py-2 px-7">
+        <Card className="flex flex-row items-center gap-4 py-2 px-2">
           <Button variant={"outline"} size={"icon-lg"} className="h-11 w-11 cursor-pointer" disabled>
             <Undo2 />
           </Button>
@@ -283,4 +283,3 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
     </div>
   )
 }
-

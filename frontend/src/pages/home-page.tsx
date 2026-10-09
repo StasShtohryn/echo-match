@@ -111,7 +111,7 @@ export default function HomePage() {
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
       <FilterMatchPanel matches={matches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-between overflow-hidden bg-muted/20 px-2 py-4">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto bg-muted/20 px-2 py-4">
         {showStatus ? (
           <div className="flex max-w-sm flex-1 flex-col justify-center items-center gap-4 text-center">
             <h2 className="text-xl font-semibold">{isLoading ? "Завантаження..." : currentStatus.title}</h2>
