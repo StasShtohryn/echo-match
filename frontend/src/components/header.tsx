@@ -1,4 +1,4 @@
-import { BellIcon, Heart, LogOutIcon, Settings, User } from "lucide-react";
+import { BellIcon, LogOutIcon, Monitor, Moon, Settings, Sun, User } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -10,44 +10,163 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useTheme } from "@/components/theme-provider"
+import { getMyProfile, type MyProfile } from "@/services/auth-service";
+
+import logo from "@/media/logo.svg"
+import logoDark from "@/media/logo_dark.svg"
+import { useEffect, useState } from "react";
+
 
 export default function Header() {
   const { user, logout } = useAuthStore();
+  const { theme, setTheme } = useTheme()
+
+  const [profile, setProfile] = useState<MyProfile | null>(null);
+  const location = useLocation();
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+
+    if (theme === "dark") return true;
+    if (theme === "light") return false;
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  useEffect(() => {
+    const updateDarkMode = () => {
+      const shouldUseDarkMode =
+        theme === "dark" ||
+        (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+      setIsDarkMode(shouldUseDarkMode);
+    };
+
+    updateDarkMode();
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => updateDarkMode();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, [theme]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadUserData() {
+      try {
+        const data = await getMyProfile();
+        if (isMounted && data) {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error("Не вдалося завантажити профіль у хедері:", error);
+      }
+    }
+
+    if (user) {
+      void loadUserData();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const displayName = profile?.displayName ?? user?.name ?? "Користувач";
+  const userAge = profile?.age;
+
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
 
   return (
     <header className="flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 dark:border-blue-100/30 bg-card/55 backdrop-blur-lg px-4 py-3 shadow-none">
       <Link to="/" className="flex items-center gap-2 text-[16px] font-medium">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Heart className="size-4" />
+        <div className="flex">
+          <img
+            src={isDarkMode ? logoDark : logo}
+            alt="EchoMatch Logo"
+            className="h-10 w-auto object-contain"
+          />
         </div>
-        EchoMatch
       </Link>
 
-      <Link to="/messenger">
-        <Button variant="link" className="cursor-pointer">
-          Месенджер
-        </Button>
-      </Link>
+      <nav className="flex justify-between gap-10 ">
+        <Link to="/">
+          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/")
+            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+            }`}>
+            Свайпи
+          </Button>
+        </Link>
+        <Link to="/events">
+          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/events")
+            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+            }`}>
+            Події
+          </Button>
+        </Link>
+        <Link to="/messenger">
+          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/messenger")
+            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+            }`}>
+            Чати
+          </Button>
+        </Link>
+        <Link to="/me">
+          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/me")
+            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+            }`}>
+            Профіль
+          </Button>
+        </Link>
+      </nav>
 
       <DropdownMenu>
         <DropdownMenuTrigger
+          nativeButton={false}
           render={
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar className="h-10 w-10 cursor-pointer">
+            <div className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-85">
+              <span className="text-sm font-bold">
+                {displayName}
+                {userAge !== undefined && `, ${userAge}`}
+              </span>
+
+              <Avatar className="size-10 border border-[#F3DDD0]">
                 <AvatarImage
-                  src={user?.picture ?? undefined}
-                  alt={user?.name ?? user?.email ?? "User"}
+                  src={profile?.photos?.[0]?.url ?? user?.picture ?? undefined}
+                  alt={displayName}
+                  className="object-cover"
                 />
-                <AvatarFallback>
-                  {(user?.name ?? user?.email ?? "ME").slice(0, 2).toUpperCase()}
+                <AvatarFallback className="bg-[#FAF7F2] font-bold text-[#F37936]">
+                  {displayName.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-            </Button>
+            </div>
+
           }
         />
         <DropdownMenuContent align="center" className="min-w-max">
@@ -64,7 +183,7 @@ export default function Header() {
                 Профіль
               </DropdownMenuItem>
             </Link>
-            <Link to="/">
+            <Link to="/me/edit">
               <DropdownMenuItem className="cursor-pointer">
                 <Settings />
                 Налаштування
@@ -72,12 +191,29 @@ export default function Header() {
             </Link>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              {theme === "dark" ? <Moon /> : theme === "system" ? <Monitor /> : <Sun />}
+              Тема
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuRadioGroup
+                value={theme}
+                onValueChange={(value) => setTheme(value as typeof theme)}
+              >
+                <DropdownMenuRadioItem value="light">Світла</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="dark">Темна</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="system">Системна</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">
             <LogOutIcon />
             Вийти
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </header>
+    </header >
   );
 }

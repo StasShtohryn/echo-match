@@ -71,6 +71,7 @@ function emptyForm(): UpdateProfileRequest {
     familyPlans: null,
     communication: null,
     loveLanguage: null,
+    city: null,
     pets: null,
     drinking: null,
     smoking: null,
@@ -94,6 +95,7 @@ function formFromProfile(profile: MyProfile): UpdateProfileRequest {
     familyPlans: profile.familyPlans,
     communication: profile.communication,
     loveLanguage: profile.loveLanguage,
+    city: profile.city,
     pets: profile.pets,
     drinking: profile.drinking,
     smoking: profile.smoking,
@@ -218,29 +220,29 @@ export default function ProfileEditPage() {
     <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col">
       <ScrollArea className="h-full min-h-0 flex-1 px-4">
         <main className="space-y-6 py-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/me")}><ArrowLeft className="mr-2 size-4" />Назад</Button>
-          <h1 className="mt-3 text-3xl font-semibold">Редагування профілю</h1>
-        </div>
-        <Button onClick={() => void save()} disabled={isSaving}><Save className="mr-2 size-4" />{isSaving ? "Зберігаємо..." : "Зберегти"}</Button>
-      </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/me")}><ArrowLeft className="mr-2 size-4" />Назад</Button>
+              <h1 className="mt-3 text-3xl font-semibold">Редагування профілю</h1>
+            </div>
+            <Button onClick={() => void save()} disabled={isSaving}><Save className="mr-2 size-4" />{isSaving ? "Зберігаємо..." : "Зберегти"}</Button>
+          </div>
 
-      <Card><CardHeader><CardTitle>Про вас</CardTitle></CardHeader><CardContent><FieldGroup className="grid gap-4 md:grid-cols-2">
-        {profileFields.map(({ key, label, type }) => <Field key={key}><FieldLabel htmlFor={key}>{label}</FieldLabel>{type === "textarea" ? <Textarea id={key} value={form[key] ?? ""} onChange={(event) => updateField(key, event.target.value)} maxLength={500} /> : <Input id={key} value={form[key] ?? ""} onChange={(event) => updateField(key, event.target.value)} />}</Field>)}
-        <Field><FieldLabel htmlFor="heightCm">Зріст, см</FieldLabel><Input id="heightCm" type="number" min={120} max={250} value={form.heightCm ?? ""} onChange={(event) => setForm((current) => ({ ...current, heightCm: event.target.value ? Number(event.target.value) : null }))} /></Field>
-      </FieldGroup></CardContent></Card>
+          <Card><CardHeader><CardTitle>Про вас</CardTitle></CardHeader><CardContent><FieldGroup className="grid gap-4 md:grid-cols-2">
+            {profileFields.map(({ key, label, type }) => <Field key={key}><FieldLabel htmlFor={key}>{label}</FieldLabel>{type === "textarea" ? <Textarea id={key} value={form[key] ?? ""} onChange={(event) => updateField(key, event.target.value)} maxLength={500} /> : <Input id={key} value={form[key] ?? ""} onChange={(event) => updateField(key, event.target.value)} />}</Field>)}
+            <Field><FieldLabel htmlFor="heightCm">Зріст, см</FieldLabel><Input id="heightCm" type="number" min={120} max={250} value={form.heightCm ?? ""} onChange={(event) => setForm((current) => ({ ...current, heightCm: event.target.value ? Number(event.target.value) : null }))} /></Field>
+          </FieldGroup></CardContent></Card>
 
-      <Card><CardHeader><CardTitle>Вподобання анкети</CardTitle></CardHeader><CardContent><FieldGroup className="grid gap-4 md:grid-cols-2">
-        {enumFields.map(({ key, label, optionKey }) => <Field key={key}><FieldLabel htmlFor={key}>{label}</FieldLabel><select id={key} className="h-9 rounded-2xl border border-transparent bg-input/50 px-3 text-sm" value={form[key] ?? ""} onChange={(event) => updateField(key, event.target.value)}><option value="">Не вказано</option>{(lookups.options[optionKey] ?? []).map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>)}
-      </FieldGroup></CardContent></Card>
+          <Card><CardHeader><CardTitle>Вподобання анкети</CardTitle></CardHeader><CardContent><FieldGroup className="grid gap-4 md:grid-cols-2">
+            {enumFields.map(({ key, label, optionKey }) => <Field key={key}><FieldLabel htmlFor={key}>{label}</FieldLabel><select id={key} className="h-9 rounded-2xl border border-transparent bg-input/50 px-3 text-sm" value={form[key] ?? ""} onChange={(event) => updateField(key, event.target.value)}><option value="">Не вказано</option>{(lookups.options[optionKey] ?? []).map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>)}
+          </FieldGroup></CardContent></Card>
 
-      <Card><CardHeader><CardTitle>Інтереси та мови</CardTitle></CardHeader><CardContent className="grid gap-6 md:grid-cols-2"><ChoiceList title="Інтереси, до 5" items={lookups.interests} selected={interestIds} onToggle={(id) => toggleId(interestIds, id, 5, setInterestIds)} /><ChoiceList title="Мови, до 10" items={lookups.languages} selected={languageIds} onToggle={(id) => toggleId(languageIds, id, 10, setLanguageIds)} /></CardContent></Card>
+          <Card><CardHeader><CardTitle>Інтереси та мови</CardTitle></CardHeader><CardContent className="grid gap-6 md:grid-cols-2"><ChoiceList title="Інтереси, до 5" items={lookups.interests} selected={interestIds} onToggle={(id) => toggleId(interestIds, id, 5, setInterestIds)} /><ChoiceList title="Мови, до 10" items={lookups.languages} selected={languageIds} onToggle={(id) => toggleId(languageIds, id, 10, setLanguageIds)} /></CardContent></Card>
 
-      <Card><CardHeader><CardTitle>Запитання</CardTitle></CardHeader><CardContent className="space-y-4">{[0, 1, 2].map((index) => { const answer = promptAnswers[index] ?? { promptId: 0, answer: "" }; return <div className="grid gap-2 md:grid-cols-2" key={index}><select className="h-9 rounded-2xl border border-transparent bg-input/50 px-3 text-sm" value={answer.promptId || ""} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, promptId: Number(event.target.value) }; return next })}><option value="">Оберіть запитання</option>{lookups.prompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}</select><Textarea placeholder="Ваша відповідь" maxLength={124} value={answer.answer} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, answer: event.target.value }; return next })} /></div> })}</CardContent></Card>
+          <Card><CardHeader><CardTitle>Запитання</CardTitle></CardHeader><CardContent className="space-y-4">{[0, 1, 2].map((index) => { const answer = promptAnswers[index] ?? { promptId: 0, answer: "" }; return <div className="grid gap-2 md:grid-cols-2" key={index}><select className="h-9 rounded-2xl border border-transparent bg-input/50 px-3 text-sm" value={answer.promptId || ""} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, promptId: Number(event.target.value) }; return next })}><option value="">Оберіть запитання</option>{lookups.prompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}</select><Textarea placeholder="Ваша відповідь" maxLength={124} value={answer.answer} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, answer: event.target.value }; return next })} /></div> })}</CardContent></Card>
 
-      <Card><CardHeader><CardTitle>Фотографії</CardTitle></CardHeader><CardContent className="space-y-4"><label className="inline-flex cursor-pointer items-center rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground"><ImagePlus className="mr-2 size-4" />Додати фото<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={!!uploadingPhoto} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void handlePhoto(file) }} /></label>{uploadingPhoto && <Attachment state="uploading" className="w-full max-w-md"><AttachmentMedia><LoaderCircle className="animate-spin" /></AttachmentMedia><AttachmentContent><AttachmentTitle>{uploadingPhoto.fileName}</AttachmentTitle><AttachmentDescription>Завантаження · {uploadingPhoto.progress}%</AttachmentDescription></AttachmentContent><AttachmentActions><AttachmentAction type="button" aria-label="Скасувати завантаження" onClick={cancelPhotoUpload}><X /></AttachmentAction></AttachmentActions></Attachment>}<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{profile.photos.map((photo) => <div className="space-y-2" key={photo.id}><img src={photo.url} alt="Фото профілю" className="aspect-square w-full rounded-2xl object-cover" /> <div className="flex gap-1"><Button size="sm" variant={photo.isMain ? "secondary" : "outline"} disabled={photo.isMain} onClick={() => void makeMain(photo.id)}>{photo.isMain ? "Головне" : "Зробити головним"}</Button><Button size="icon" variant="ghost" aria-label="Видалити фото" onClick={() => void removePhoto(photo.id)}><Trash2 className="size-4" /></Button></div></div>)}</div></CardContent></Card>
-      <div className="flex justify-end"><Link to="/settings"><Button variant="outline">Перейти до налаштувань</Button></Link></div>
+          <Card><CardHeader><CardTitle>Фотографії</CardTitle></CardHeader><CardContent className="space-y-4"><label className="inline-flex cursor-pointer items-center rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground"><ImagePlus className="mr-2 size-4" />Додати фото<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={!!uploadingPhoto} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void handlePhoto(file) }} /></label>{uploadingPhoto && <Attachment state="uploading" className="w-full max-w-md"><AttachmentMedia><LoaderCircle className="animate-spin" /></AttachmentMedia><AttachmentContent><AttachmentTitle>{uploadingPhoto.fileName}</AttachmentTitle><AttachmentDescription>Завантаження · {uploadingPhoto.progress}%</AttachmentDescription></AttachmentContent><AttachmentActions><AttachmentAction type="button" aria-label="Скасувати завантаження" onClick={cancelPhotoUpload}><X /></AttachmentAction></AttachmentActions></Attachment>}<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{profile.photos.map((photo) => <div className="space-y-2" key={photo.id}><img src={photo.url} alt="Фото профілю" className="aspect-square w-full rounded-2xl object-cover" /> <div className="flex gap-1"><Button size="sm" variant={photo.isMain ? "secondary" : "outline"} disabled={photo.isMain} onClick={() => void makeMain(photo.id)}>{photo.isMain ? "Головне" : "Зробити головним"}</Button><Button size="icon" variant="ghost" aria-label="Видалити фото" onClick={() => void removePhoto(photo.id)}><Trash2 className="size-4" /></Button></div></div>)}</div></CardContent></Card>
+          <div className="flex justify-end"><Link to="/settings"><Button variant="outline">Перейти до налаштувань</Button></Link></div>
         </main>
       </ScrollArea>
     </div>

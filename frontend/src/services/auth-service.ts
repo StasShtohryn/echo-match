@@ -25,6 +25,30 @@ export interface LookupItem {
   name: string
 }
 
+export interface LookupsResponse {
+  interests: LookupItem[]
+  languages: LookupItem[]
+  prompts: LookupItem[]
+  options: {
+    gender: string[]
+    orientation: string[]
+    showMe: string[]
+    lookingFor: string[]
+    familyPlans: string[]
+    communication: string[]
+    loveLanguage: string[]
+    pets: string[]
+    drinking: string[]
+    smoking: string[]
+    workout: string[]
+  }
+}
+
+export interface PromptAnswerInput {
+  promptId: number
+  answer: string
+}
+
 export interface PromptAnswer {
   promptId: number
   code: string
@@ -62,6 +86,7 @@ export interface MyProfile {
   occupation: string | null
   company: string | null
   school: string | null
+  city: string | null
   heightCm: number | null
   lookingFor: string | null
   preferences: DiscoveryPreferences | null
@@ -91,6 +116,7 @@ export interface UpdateProfileRequest {
   occupation: string | null
   company: string | null
   school: string | null
+  city: string | null
   heightCm: number | null
   lookingFor: string | null
   familyPlans: string | null
@@ -102,6 +128,15 @@ export interface UpdateProfileRequest {
   workout: string | null
   instagramHandle: string | null
   spotifyHandle: string | null
+}
+
+export interface UniversityItem {
+  id?: string | number
+  institution_id?: string | number
+  institution_name?: string
+  name?: string
+  short_name?: string
+  [key: string]: unknown
 }
 
 export interface UpdatePreferencesRequest {
@@ -214,6 +249,7 @@ export async function getLookups(): Promise<Lookups> {
   return response.data
 }
 
+
 export async function updateMyProfile(
   profile: UpdateProfileRequest,
 ): Promise<MyProfile> {
@@ -224,6 +260,26 @@ export async function updateMyProfile(
 export async function updateMyInterests(interestIds: number[]): Promise<LookupItem[]> {
   const response = await api.put<LookupItem[]>("/profiles/me/interests", { interestIds })
   return response.data
+}
+
+export async function getUniversities(regionCode: number, categoryCode: number): Promise<UniversityItem[]> {
+  const response = await api.get<UniversityItem[] | { items: UniversityItem[] }>(
+    "/api/universities",
+    {
+      params: {
+        rg: regionCode,
+        ut: categoryCode,
+        exp: "json",
+      },
+    }
+  )
+
+  const data = response.data
+  if (Array.isArray(data)) return data
+  if (data && typeof data === "object" && "items" in data && Array.isArray(data.items)) {
+    return data.items
+  }
+  return []
 }
 
 export async function updateMyLanguages(languageIds: number[]): Promise<LookupItem[]> {
@@ -308,6 +364,7 @@ export async function uploadProfilePhoto(
 
   return response.data
 }
+
 
 export async function createFaceVerificationSession(): Promise<FaceVerificationSession> {
   const response = await api.post<FaceVerificationSession>(
