@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/signalr"
-import { ArrowLeft, Camera, Check, CheckCheck, FileText, ImageIcon, LoaderCircle, Paperclip, Send } from "lucide-react"
-import { Link, useParams } from "react-router"
+import { ArrowLeft, Bell, BellOff, Camera, Check, CheckCheck, CircleX, Eye, FileText, ImageIcon, LoaderCircle, MapPin, MessageCircle, Paperclip, Pin, PinOff, Send, Sparkles, Trash2, X } from "lucide-react"
+import { Link, useNavigate, useParams } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import {
   ContextMenuGroup,
   ContextMenuItem,
   ContextMenuLabel,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import {
@@ -23,6 +24,7 @@ import { Marker, MarkerContent } from "@/components/ui/marker"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { getApiErrorMessage } from "@/lib/api-error"
+import { getPublicProfile, type PublicProfile } from "@/services/auth-service"
 import { useAuthStore } from "@/store/useAuthStore"
 import type { Match } from "@/types/match.types"
 import { getMatches } from "@/services/match-service"
@@ -32,16 +34,17 @@ import {
   markMessagesRead,
   removeMessageReaction,
   sendMessage,
+  suggestMessages,
   setMessageReaction,
+  type AiSuggestionKind,
   type ChatMessage,
   type ChatMessageEvent,
   type ChatReadEvent,
   type ChatReactionEvent,
   type ChatTypingEvent,
+  type AiSuggestions,
   type ReactionType,
 } from "@/services/message-service"
-import { Input } from "@base-ui/react/input"
-
 const PAGE_SIZE = 30
 const REACTION_OPTIONS: { type: ReactionType; emoji: string; label: string }[] = [
   { type: "Heart", emoji: "❤️", label: "Сердце" },
@@ -94,14 +97,26 @@ function normalizeReaction(reaction: ReactionType | number | null): ReactionType
 
 export default function MessengerPage() {
   const { matchId } = useParams()
+  const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const [matches, setMatches] = useState<Match[]>([])
+  const [partnerProfiles, setPartnerProfiles] = useState<Record<string, PublicProfile>>({})
+  const [loadingPartnerProfileIds, setLoadingPartnerProfileIds] = useState<Set<string>>(() => new Set())
+  const [partnerProfileErrors, setPartnerProfileErrors] = useState<Record<string, string>>({})
+  const [pinnedMatchIds, setPinnedMatchIds] = useState<Set<string>>(() => new Set())
+  const [mutedMatchIds, setMutedMatchIds] = useState<Set<string>>(() => new Set())
   const [isMatchesLoading, setIsMatchesLoading] = useState(true)
   const [matchesError, setMatchesError] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loadedMatchId, setLoadedMatchId] = useState<string | null>(null)
   const [partnerLastReadAt, setPartnerLastReadAt] = useState<string | null>(null)
   const [messageText, setMessageText] = useState("")
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
+  const [aiSuggestionsContext, setAiSuggestionsContext] = useState<{
+    matchId: string
+    kind: AiSuggestionKind
+  } | null>(null)
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false)
   const [typingMatchId, setTypingMatchId] = useState<string | null>(null)
   const [isTypingVisible, setIsTypingVisible] = useState(false)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
@@ -113,6 +128,8 @@ export default function MessengerPage() {
   const connectionRef = useRef<HubConnection | null>(null)
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const selectedMatchIdRef = useRef(matchId)
+  const aiRequestVersionRef = useRef(0)
+  const loadingPartnerProfileIdsRef = useRef(new Set<string>())
   const partnerProfileIdRef = useRef<string | null>(null)
   const scrollToBottomRef = useRef(false)
   const previousScrollRef = useRef<{ height: number; top: number } | null>(null)
@@ -159,6 +176,15 @@ export default function MessengerPage() {
   const selectedMatch = useMemo(
     () => matches.find((match) => match.id === matchId) ?? null,
     [matches, matchId],
+  )
+  const sortedMatches = useMemo(
+    () => [...matches].sort((left, right) => {
+      const pinOrder = Number(pinnedMatchIds.has(right.id)) - Number(pinnedMatchIds.has(left.id))
+      if (pinOrder !== 0) return pinOrder
+      return new Date(right.lastMessage?.sentAt ?? right.createdAt).getTime()
+        - new Date(left.lastMessage?.sentAt ?? left.createdAt).getTime()
+    }),
+    [matches, pinnedMatchIds],
   )
   const visibleMessages = loadedMatchId === matchId ? messages : []
 
@@ -341,6 +367,9 @@ export default function MessengerPage() {
       }
 
       const isMine = event.senderProfileId !== partnerProfileIdRef.current
+      aiRequestVersionRef.current += 1
+      setAiSuggestions([])
+      setAiSuggestionsContext(null)
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
       if (typingExitTimeoutRef.current) clearTimeout(typingExitTimeoutRef.current)
       setIsTypingVisible(false)
@@ -495,6 +524,9 @@ export default function MessengerPage() {
         ? current
         : [...current, message].sort((left, right) => left.sequence - right.sequence))
       setMessageText("")
+      setAiSuggestions([])
+      setAiSuggestionsContext(null)
+      aiRequestVersionRef.current += 1
       scrollToBottomRef.current = true
       setMatches((current) => sortByRecentActivity(current.map((match) => (
         match.id === matchId
@@ -509,6 +541,49 @@ export default function MessengerPage() {
         inputRef.current?.focus()
       })
     }
+  }
+
+  async function handleGenerateSuggestions() {
+    if (
+      !matchId
+      || loadedMatchId !== matchId
+      || isGeneratingSuggestions
+      || isSending
+    ) return
+
+    const requestedMatchId = matchId
+    const kind: AiSuggestionKind = visibleMessages.length === 0 ? "FirstMessage" : "Reply"
+    const requestVersion = aiRequestVersionRef.current
+    setIsGeneratingSuggestions(true)
+    setChatError(null)
+    try {
+      const result: AiSuggestions = await suggestMessages(requestedMatchId, kind)
+      if (
+        selectedMatchIdRef.current !== requestedMatchId
+        || aiRequestVersionRef.current !== requestVersion
+      ) return
+      if (result.suggestions.length === 0) {
+        throw new Error("Не вдалося згенерувати варіанти повідомлення.")
+      }
+      setAiSuggestionsContext({ matchId: requestedMatchId, kind })
+      setAiSuggestions(result.suggestions)
+    } catch (error: unknown) {
+      if (
+        selectedMatchIdRef.current === requestedMatchId
+        && aiRequestVersionRef.current === requestVersion
+      ) {
+        setChatError(getApiErrorMessage(error, "Не вдалося згенерувати варіанти повідомлення."))
+      }
+    } finally {
+      setIsGeneratingSuggestions(false)
+    }
+  }
+
+  function handleSelectSuggestion(suggestion: string) {
+    setMessageText(suggestion)
+    setAiSuggestions([])
+    setAiSuggestionsContext(null)
+    requestAnimationFrame(() => messageInputRef.current?.focus())
   }
 
   function handleMessageInputChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -534,6 +609,81 @@ export default function MessengerPage() {
     }
   }
 
+  function togglePinnedMatch(id: string) {
+    setPinnedMatchIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleMutedMatch(id: string) {
+    setMutedMatchIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function loadPartnerProfile(profileId: string) {
+    if (partnerProfiles[profileId] || loadingPartnerProfileIdsRef.current.has(profileId)) return
+
+    loadingPartnerProfileIdsRef.current.add(profileId)
+    setLoadingPartnerProfileIds(new Set(loadingPartnerProfileIdsRef.current))
+    setPartnerProfileErrors((current) => {
+      const next = { ...current }
+      delete next[profileId]
+      return next
+    })
+
+    try {
+      const profile = await getPublicProfile(profileId)
+      setPartnerProfiles((current) => ({ ...current, [profileId]: profile }))
+    } catch (error: unknown) {
+      setPartnerProfileErrors((current) => ({
+        ...current,
+        [profileId]: getApiErrorMessage(error, "Не вдалося завантажити профіль."),
+      }))
+    } finally {
+      loadingPartnerProfileIdsRef.current.delete(profileId)
+      setLoadingPartnerProfileIds(new Set(loadingPartnerProfileIdsRef.current))
+    }
+  }
+
+  function markMatchUnread(id: string) {
+    setMatches((current) => current.map((match) => (
+      match.id === id ? { ...match, unreadCount: Math.max(1, match.unreadCount) } : match
+    )))
+  }
+
+  function clearMatchHistory(id: string) {
+    setMatches((current) => current.map((match) => (
+      match.id === id ? { ...match, lastMessage: null, unreadCount: 0 } : match
+    )))
+    if (matchId === id) {
+      setMessages([])
+      setHasOlderMessages(false)
+      setPartnerLastReadAt(null)
+    }
+  }
+
+  function deleteMatch(id: string) {
+    setMatches((current) => current.filter((match) => match.id !== id))
+    setPinnedMatchIds((current) => {
+      const next = new Set(current)
+      next.delete(id)
+      return next
+    })
+    setMutedMatchIds((current) => {
+      const next = new Set(current)
+      next.delete(id)
+      return next
+    })
+    if (matchId === id) navigate("/messenger")
+  }
+
   return (
     <div className="flex min-h-0 flex-1 bg-background">
       <aside className={`${matchId ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-r border-border/80 bg-card/50 md:w-80`}>
@@ -554,35 +704,116 @@ export default function MessengerPage() {
             </div>
           ) : matches.length === 0 ? (
             <p className="p-5 text-sm text-muted-foreground">Поки немає мэтчів. Коли з кимось співпадуть симпатії, тут з’явиться чат.</p>
-          ) : matches.map((match) => (
-            <Link
-              key={match.id}
-              to={`/messenger/${match.id}`}
-              className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-muted/70 ${match.id === matchId ? "bg-muted" : ""}`}
-            >
-              <Avatar className="size-12 shrink-0 rounded-xl">
-                <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
-                <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-semibold">{match.partner.displayName}</span>
-                  {match.lastMessage && <span className="shrink-0 text-[11px] text-muted-foreground">{formatConversationTime(match.lastMessage.sentAt)}</span>}
-                </div>
-                <div className="mt-1 flex items-center justify-between gap-2">
-                  <span className="truncate text-xs text-muted-foreground">
-                    {match.lastMessage
-                      ? `${match.lastMessage.isMine ? "Ви: " : ""}${match.lastMessage.text}`
-                      : "Почніть розмову"}
-                  </span>
-                  {match.unreadCount > 0 && (
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                      {match.unreadCount > 99 ? "99+" : match.unreadCount}
-                    </span>
+          ) : sortedMatches.map((match) => (
+            <ContextMenu key={match.id} onOpenChange={(open) => {
+              if (open) void loadPartnerProfile(match.partner.profileId)
+            }}>
+              <ContextMenuTrigger
+                render={
+                  <Link
+                    to={`/messenger/${match.id}`}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/70 ${match.id === matchId ? "bg-muted" : ""}`}
+                  >
+                    <Avatar className="size-12 shrink-0 rounded-xl">
+                      <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
+                      <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-semibold">{match.partner.displayName}</span>
+                        {match.lastMessage && <span className="shrink-0 text-[11px] text-muted-foreground">{formatConversationTime(match.lastMessage.sentAt)}</span>}
+                      </div>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <span className="truncate text-xs text-muted-foreground">
+                          {match.lastMessage
+                            ? `${match.lastMessage.isMine ? "Ви: " : ""}${match.lastMessage.text}`
+                            : "Почніть розмову"}
+                        </span>
+                        {match.unreadCount > 0 && (
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                            {match.unreadCount > 99 ? "99+" : match.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                }
+              />
+              <ContextMenuContent className="w-72 bg-popover/55 backdrop-blur-xl">
+                {(() => {
+                  const profile = partnerProfiles[match.partner.profileId]
+                  const isProfileLoading = loadingPartnerProfileIds.has(match.partner.profileId)
+                  const profileError = partnerProfileErrors[match.partner.profileId]
+                  const interests = profile?.interests ?? []
+
+                  return (
+                <div className="px-2 py-2">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="size-12 rounded-xl">
+                      <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
+                      <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {profile?.displayName ?? match.partner.displayName}{(profile?.age ?? match.partner.age) ? `, ${profile?.age ?? match.partner.age}` : ""}
+                      </p>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3" /> {profile?.city || "Місто не вказано"}
+                      </p>
+                    </div>
+                  </div>
+                  {profile?.bio && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{profile.bio}</p>}
+                  <p className="mt-3 text-xs text-muted-foreground">Інтереси</p>
+                  {isProfileLoading ? (
+                    <p className="mt-1.5 text-xs text-muted-foreground">Завантаження профілю...</p>
+                  ) : profileError ? (
+                    <p role="alert" className="mt-1.5 text-xs text-destructive">{profileError}</p>
+                  ) : interests.length > 0 ? (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {interests.map((interest) => (
+                        <span key={interest.id} className="rounded-full bg-muted px-2 py-1 text-xs">{interest.name}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      {profile ? "Інтереси не вказані" : "Профіль поки не завантажено"}
+                    </p>
                   )}
                 </div>
-              </div>
-            </Link>
+                  )
+                })()}
+                <ContextMenuSeparator />
+                <ContextMenuGroup>
+                  <ContextMenuItem onClick={() => navigate(`/messenger/${match.id}`)}>
+                    <MessageCircle />
+                    Перейти до чату
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => markMatchUnread(match.id)}>
+                    <Eye />
+                    Позначити як непрочитане
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => togglePinnedMatch(match.id)}>
+                    {pinnedMatchIds.has(match.id) ? <PinOff /> : <Pin />}
+                    {pinnedMatchIds.has(match.id) ? "Відкріпити чат" : "Закріпити чат"}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => toggleMutedMatch(match.id)}>
+                    {mutedMatchIds.has(match.id) ? <Bell /> : <BellOff />}
+                    {mutedMatchIds.has(match.id) ? "Увімкнути сповіщення" : "Вимкнути сповіщення"}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => clearMatchHistory(match.id)}>
+                    <CircleX />
+                    Очистити історію
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    variant="destructive"
+                    onClick={() => deleteMatch(match.id)}
+                  >
+                    <Trash2 />
+                    Видалити чат
+                  </ContextMenuItem>
+                </ContextMenuGroup>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       </aside>
@@ -645,7 +876,7 @@ export default function MessengerPage() {
                             >
                               <BubbleContent className={`rounded-2xl px-3 py-1.5 ${message.isMine ? "rounded-br-xs" : "rounded-bl-xs border-border bg-card text-card-foreground!"}`}>
                                 <div className="flex flex-wrap items-end justify-between gap-x-2.5 gap-y-0.5">
-                                  <p className="min-w-0 flex-1 whitespace-pre-wrap break-all text-[14px] leading-snug">{message.text}</p>
+                                  <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-[14px] leading-snug">{message.text}</p>
                                   <div className={`ml-auto inline-flex shrink-0 select-none items-center gap-1 self-end text-[10px] tabular-nums ${message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                                     <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
                                     {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
@@ -713,6 +944,39 @@ export default function MessengerPage() {
                   </Marker>
                 )}
               </div>
+              {aiSuggestionsContext?.matchId === matchId && aiSuggestions.length > 0 && loadedMatchId === matchId && (
+                <div className="mx-3 mb-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm md:mx-6">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">
+                      {aiSuggestionsContext?.kind === "FirstMessage" ? "Варіанти для першого повідомлення" : "Варіанти відповіді"}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Закрити варіанти"
+                      onClick={() => {
+                        setAiSuggestions([])
+                        setAiSuggestionsContext(null)
+                      }}
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                  <div className="grid gap-2">
+                    {aiSuggestions.map((suggestion, index) => (
+                      <button
+                        key={`${index}-${suggestion}`}
+                        type="button"
+                        className="rounded-xl border border-border/70 px-3 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <form onSubmit={(event) => void handleSendMessage(event)} className="flex w-full items-center gap-2 border-t border-border/70 p-3 md:px-6 md:py-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -743,6 +1007,21 @@ export default function MessengerPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {loadedMatchId === matchId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0 border-border bg-card shadow-sm hover:bg-muted"
+                    aria-label={visibleMessages.length === 0 ? "Згенерувати варіанти першого повідомлення" : "Згенерувати варіанти відповіді"}
+                    title={visibleMessages.length === 0 ? "Згенерувати варіанти першого повідомлення" : "Згенерувати варіанти відповіді"}
+                    disabled={isGeneratingSuggestions || isSending}
+                    onClick={() => void handleGenerateSuggestions()}
+                  >
+                    {isGeneratingSuggestions ? <LoaderCircle className="animate-spin" /> : <Sparkles />}
+                  </Button>
+                )}
 
                 <Textarea
                   autoFocus

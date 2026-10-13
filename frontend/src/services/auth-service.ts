@@ -166,6 +166,7 @@ export interface PublicProfile {
   company: string | null
   school: string | null
   heightCm: number | null
+  city: string | null
   lookingFor: string | null
   familyPlans: string | null
   communication: string | null
@@ -241,6 +242,11 @@ export async function signInWithGoogle(idToken: string): Promise<AuthResponse> {
 
 export async function getMyProfile(): Promise<MyProfile> {
   const response = await api.get<MyProfile>("/profiles/me")
+  return response.data
+}
+
+export async function getPublicProfile(profileId: string): Promise<PublicProfile> {
+  const response = await api.get<PublicProfile>(`/profiles/${profileId}`)
   return response.data
 }
 
