@@ -6,14 +6,21 @@ Help users write, and help a new match start talking.
 
 Model
 
-Claude Haiku 4.5 through the official Anthropic SDK (`Anthropic` package), called
-from Infrastructure. The key lives in Ai:ApiKey — user secrets in development, an
-environment variable in production — never in appsettings.json. Ai:BaseUrl exists
-so a stub can stand in for api.anthropic.com in checks.
+Claude Sonnet 5.5 (claude-sonnet-5-5) through the official Anthropic SDK
+(`Anthropic` package), called from Infrastructure. Chosen over Haiku for the
+quality of playful and flirty wording, which is the whole point of the feature.
+The key lives in Ai:ApiKey — user secrets in development, an environment variable
+in production — never in appsettings.json. Ai:BaseUrl exists so a stub can stand
+in for api.anthropic.com in checks.
+
+The call goes through client.Beta.Messages, because server-side fallback is a
+beta. Effort is Low: three short messages need little reasoning, and reasoning is
+billed as output. MaxTokens is 2000 so that the reasoning cannot crowd out the
+answer itself.
 
 The subscription on claude.ai does not include API access: the console account is
-billed separately, pay as you go. One suggestion request costs about $0.0035, so
-roughly 280 of them per dollar.
+billed separately, pay as you go. One suggestion request costs about $0.0085, so
+roughly 120 of them per dollar.
 
 What it does
 
@@ -74,3 +81,15 @@ A refusal or an outage on the model's side raises AiUnavailableException, which
 the global handler maps to 503 — the client says "try again" instead of "something
 broke". The SDK already retries 429 and 5xx twice before that. A missing key is a
 different thing: it is our own misconfiguration, so it throws and surfaces as 500.
+
+A refusal arrives as HTTP 200 with stop_reason "refusal", so it is checked
+explicitly; otherwise it would look like an empty answer.
+
+The request opts into server-side fallback (fallbacks: "default", beta header
+server-side-fallback-2026-07-01). Anthropic picks the substitute by the reason for
+the refusal: for Sonnet 5.5 only "cyber" and "frontier_llm" declines are retried,
+on Claude Sonnet 5. "general_harms", "bio" and "reasoning_extraction" are not
+retried and come back as a refusal. For a dating app the likely category is
+general_harms, so the fallback rarely fires here; it stays because it costs
+nothing until it does. What actually keeps refusals rare is the system prompt's
+limits above.

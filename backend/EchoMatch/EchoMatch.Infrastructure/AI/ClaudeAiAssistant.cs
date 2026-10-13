@@ -1,6 +1,6 @@
 ﻿using Anthropic;
 using Anthropic.Exceptions;
-using Anthropic.Models.Messages;
+using Anthropic.Models.Beta.Messages;
 using EchoMatch.Application.Common.Exceptions;
 using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Application.Common.Models;
@@ -42,15 +42,25 @@ namespace EchoMatch.Infrastructure.Ai
                 throw new InvalidOperationException("Ai:ApiKey is not configured.");
             }
 
-            Message response;
+            BetaMessage response;
 
             try
             {
-                response = await _client.Messages.Create(
+                response = await _client.Beta.Messages.Create(
                     new MessageCreateParams
                     {
                         Model = _settings.Model,
                         MaxTokens = _settings.MaxTokens,
+
+                        // Три короткі повідомлення не потребують довгих роздумів,
+                        // а міркування оплачуються як вихідний текст
+                        OutputConfig = new BetaOutputConfig { Effort = Effort.Low },
+
+                        // Якщо класифікатор безпеки відхилить сміливий флірт, запит
+                        // у межах того самого виклику перейде до резервної моделі
+                        Betas = ["server-side-fallback-2026-07-01"],
+                        Fallbacks = new BetaFallbacksParam(JsonSerializer.SerializeToElement("default")),
+
                         System = systemPrompt,
                         Messages = [new() { Role = Role.User, Content = userPrompt }]
                     },
@@ -70,9 +80,17 @@ namespace EchoMatch.Infrastructure.Ai
                 throw new AiUnavailableException("Помічник не відповів за відведений час.");
             }
 
+            // Відмова приходить зі статусом 200, тож її треба перевірити явно,
+            // інакше вона виглядала б як порожня відповідь
+            if (response.StopReason == "refusal")
+            {
+                throw new AiUnavailableException("Помічник відмовився відповідати на цей запит.");
+            }
+
+            // Блоки міркувань тут теж є, але нам потрібен лише текст
             return string.Concat(response.Content
                 .Select(block => block.Value)
-                .OfType<TextBlock>()
+                .OfType<BetaTextBlock>()
                 .Select(block => block.Text));
         }
 
