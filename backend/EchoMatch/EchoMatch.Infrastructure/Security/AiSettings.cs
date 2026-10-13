@@ -6,13 +6,13 @@
 
         public string ApiKey { get; set; } = string.Empty;
         public string BaseUrl { get; set; } = "https://api.anthropic.com";
-        public string Model { get; set; } = "claude-haiku-4-5";
+        public string Model { get; set; } = "claude-sonnet-5-5";
 
         // Скільки повідомлень історії їде в запит. Уся розмова не влізла б
         // у вікно моделі, а платити за неї довелося б щоразу
         public int MaxHistoryMessages { get; set; } = 50;
 
-        public int MaxTokens { get; set; } = 400;
+        public int MaxTokens { get; set; } = 2000;
         public int SuggestionCount { get; set; } = 3;
     }
 }
