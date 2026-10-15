@@ -30,7 +30,14 @@ import { useEffect, useState } from "react";
 
 export default function Header() {
   const { user, logout } = useAuthStore();
-  const { theme, setTheme } = useTheme()
+  const {
+    theme,
+    setTheme,
+    accentColor,
+    setAccentColor,
+    darkAccentColor,
+    setDarkAccentColor,
+  } = useTheme()
 
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const location = useLocation();
@@ -113,7 +120,7 @@ export default function Header() {
       <nav className="flex justify-between gap-10 ">
         <Link to="/">
           <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/")
-            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            ? "text-primary font-semibold"
             : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
             }`}>
             Свайпи
@@ -121,7 +128,7 @@ export default function Header() {
         </Link>
         <Link to="/events">
           <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/events")
-            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            ? "text-primary font-semibold"
             : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
             }`}>
             Події
@@ -129,7 +136,7 @@ export default function Header() {
         </Link>
         <Link to="/messenger">
           <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/messenger")
-            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            ? "text-primary font-semibold"
             : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
             }`}>
             Чати
@@ -137,7 +144,7 @@ export default function Header() {
         </Link>
         <Link to="/me">
           <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/me")
-            ? "text-[#F37936] font-semibold dark:text-[#18B7A0]"
+            ? "text-primary font-semibold"
             : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
             }`}>
             Профіль
@@ -155,13 +162,19 @@ export default function Header() {
                 {userAge !== undefined && `, ${userAge}`}
               </span>
 
-              <Avatar className="size-10 border border-[#F3DDD0]">
+              <Avatar
+                className="size-10 border"
+                style={{ borderColor: "var(--header-accent-border)" }}
+              >
                 <AvatarImage
                   src={profile?.photos?.[0]?.url ?? user?.picture ?? undefined}
                   alt={displayName}
                   className="object-cover"
                 />
-                <AvatarFallback className="bg-[#FAF7F2] font-bold text-[#F37936]">
+                <AvatarFallback
+                  className="bg-[#FAF7F2] font-bold"
+                  style={{ color: "var(--header-accent)" }}
+                >
                   {displayName.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -197,12 +210,56 @@ export default function Header() {
               Тема
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Sun />
+                  Світла
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup
+                    value={accentColor}
+                    onValueChange={(value) => {
+                      if (value === "orange" || value === "rose") {
+                        setAccentColor(value);
+                        setTheme("light");
+                      }
+                    }}
+                  >
+                    <DropdownMenuRadioItem value="orange">Orange</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="rose">Rose</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Moon />
+                  Темна
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup
+                    value={darkAccentColor}
+                    onValueChange={(value) => {
+                      if (value === "teal" || value === "violet") {
+                        setDarkAccentColor(value);
+                        setTheme("dark");
+                      }
+                    }}
+                  >
+                    <DropdownMenuRadioItem value="teal">Teal</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="violet">Violet</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
               <DropdownMenuRadioGroup
-                value={theme}
-                onValueChange={(value) => setTheme(value as typeof theme)}
+                value={theme === "system" ? "system" : ""}
+                onValueChange={(value) => {
+                  if (value === "system") {
+                    setTheme(value);
+                  }
+                }}
               >
-                <DropdownMenuRadioItem value="light">Світла</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="dark">Темна</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="system">Системна</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuSubContent>
