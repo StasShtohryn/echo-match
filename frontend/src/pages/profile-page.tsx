@@ -13,6 +13,7 @@ import { useNavigate, Navigate } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore"
 import { useEffect, useState } from "react";
 import { getMyProfile, type MyProfile } from "@/services/auth-service";
+import { getMatchCounts } from "@/services/match-service";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { toast } from "@/components/ui/toast";
 
@@ -20,6 +21,7 @@ export default function ProfilePage() {
   const { user, login, logout } = useAuthStore()
   const [profile, setProfile] = useState<MyProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [matchCount, setMatchCount] = useState<number | null>(null)
 
   const navigate = useNavigate()
 
@@ -77,6 +79,37 @@ export default function ProfilePage() {
       isMounted = false
     }
   }, [login, navigate, user])
+
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    let isMounted = true
+
+    async function loadMatchCount() {
+      try {
+        const counts = await getMatchCounts()
+        if (isMounted) {
+          setMatchCount(counts.total)
+        }
+      } catch (error: unknown) {
+        if (isMounted) {
+          toast.add({
+            type: "error",
+            title: "Не вдалося завантажити кількість матчів",
+            description: getApiErrorMessage(error, "Спробуйте ще раз."),
+          })
+        }
+      }
+    }
+
+    void loadMatchCount()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user])
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -158,7 +191,7 @@ export default function ProfilePage() {
                   <div className="mt-6 space-y-4">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Дата реєстрації</span>
-                      <span>{profile?.createdAt ? "Профіль заповнено" : "Не вказано"}</span>
+                      <span>{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : ""}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Активність</span>
@@ -183,7 +216,7 @@ export default function ProfilePage() {
                         <Heart className="text-primary size-5" />
                       </div>
                       <div>
-                        <p className="text-2xl font-semibold">128</p>
+                        <p className="text-2xl font-semibold">{matchCount ?? "—"}</p>
                         <p className="text-muted-foreground text-sm">
                           Метчів
                         </p>
