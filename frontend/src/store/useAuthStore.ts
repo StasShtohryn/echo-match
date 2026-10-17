@@ -1,6 +1,25 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { jwtDecode } from "jwt-decode";
 import type { AuthUser } from "@/types/user.types";
+
+export function getSessionExpiration(token: string | undefined): number | null {
+  if (!token) return null;
+
+  try {
+    const payload = jwtDecode<{ exp?: number }>(token);
+    return typeof payload.exp === "number" && Number.isFinite(payload.exp)
+      ? payload.exp * 1000
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function hasValidSession(user: AuthUser | null, isAuthenticated: boolean): boolean {
+  const expiresAt = getSessionExpiration(user?.token);
+  return isAuthenticated && expiresAt !== null && expiresAt > Date.now();
+}
 
 interface AuthState {
   user: AuthUser | null;

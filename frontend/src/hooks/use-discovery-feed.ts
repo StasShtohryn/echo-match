@@ -23,6 +23,7 @@ export function useDiscoveryFeed() {
 
   const loadFeed = useCallback(async (replace = false) => {
     const currentRequestId = ++requestId.current
+    if (replace) canRefill.current = true
     setIsLoading(true)
     setError(null)
 
@@ -42,7 +43,10 @@ export function useDiscoveryFeed() {
         return [...byId.values()]
       })
     } catch (nextError) {
-      if (currentRequestId === requestId.current) setError(nextError)
+      if (currentRequestId === requestId.current) {
+        canRefill.current = false
+        setError(nextError)
+      }
     } finally {
       if (currentRequestId === requestId.current) setIsLoading(false)
     }

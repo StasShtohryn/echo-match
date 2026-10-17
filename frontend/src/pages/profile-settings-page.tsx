@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { getLookups, getMyProfile, updateMyLocation, updateMyPreferences, updateMyVisibility, type Lookups, type MyProfile } from "@/services/auth-service"
+import { saveMyLocation } from "@/lib/location"
+import { getLookups, getMyProfile, updateMyPreferences, updateMyVisibility, type Lookups, type MyProfile } from "@/services/auth-service"
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate()
@@ -48,7 +49,7 @@ export default function ProfileSettingsPage() {
       await updateMyPreferences({ showMe, minAge, maxAge, maxDistanceKm })
       await updateMyVisibility(isPrivate)
       if (latitude.trim() && longitude.trim()) {
-        await updateMyLocation(Number(latitude), Number(longitude))
+        await saveMyLocation(Number(latitude), Number(longitude))
       }
       const nextProfile = await getMyProfile()
       setProfile(nextProfile)
@@ -153,6 +154,21 @@ export default function ProfileSettingsPage() {
                   />
                 </Field>
               </FieldGroup>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Місто в профілі: <span className="font-medium text-foreground">{profile.city ?? "не визначено"}</span>.
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Місто визначається за координатами через{" "}
+                <a
+                  href="https://www.openstreetmap.org/copyright"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-4"
+                >
+                  OpenStreetMap
+                </a>
+                .
+              </p>
             </CardContent>
           </Card>
 
