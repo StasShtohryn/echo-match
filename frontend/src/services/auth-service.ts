@@ -321,6 +321,10 @@ export async function createSwipe(
   return response.data
 }
 
+export async function undoSwipe(targetProfileId: string): Promise<void> {
+  await api.delete(`/swipes/${targetProfileId}`)
+}
+
 export async function updateMyLocation(
   latitude: number,
   longitude: number,

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   createSwipe,
   getDiscoveryFeed,
+  undoSwipe,
   type DiscoveryCandidate,
   type DiscoveryStatus,
   type SwipeDirection,
@@ -16,8 +17,10 @@ export function useDiscoveryFeed() {
   const [status, setStatus] = useState<DiscoveryStatus>("Ready")
   const [isLoading, setIsLoading] = useState(true)
   const [isSwiping, setIsSwiping] = useState(false)
+  const [isUndoing, setIsUndoing] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [lastSwipe, setLastSwipe] = useState<SwipeResult | null>(null)
+  const [lastSwipedCandidate, setLastSwipedCandidate] = useState<DiscoveryCandidate | null>(null)
   const requestId = useRef(0)
   const canRefill = useRef(true)
 
@@ -64,7 +67,7 @@ export function useDiscoveryFeed() {
 
   const swipe = useCallback(async (direction: SwipeDirection) => {
     const candidate = candidates[0]
-    if (!candidate || isSwiping) return null
+    if (!candidate || isSwiping || isUndoing) return null
 
     setIsSwiping(true)
     setError(null)
@@ -72,6 +75,7 @@ export function useDiscoveryFeed() {
       const result = await createSwipe(candidate.profile.id, direction)
       setCandidates((current) => current.filter((item) => item.profile.id !== candidate.profile.id))
       setLastSwipe(result)
+      setLastSwipedCandidate(result.isMatch ? null : candidate)
       return result
     } catch (nextError) {
       setError(nextError)
@@ -79,7 +83,31 @@ export function useDiscoveryFeed() {
     } finally {
       setIsSwiping(false)
     }
-  }, [candidates, isSwiping])
+  }, [candidates, isSwiping, isUndoing])
+
+  const undoLastSwipe = useCallback(async () => {
+    if (!lastSwipedCandidate || isSwiping || isUndoing) return
+
+    setIsUndoing(true)
+    setError(null)
+    try {
+      await undoSwipe(lastSwipedCandidate.profile.id)
+      requestId.current += 1
+      setCandidates((current) => [
+        lastSwipedCandidate,
+        ...current.filter((candidate) => candidate.profile.id !== lastSwipedCandidate.profile.id),
+      ])
+      setStatus("Ready")
+      setIsLoading(false)
+      setLastSwipe(null)
+      setLastSwipedCandidate(null)
+    } catch (nextError) {
+      setError(nextError)
+      throw nextError
+    } finally {
+      setIsUndoing(false)
+    }
+  }, [isSwiping, isUndoing, lastSwipedCandidate])
 
   const refresh = useCallback(() => {
     setLastSwipe(null)
@@ -92,9 +120,12 @@ export function useDiscoveryFeed() {
     status,
     isLoading,
     isSwiping,
+    isUndoing,
     error,
     lastSwipe,
+    canUndo: lastSwipedCandidate !== null,
     swipe,
+    undoLastSwipe,
     refresh,
     dismissSwipeResult: () => setLastSwipe(null),
   }
