@@ -9,7 +9,7 @@ import {
 import { toast } from "@/components/ui/toast"
 import { Input } from "@/components/ui/input"
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router"
-import { useAuthStore } from "@/store/useAuthStore"
+import { hasValidSession, useAuthStore } from "@/store/useAuthStore"
 import {
   Select,
   SelectContent,
@@ -22,6 +22,7 @@ import { jwtDecode } from "jwt-decode"
 import type { GoogleJwtPayload } from "@/types/auth.types"
 import { useEffect, useState } from "react"
 import { getApiErrorMessage } from "@/lib/api-error"
+import { updateLocationAfterAuthentication } from "@/lib/location"
 import {
   createProfile as submitProfile,
   registerWithPassword,
@@ -168,6 +169,7 @@ export function SignupForm({
   const login = useAuthStore((state) => state.login)
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const hasSession = hasValidSession(user, isAuthenticated)
   const accountErrors = getAccountErrors(formData)
   const profileErrors = getProfileErrors(formData)
   const [showProfileErrors, setShowProfileErrors] = useState(false)
@@ -180,7 +182,7 @@ export function SignupForm({
     }
   }, [isOnboarding])
 
-  if (isAuthenticated && !isOnboarding && !showWelcomeModal) {
+  if (hasSession && !isOnboarding && !showWelcomeModal) {
     return <Navigate to="/tests" replace />
   }
 
@@ -288,6 +290,7 @@ export function SignupForm({
         picture: uploadedPhoto.url,
         provider: user.provider,
       })
+      updateLocationAfterAuthentication()
       setShowWelcomeModal(true)
     } catch (error: unknown) {
       toast.add({

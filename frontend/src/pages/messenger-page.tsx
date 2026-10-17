@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/signalr"
 import { ArrowLeft, Bell, BellOff, Camera, Check, CheckCheck, CircleX, Eye, FileText, ImageIcon, LoaderCircle, MapPin, MessageCircle, Paperclip, Pin, PinOff, Send, Sparkles, Trash2, X } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
@@ -108,6 +109,7 @@ export default function MessengerPage() {
   const [isMatchesLoading, setIsMatchesLoading] = useState(true)
   const [matchesError, setMatchesError] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [activeReactionMessageId, setActiveReactionMessageId] = useState<string | null>(null)
   const [loadedMatchId, setLoadedMatchId] = useState<string | null>(null)
   const [partnerLastReadAt, setPartnerLastReadAt] = useState<string | null>(null)
   const [messageText, setMessageText] = useState("")
@@ -865,9 +867,19 @@ export default function MessengerPage() {
                   const reactions = [myReaction, partnerReaction].filter((value): value is ReactionType => value !== null)
 
                   return (
-                    <div key={message.id} className={`flex ${message.isMine ? "justify-end" : "justify-start"}`}>
+                    <div
+                      key={message.id}
+                      className={`flex ${message.isMine ? "justify-end" : "justify-start"} ${activeReactionMessageId === message.id ? "relative z-[45]" : ""}`}
+                    >
                       <div className={`relative max-w-[min(78%,34rem)] ${reactions.length > 0 ? "mb-3" : ""}`}>
-                        <ContextMenu>
+                        <ContextMenu
+                          onOpenChange={(open) => {
+                            setActiveReactionMessageId((current) => {
+                              if (open) return message.id
+                              return current === message.id ? null : current
+                            })
+                          }}
+                        >
                           <ContextMenuTrigger className="block w-fit max-w-full cursor-context-menu">
                             <Bubble
                               align={message.isMine ? "end" : "start"}
@@ -928,6 +940,15 @@ export default function MessengerPage() {
                 <div ref={messagesEndRef} className="h-px w-full" />
               </div>
             </ScrollArea>
+            {activeReactionMessageId && createPortal(
+              <button
+                type="button"
+                aria-label="Закрыть меню реакций"
+                className="fixed inset-0 z-40 cursor-default animate-in fade-in-0 duration-200 ease-out bg-black/15 backdrop-blur-[1px]"
+                onClick={() => setActiveReactionMessageId(null)}
+              />,
+              document.body,
+            )}
 
             <div className="mx-auto w-full max-w-4xl shrink-0">
               <div className="flex h-7 items-center px-4 md:px-6">

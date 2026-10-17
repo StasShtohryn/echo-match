@@ -12,10 +12,11 @@ import { Input } from "@/components/ui/input"
 import { Link, Navigate, useNavigate } from "react-router"
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google"
 import { jwtDecode } from "jwt-decode"
-import { useAuthStore } from "@/store/useAuthStore"
+import { hasValidSession, useAuthStore } from "@/store/useAuthStore"
 import type { GoogleJwtPayload } from "@/types/auth.types"
 import { useState } from "react"
 import { getApiErrorMessage } from "@/lib/api-error"
+import { updateLocationAfterAuthentication } from "@/lib/location"
 import {
   getMyProfile,
   loginWithPassword,
@@ -31,9 +32,10 @@ export function LoginForm({
   const navigate = useNavigate()
 
   const login = useAuthStore((state) => state.login)
+  const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
-  if (isAuthenticated) {
+  if (hasValidSession(user, isAuthenticated)) {
     return <Navigate to="/me" replace />
   }
 
@@ -66,6 +68,7 @@ export function LoginForm({
   async function navigateAfterAuthentication() {
     try {
       await getMyProfile()
+      updateLocationAfterAuthentication()
       navigate("/me")
     } catch (error: unknown) {
       const isMissingProfile =

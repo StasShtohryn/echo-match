@@ -321,8 +321,16 @@ export async function createSwipe(
   return response.data
 }
 
-export async function updateMyLocation(latitude: number, longitude: number): Promise<void> {
-  await api.put("/profiles/me/location", { latitude, longitude })
+export async function undoSwipe(targetProfileId: string): Promise<void> {
+  await api.delete(`/swipes/${targetProfileId}`)
+}
+
+export async function updateMyLocation(
+  latitude: number,
+  longitude: number,
+  city?: string,
+): Promise<void> {
+  await api.put("/profiles/me/location", { latitude, longitude, city })
 }
 
 export async function updateMyVisibility(isPrivate: boolean): Promise<void> {
