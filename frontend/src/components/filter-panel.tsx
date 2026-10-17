@@ -8,6 +8,7 @@ import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
 import { Minus, Plus } from "lucide-react";
 import { FilterSkeleton } from "./filter-sceleton";
+import { getLabel, INTERESTED_IN_OPTIONS } from "@/lib/some-lookups";
 
 
 interface FilterlProps {
@@ -30,15 +31,13 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
   const [maxAge, setMaxAge] = useState<number>(initialPreferences?.maxAge ?? maxLimit)
   const [minInput, setMinInput] = useState<string>(String(initialPreferences?.minAge ?? minLimit))
   const [maxInput, setMaxInput] = useState<string>(String(initialPreferences?.maxAge ?? maxLimit))
-  const [lookingFor, setLookingFor] = useState<string>(initialPreferences?.showMe ?? "Women")
-  const [maxDistanceKm, setMaxDistanceKm] = useState<number | null>(
+  const [lookingFor, setLookingFor] = useState<string>(initialPreferences?.showMe ?? "Women"); const [maxDistanceKm, setMaxDistanceKm] = useState<number | null>(
     initialPreferences?.maxDistanceKm ?? minDistanceLimit
   )
-
   useEffect(() => {
     if (!initialPreferences) return
 
-    setLookingFor(initialPreferences.showMe)
+    setLookingFor(initialPreferences.showMe ?? "Women");
     setMinAge(initialPreferences.minAge)
     setMaxAge(initialPreferences.maxAge)
     setMinInput(String(initialPreferences.minAge))
@@ -159,12 +158,14 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
           id="lookingFor"
           className="h-9 w-full rounded-xl border-input bg-background text-xs font-bold text-foreground"
         >
-          <SelectValue />
+          <SelectValue>
+            {getLabel(INTERESTED_IN_OPTIONS, lookingFor) ?? "Кого шукаю"}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="Women">Дівчат</SelectItem>
-          <SelectItem value="Men">Хлопців</SelectItem>
-          <SelectItem value="Everyone">Будь-кого</SelectItem>
+          <SelectItem value="Women">{INTERESTED_IN_OPTIONS["Women"] ?? "Дівчат"}</SelectItem>
+          <SelectItem value="Men">{INTERESTED_IN_OPTIONS["Men"] ?? "Хлопців"}</SelectItem>
+          <SelectItem value="Everyone">{INTERESTED_IN_OPTIONS["Everyone"] ?? "Будь-кого"}</SelectItem>
         </SelectContent>
       </Select>
 

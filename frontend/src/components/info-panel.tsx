@@ -2,6 +2,7 @@ import type { FC } from "react";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 import { Progress } from "./ui/progress";
+import { getLabel, GOAL_OPTIONS } from "@/lib/some-lookups";
 
 export interface ProfileDetailsProps {
     displayName: string;
@@ -85,7 +86,7 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
                                 Шукаю
                             </h2>
                             <p className="text-xs leading-relaxed text-muted-foreground">
-                                {lookingFor}
+                                {getLabel(GOAL_OPTIONS, lookingFor)}
                             </p>
                         </div>
                     </>

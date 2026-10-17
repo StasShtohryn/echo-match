@@ -5,23 +5,57 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Edit, Settings, MessageCircle, Heart, HeartHandshake, BadgeCheck, ShieldCheck } from "lucide-react";
+import { Edit, Settings, MessageCircle, Heart, HeartHandshake, BadgeCheck } from "lucide-react";
 import { useNavigate, Navigate } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore"
-import { useEffect, useState } from "react";
-import { getMyProfile, type MyProfile } from "@/services/auth-service";
+import { useEffect, useRef, useState } from "react";
+import { getMyProfile, uploadProfilePhoto, type MyProfile } from "@/services/auth-service";
 import { getMatchCounts } from "@/services/match-service";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { toast } from "@/components/ui/toast";
+import { ImagePlus, LoaderCircle } from "lucide-react";
+import { Attachment, AttachmentMedia, AttachmentContent, AttachmentTitle, AttachmentDescription, AttachmentActions, AttachmentAction } from "@/components/ui/attachment";
+
+import { Dialog } from "@base-ui/react/dialog";
+import {
+  type CarouselApi,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { X } from "lucide-react";
+import {
+  getLabel,
+  ORIENTATION_OPTIONS,
+  LOVE_STYLE_OPTIONS,
+  GOAL_OPTIONS,
+  FAMILY_PLAN_OPTIONS,
+  PET_OPTIONS,
+  WORKOUT_OPTIONS,
+  DRINKING_OPTIONS,
+  SMOKING_OPTIONS,
+  COMMUNICATION_OPTIONS,
+  ZODIAC_OPTIONS,
+  INTERESTED_IN_OPTIONS,
+} from "@/lib/some-lookups";
+
+
 
 export default function ProfilePage() {
   const { user, login, logout } = useAuthStore()
   const [profile, setProfile] = useState<MyProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [matchCount, setMatchCount] = useState<number | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightboxCurrentIndex, setLightboxCurrentIndex] = useState(0);
+  const [lightboxCarouselApi, setLightboxCarouselApi] = useState<CarouselApi | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState<{ fileName: string; progress: number } | null>(null)
+
 
   const navigate = useNavigate()
 
@@ -81,6 +115,51 @@ export default function ProfilePage() {
   }, [login, navigate, user])
 
   useEffect(() => {
+    if (!lightboxCarouselApi || lightboxIndex === null) return;
+    const carouselApi = lightboxCarouselApi;
+
+    function handleLightboxSelect() {
+      setLightboxCurrentIndex(carouselApi.selectedScrollSnap());
+    }
+
+    handleLightboxSelect();
+    carouselApi.on("select", handleLightboxSelect);
+    return () => {
+      carouselApi.off("select", handleLightboxSelect);
+    };
+  }, [lightboxCarouselApi, lightboxIndex]);
+
+  const photoUploadController = useRef<AbortController | null>(null)
+  async function handlePhoto(file: File) {
+    const controller = new AbortController()
+    photoUploadController.current = controller
+    setUploadingPhoto({ fileName: file.name, progress: 0 })
+
+    try {
+      await uploadProfilePhoto(file, {
+        signal: controller.signal,
+        onProgress: (progress) => setUploadingPhoto({ fileName: file.name, progress }),
+      })
+      const nextProfile = await getMyProfile()
+      setProfile(nextProfile)
+      toast.add({ type: "success", title: "Фото додано" })
+    } catch (error: unknown) {
+      if (controller.signal.aborted) return
+      toast.add({ type: "error", title: "Не вдалося додати фото", description: getApiErrorMessage(error, "Перевірте формат і розмір файлу.") })
+    } finally {
+      if (photoUploadController.current === controller) {
+        photoUploadController.current = null
+        setUploadingPhoto(null)
+      }
+    }
+  }
+
+  function cancelPhotoUpload() {
+    photoUploadController.current?.abort()
+  }
+
+
+  useEffect(() => {
     if (!user) {
       return
     }
@@ -134,12 +213,18 @@ export default function ProfilePage() {
 
   console.log(profile?.createdAt);
 
+  const photos = profile?.photos ? [...profile.photos].sort((a, b) => {
+    if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
+    return a.order - b.order;
+  }) : [];
+  const count = photos.length;
+
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full flex-1 flex-col ">
       <ScrollArea className="h-full min-h-0 flex-1">
         <div className="container mx-auto px-4 py-6 md:px-6 2xl:max-w-350">
-          <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row">
+          <div className="mb-6 flex flex-col items-start justify-between gap-2 sm:flex-row">
             <h1 className="text-2xl font-semibold">Особистий Кабінет</h1>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={() => navigate("/me/edit")}>
@@ -184,18 +269,32 @@ export default function ProfilePage() {
                     <p className="text-muted-foreground text-sm">
                       {user.provider === "google" ? "Google user" : "Користувач"}
                     </p>
-
-
                   </div>
 
-                  <div className="mt-6 space-y-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Дата реєстрації</span>
-                      <span>{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : ""}</span>
+                  <div className="mt-6 space-y-3 border-t border-border/50 pt-4 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground font-medium">Дата реєстрації</span>
+                      <span className="font-medium text-foreground">
+                        {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "—"}
+                      </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Активність</span>
-                      <span>{profile?.isFaceVerified ? "Верифіковано" : "Не верифіковано"}</span>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground font-medium">Верифікація</span>
+                      {profile?.isFaceVerified ? (
+                        <Badge variant="secondary" className="text-xs">
+                          Верифіковано
+                        </Badge>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2.5 text-xs font-medium border-primary/40 text-primary hover:bg-primary/10"
+                          onClick={() => navigate("/verification")}
+                        >
+                          Пройти
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <Button className="mt-4 w-full" size="lg" onClick={() => { logout(); navigate("/login") }}>
@@ -203,6 +302,216 @@ export default function ProfilePage() {
                   </Button>
                 </CardContent>
               </Card>
+
+              <Card className="mt-4 p-0">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-center pb-3">
+                    <h3 className="text-lg font-semibold">Фотографії</h3>
+                  </div>
+                  <label
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 mb-4  rounded-xl border border-dashed border-primary/40 bg-primary/5 py-2 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                    aria-label="Додати фото"
+                  >
+                    <ImagePlus className="size-4" />
+                    <span>Додати нове фото</span>
+                    <input
+                      className="hidden"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                      disabled={!!uploadingPhoto}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        if (file) void handlePhoto(file);
+                      }}
+                    />
+                  </label>
+
+                  {/* ВАРІАНТ 1: Лише 1 фото */}
+                  {count === 1 && (
+                    <div className="grid grid-cols-1 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLightboxCurrentIndex(0);
+                          setLightboxIndex(0);
+                        }} className="aspect-[4/5] relative overflow-hidden rounded-2xl">
+                        <img src={photos[0].url} alt="Main photo" className="size-full object-cover" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* ВАРІАНТ 2: 2 фотографії */}
+                  {count === 2 && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {photos.map((photo, index) => (
+                        <button
+                          key={photo.id}
+                          type="button"
+                          onClick={() => {
+                            setLightboxCurrentIndex(index);
+                            setLightboxIndex(index);
+                          }} className="aspect-square relative overflow-hidden rounded-2xl">
+                          <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ВАРІАНТ 3: Від 3 до 6 фото */}
+                  {count >= 3 && count < 7 && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {photos.map((photo, index) => (
+                        <button
+                          key={photo.id}
+                          type="button"
+                          onClick={() => {
+                            setLightboxCurrentIndex(index);
+                            setLightboxIndex(index);
+                          }} className="aspect-square relative overflow-hidden rounded-2xl">
+                          <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                        </button>
+                      ))}
+                      {uploadingPhoto && (
+                        <div className="mt-3">
+                          <Attachment state="uploading" className="w-full">
+                            <AttachmentMedia>
+                              <LoaderCircle className="animate-spin" />
+                            </AttachmentMedia>
+                            <AttachmentContent>
+                              <AttachmentTitle>{uploadingPhoto.fileName}</AttachmentTitle>
+                              <AttachmentDescription>
+                                Завантаження · {uploadingPhoto.progress}%
+                              </AttachmentDescription>
+                            </AttachmentContent>
+                            <AttachmentActions>
+                              <AttachmentAction
+                                type="button"
+                                aria-label="Скасувати завантаження"
+                                onClick={cancelPhotoUpload}
+                              >
+                                <X />
+                              </AttachmentAction>
+                            </AttachmentActions>
+                          </Attachment>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ВАРІАНТ 4: 6+ фото (Макет з фігми) */}
+                  {count >= 7 && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Перші 3 великі фото */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLightboxCurrentIndex(0);
+                          setLightboxIndex(0);
+                        }}
+                        className="aspect-square relative overflow-hidden rounded-2xl"
+                      >
+                        <img src={photos[0].url} alt="Photo 1" className="size-full object-cover" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLightboxCurrentIndex(1);
+                          setLightboxIndex(1);
+                        }}
+                        className="aspect-square relative overflow-hidden rounded-2xl"
+                      >
+                        <img src={photos[1].url} alt="Photo 2" className="size-full object-cover" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLightboxCurrentIndex(2);
+                          setLightboxIndex(2);
+                        }}
+                        className="aspect-square relative overflow-hidden rounded-2xl"
+                      >
+                        <img src={photos[2].url} alt="Photo 3" className="size-full object-cover" />
+                      </button>
+
+                      {/* Блок 2х2 для решти фото */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {photos.slice(3, 7).map((photo, index) => {
+                          const actualIndex = index + 3;
+                          return (
+                            <button
+                              key={photo.id}
+                              type="button"
+                              onClick={() => {
+                                setLightboxCurrentIndex(actualIndex);
+                                setLightboxIndex(actualIndex);
+                              }}
+                              className="aspect-square relative overflow-hidden rounded-xl"
+                            >
+                              <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="mt-4 p-0">
+                <CardContent className="space-y-4 p-6">
+                  {/* Заголовок та кнопка редагування */}
+                  <div className="flex items-center justify-center border-b border-border/60 pb-3">
+                    <h3 className="text-lg font-semibold">Мої налаштування</h3>
+                  </div>
+
+                  {/* Статус приватності по центру */}
+                  <div className="flex justify-between items-center gap-2">
+                    <Badge variant={profile.isPrivate ? "secondary" : "outline"}>
+                      {profile.isPrivate ? "Приватний профіль" : "Відкритий профіль"}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground hover:text-foreground"
+                      aria-label="Редагувати налаштування"
+                      onClick={() => navigate("/settings")}
+                    >
+                      <Edit className="size-4" />
+                    </Button>
+                  </div>
+
+                  {profile.preferences ? (
+                    <div className="space-y-3">
+                      {/* Показувати */}
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2 text-sm">
+                        <span className="font-medium text-muted-foreground">Показувати</span>
+                        <span className="font-semibold text-foreground">{getLabel(INTERESTED_IN_OPTIONS, profile.preferences.showMe)}</span>
+                      </div>
+                      {/* Вік */}
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2 text-sm">
+                        <span className="font-medium text-muted-foreground">Вік</span>
+                        <span className="font-semibold text-foreground">
+                          {profile.preferences.minAge}–{profile.preferences.maxAge} років
+                        </span>
+                      </div>
+
+                      {/* Відстань */}
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2 text-sm">
+                        <span className="font-medium text-muted-foreground">Відстань</span>
+                        <span className="font-semibold text-foreground">
+                          {profile.preferences.maxDistanceKm
+                            ? `${profile.preferences.maxDistanceKm} км`
+                            : "Без обмежень"}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm italic text-muted-foreground/60">
+                      Налаштування пошуку ще не збережені.
+                    </p>
+                  )}
+                </CardContent>              </Card>
             </div>
 
             {/* Main Content */}
@@ -258,7 +567,7 @@ export default function ProfilePage() {
 
               <ProfileDetails profile={profile} />
 
-              {/* Recent Activity */}
+              {/* Recent Activity
               <Card className="p-0">
                 <CardContent className="p-6">
                   <h3 className="mb-4 text-lg font-semibold">Остання активність</h3>
@@ -295,60 +604,171 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           </div>
         </div>
-      </ScrollArea>
-    </div>
+      </ScrollArea >
+
+      {/* Модальне вікно перегляду фотографій (Lightbox) */}
+      <Dialog.Root
+        open={lightboxIndex !== null}
+        onOpenChange={(open) => {
+          if (!open) setLightboxIndex(null);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs" />
+          <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4 text-white outline-none">
+            <Dialog.Title className="sr-only">
+              Перегляд фотографій профілю {displayName}
+            </Dialog.Title>
+            {lightboxIndex !== null && (
+              <>
+                {/* Кнопка закриття */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-lg"
+                  className="absolute top-4 right-4 z-20 border border-white/25 bg-neutral-950/75 text-white shadow-lg hover:bg-neutral-800 hover:text-white"
+                  aria-label="Закрити перегляд"
+                  onClick={() => setLightboxIndex(null)}
+                >
+                  <X />
+                </Button>
+
+                {/* Карусель перегляду */}
+                <Carousel
+                  setApi={setLightboxCarouselApi}
+                  opts={{
+                    startIndex: lightboxIndex,
+                    loop: photos.length > 1,
+                  }}
+                  className="w-full max-w-5xl"
+                >
+                  <CarouselContent className="ml-0">
+                    {photos.map((photo, index) => (
+                      <CarouselItem key={photo.id} className="pl-0">
+                        <img
+                          src={photo.url}
+                          alt={`${displayName}, фото ${index + 1}`}
+                          className="mx-auto h-[80vh] max-h-225 w-full object-contain"
+                        />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  {photos.length > 1 && (
+                    <>
+                      <CarouselPrevious className="left-2 size-11 rounded-full border border-white/25 bg-neutral-950/75 text-white shadow-lg backdrop-blur-sm hover:bg-neutral-800 hover:text-white sm:left-4" />
+                      <CarouselNext className="right-2 size-11 rounded-full border border-white/25 bg-neutral-950/75 text-white shadow-lg backdrop-blur-sm hover:bg-neutral-800 hover:text-white sm:right-4" />
+                    </>
+                  )}
+                </Carousel>
+
+                {/* Лічильник фото (наприклад: 2 / 5) */}
+                <div
+                  className="absolute bottom-5 left-1/2 -translate-x-1/2 text-sm text-white bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs"
+                  aria-live="polite"
+                >
+                  {lightboxCurrentIndex + 1} / {photos.length}
+                </div>
+              </>
+            )}
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </div >
   );
 }
 
 function ProfileDetails({ profile }: { profile: MyProfile }) {
   const details = [
-    ["Стать", profile.gender],
-    ["Вік", profile.age ? `${profile.age} років` : null],
-    ["Знак зодіаку", profile.zodiac],
-    ["Орієнтація", profile.orientation],
-    ["Шукає", profile.lookingFor],
-    ["Зріст", profile.heightCm ? `${profile.heightCm} см` : null],
-    ["Заняття", profile.occupation],
-    ["Компанія", profile.company],
-    ["Освіта", profile.school],
-    ["Сімейні плани", profile.familyPlans],
-    ["Спілкування", profile.communication],
-    ["Мова кохання", profile.loveLanguage],
-    ["Домашні тварини", profile.pets],
-    ["Алкоголь", profile.drinking],
-    ["Куріння", profile.smoking],
-    ["Спорт", profile.workout],
-  ] as const
+    // 1) місто + вік
+    { label: "Місто", value: profile.city },
+    { label: "Вік", value: profile.age ? `${profile.age} років` : null },
+
+    // 2) орієнтація + мова кохання
+    { label: "Орієнтація", value: getLabel(ORIENTATION_OPTIONS, profile.orientation) },
+    { label: "Мова кохання", value: getLabel(LOVE_STYLE_OPTIONS, profile.loveLanguage) },
+
+    // 3) стиль спілкування + фільтри (шукає)
+    { label: "Стиль спілкування", value: getLabel(COMMUNICATION_OPTIONS, profile.communication) },
+    { label: "Шукає", value: getLabel(GOAL_OPTIONS, profile.lookingFor) },
+
+    // 4) знак зодіаку + плани на сім'ю
+    { label: "Знак зодіаку", value: getLabel(ZODIAC_OPTIONS, profile.zodiac) },
+    { label: "Плани на сім'ю", value: getLabel(FAMILY_PLAN_OPTIONS, profile.familyPlans) },
+
+    // 5) тварини + освіта
+    { label: "Домашні тварини", value: getLabel(PET_OPTIONS, profile.pets) },
+    { label: "Освіта", value: profile.school },
+
+    // 6) Рід занять + компанія
+    { label: "Рід занять", value: profile.occupation },
+    { label: "Компанія", value: profile.company },
+
+    // 7) спорт + зріст
+    { label: "Спорт", value: getLabel(WORKOUT_OPTIONS, profile.workout) },
+    { label: "Зріст", value: profile.heightCm ? `${profile.heightCm} см` : null },
+
+    // 8) алкоголь + куріння
+    { label: "Алкоголь", value: getLabel(DRINKING_OPTIONS, profile.drinking) },
+    { label: "Куріння", value: getLabel(SMOKING_OPTIONS, profile.smoking) },
+  ];
+
 
   return <div className="space-y-4">
     <Card>
       <CardContent className="space-y-5 p-6">
         <div>
-          <h3 className="text-lg font-semibold">Про себе</h3>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Біо:</h6>{profile.bio || "Розкажіть про себе, щоб іншим було легше познайомитися з вами."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Рід занять:</h6>{profile.occupation || "Розкажіть про свій професійний досвід чи навчання..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Компанія:</h6>{profile.company || "Розкажіть про свою компанію, де працюєте..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Школа:</h6>{profile.school || "Розкажіть про свою школу..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Зріст:</h6>{profile.heightCm ? `${profile.heightCm} см` : null}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Місто:</h6>{profile.city || "Розкажіть про своє місто..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Плани на сім'ю:</h6>{profile.familyPlans || "Розкажіть про свої плани на сім'ю..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Стиль спілкування:</h6>{profile.communication || "Розкажіть про свій стиль спілкування..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Стиль кохання:</h6>{profile.loveLanguage || "Розкажіть про свій стиль кохання..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Домашні улюбленці:</h6>{profile.pets || "Розкажіть про своїх домашніх улюбленців..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Напої:</h6>{profile.drinking || "Розкажіть як часто вживаєте алкоголь..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Як часто ти куриш:</h6>{profile.smoking || "Розкажіть як часто курите..."}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"> <h6>Тренування:</h6>{profile.workout || "Розкажіть як часто займаєтесь спортом..."}</p>
+          <h3 className="text-lg font-semibold mb-2">Про себе</h3>
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
+            {profile.bio ? (
+              profile.bio
+            ) : (
+              <span className="italic text-muted-foreground/60">
+                Розкажіть про себе, щоб іншим було легше познайомитися з вами.
+              </span>
+            )}
+          </p>
         </div>
-        <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-          {details.filter(([, value]) => value).map(([label, value]) => <div className="flex justify-between gap-4 border-b border-border/60 pb-2 text-sm" key={label}><span className="text-muted-foreground">{label}</span><span className="text-right">{value}</span></div>)}
+
+        {/* Парна сітка в 2 колонки */}
+        <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2 border-t border-border/60 pt-4">
+          {details.map(({ label, value }) => (
+            <div
+              key={label}
+              className="flex justify-between items-center border-b border-border/50 pb-2 text-sm"
+            >
+              <span className="text-muted-foreground font-medium">{label}</span>
+              {value ? (
+                <span className="font-medium text-foreground text-right">{value}</span>
+              ) : (
+                <span className="text-xs text-muted-foreground/50 italic">Не вказано</span>
+              )}
+            </div>
+          ))}
         </div>
+        {/* Соціальні мережі */}
         <div className="grid gap-4 border-t border-border/60 pt-4 sm:grid-cols-2">
-          <div><p className="mb-2 text-sm text-muted-foreground">Instagram</p><p className="text-sm">{profile.instagramHandle ? `@${profile.instagramHandle}` : "Не вказано"}</p></div>
-          <div><p className="mb-2 text-sm text-muted-foreground">Spotify</p><p className="text-sm">{profile.spotifyHandle || "Не вказано"}</p></div>
+          <div>
+            <p className="mb-1 text-xs text-muted-foreground">Instagram</p>
+            <p className="text-sm font-medium">
+              {profile.instagramHandle ? (
+                `@${profile.instagramHandle}`
+              ) : (
+                <span className="text-muted-foreground/50 italic">Не вказано</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <p className="mb-1 text-xs text-muted-foreground">Spotify</p>
+            <p className="text-sm font-medium">
+              {profile.spotifyHandle || (
+                <span className="text-muted-foreground/50 italic">Не вказано</span>
+              )}
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -359,9 +779,5 @@ function ProfileDetails({ profile }: { profile: MyProfile }) {
     </div>
 
     <Card><CardContent className="space-y-4 p-6"><h3 className="text-lg font-semibold">Мої відповіді</h3>{profile.promptAnswers.length ? profile.promptAnswers.map((answer) => <div className="border-b border-border/60 pb-3 last:border-0 last:pb-0" key={answer.promptId}><p className="text-sm text-muted-foreground">{answer.question}</p><p className="mt-1 text-sm">{answer.answer}</p></div>) : <p className="text-sm text-muted-foreground">Відповідей ще немає</p>}</CardContent></Card>
-
-    <Card><CardContent className="space-y-4 p-6"><div className="flex items-center justify-between gap-3"><h3 className="text-lg font-semibold">Мої налаштування</h3><Badge variant={profile.isPrivate ? "secondary" : "outline"}>{profile.isPrivate ? "Приватний профіль" : "Відкритий профіль"}</Badge></div>{profile.preferences ? <div className="grid gap-4 text-sm sm:grid-cols-3"><div><p className="text-muted-foreground">Показувати</p><p className="mt-1">{profile.preferences.showMe}</p></div><div><p className="text-muted-foreground">Вік</p><p className="mt-1">{profile.preferences.minAge}–{profile.preferences.maxAge}</p></div><div><p className="text-muted-foreground">Відстань</p><p className="mt-1">{profile.preferences.maxDistanceKm ? `${profile.preferences.maxDistanceKm} км` : "Без обмежень"}</p></div></div> : <p className="text-sm text-muted-foreground">Налаштування пошуку ще не збережені.</p>}</CardContent></Card>
-
-    {profile.photos.length > 0 && <Card><CardContent className="p-6"><h3 className="mb-4 text-lg font-semibold">Фотографії</h3><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{profile.photos.map((photo) => <img className="aspect-square w-full rounded-2xl object-cover" src={photo.url} alt="Фото профілю" key={photo.id} />)}</div></CardContent></Card>}
   </div>
 }
