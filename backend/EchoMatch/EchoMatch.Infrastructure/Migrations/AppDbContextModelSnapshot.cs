@@ -22,6 +22,182 @@ namespace EchoMatch.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("EchoMatch.Domain.Entities.Event", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CoverPublicId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CoverUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("EndsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JoinPolicy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("OrganizerProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PlaceName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("OrganizerProfileId");
+
+                    b.HasIndex("StartsAt")
+                        .HasFilter("[IsDeleted] = 0 AND [CancelledAt] IS NULL");
+
+                    b.ToTable("Events", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Events_Capacity", "[Capacity] IS NULL OR [Capacity] BETWEEN 2 AND 500");
+
+                            t.HasCheckConstraint("CK_Events_EndsAfterStart", "[EndsAt] IS NULL OR [EndsAt] > [StartsAt]");
+                        });
+                });
+
+            modelBuilder.Entity("EchoMatch.Domain.Entities.EventMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("SenderProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Sequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Sequence"));
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    SqlServerKeyBuilderExtensions.IsClustered(b.HasKey("Id"), false);
+
+                    b.HasIndex("SenderProfileId");
+
+                    b.HasIndex("EventId", "Sequence")
+                        .IsUnique();
+
+                    SqlServerIndexBuilderExtensions.IsClustered(b.HasIndex("EventId", "Sequence"));
+
+                    b.ToTable("EventMessages", (string)null);
+                });
+
+            modelBuilder.Entity("EchoMatch.Domain.Entities.EventParticipant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.HasIndex("EventId", "ProfileId")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("EventParticipants", (string)null);
+                });
+
             modelBuilder.Entity("EchoMatch.Domain.Entities.Interest", b =>
                 {
                     b.Property<int>("Id")
@@ -1184,6 +1360,160 @@ namespace EchoMatch.Infrastructure.Migrations
                     b.ToTable("UserProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("EventCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("EventCategories", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "party",
+                            IsActive = true,
+                            Name = "Вечірки"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "sport",
+                            IsActive = true,
+                            Name = "Спорт"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "music",
+                            IsActive = true,
+                            Name = "Музика й концерти"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "food",
+                            IsActive = true,
+                            Name = "Їжа та напої"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = "outdoors",
+                            IsActive = true,
+                            Name = "Природа й прогулянки"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Code = "games",
+                            IsActive = true,
+                            Name = "Ігри та настолки"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Code = "culture",
+                            IsActive = true,
+                            Name = "Культура й мистецтво"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Code = "learning",
+                            IsActive = true,
+                            Name = "Лекції та навчання"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Code = "networking",
+                            IsActive = true,
+                            Name = "Нетворкінг"
+                        });
+                });
+
+            modelBuilder.Entity("EchoMatch.Domain.Entities.Event", b =>
+                {
+                    b.HasOne("EventCategory", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EchoMatch.Domain.Entities.UserProfile", "OrganizerProfile")
+                        .WithMany()
+                        .HasForeignKey("OrganizerProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("OrganizerProfile");
+                });
+
+            modelBuilder.Entity("EchoMatch.Domain.Entities.EventMessage", b =>
+                {
+                    b.HasOne("EchoMatch.Domain.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EchoMatch.Domain.Entities.UserProfile", "SenderProfile")
+                        .WithMany()
+                        .HasForeignKey("SenderProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("SenderProfile");
+                });
+
+            modelBuilder.Entity("EchoMatch.Domain.Entities.EventParticipant", b =>
+                {
+                    b.HasOne("EchoMatch.Domain.Entities.Event", "Event")
+                        .WithMany("Participants")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EchoMatch.Domain.Entities.UserProfile", "Profile")
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("Profile");
+                });
+
             modelBuilder.Entity("EchoMatch.Domain.Entities.Match", b =>
                 {
                     b.HasOne("EchoMatch.Domain.Entities.UserProfile", "ProfileOne")
@@ -1393,6 +1723,11 @@ namespace EchoMatch.Infrastructure.Migrations
                     b.Navigation("Preferences");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EchoMatch.Domain.Entities.Event", b =>
+                {
+                    b.Navigation("Participants");
                 });
 
             modelBuilder.Entity("EchoMatch.Domain.Entities.Interest", b =>
