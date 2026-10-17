@@ -113,12 +113,25 @@ impressions.
 
 ## Events
 
-- [ ] Create Event
-- [ ] Join Event
-- [ ] Organizer Approval
-- [ ] Tags
-- [ ] Geo Search
-- [ ] Event Chat
+Contract in api.md (Event Endpoints). Target: the defense, end of October.
+
+- [x] Data: EventCategory lookup, Event, EventParticipant, EventMessage
+      (migration Events)
+- [x] Create, edit, cancel, cover
+- [x] List with category, city, title search and dates; event details
+- [x] Join and leave, with a row lock so the last seat goes to one person
+- [x] Organizer Approval, per event (joinPolicy Open | ApprovalRequired):
+      requests, approve, reject, remove a participant
+- [x] Participants, visible to approved participants only
+- [ ] GET /api/events/mine with last message and unread count
+- [ ] Event Chat with a read mark per participant
+- [ ] Live updates, addressed to approved users rather than a group
+- [ ] Seed: events from seeded profiles
+- [ ] Tags beyond the single category (Interests as tags)
+- [ ] Geo Search: coordinates on Event (two nullable columns) picked on a map,
+      then GeoLocation.BoundingBox as the feed does. Until then: city filter
+- [ ] Reactions in event chats
+- [ ] Reminder before an event starts
 
 ---
 

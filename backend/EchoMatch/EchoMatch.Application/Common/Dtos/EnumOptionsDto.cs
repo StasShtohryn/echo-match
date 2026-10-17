@@ -15,5 +15,6 @@ namespace EchoMatch.Application.Common.Dtos
         public required IReadOnlyList<string> Drinking { get; init; }
         public required IReadOnlyList<string> Smoking { get; init; }
         public required IReadOnlyList<string> Workout { get; init; }
+        public required IReadOnlyList<string> EventJoinPolicy { get; init; }
     }
 }
