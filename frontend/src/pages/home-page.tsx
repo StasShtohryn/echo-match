@@ -9,7 +9,7 @@ import { getApiErrorMessage } from "@/lib/api-error"
 import { getMyProfile, updateMyPreferences, type DiscoveryPreferences, type DiscoveryStatus, type PublicProfile, type UpdatePreferencesRequest } from "@/services/auth-service"
 import { useDiscoveryFeed } from "@/hooks/use-discovery-feed"
 import { useMatches } from "@/hooks/use-matches"
-import { Heart } from "lucide-react"
+import { Heart, Undo2 } from "lucide-react"
 import { calculateTotalScore } from "@/lib/compatibility"
 
 const statusContent: Record<DiscoveryStatus, { title: string; description: string; action?: string }> = {
@@ -27,7 +27,20 @@ export default function HomePage() {
   const [preferences, setPreferences] = useState<DiscoveryPreferences | null>(null)
   const [myProfile, setMyProfile] = useState<PublicProfile | null>(null)
 
-  const { currentCandidate, status, isLoading, isSwiping, error, lastSwipe, swipe, refresh, dismissSwipeResult } = useDiscoveryFeed()
+  const {
+    currentCandidate,
+    status,
+    isLoading,
+    isSwiping,
+    isUndoing,
+    canUndo,
+    error,
+    lastSwipe,
+    swipe,
+    undoLastSwipe,
+    refresh,
+    dismissSwipeResult,
+  } = useDiscoveryFeed()
   const { matches, isLoading: isMatchesLoading, refresh: refreshMatches } = useMatches()
 
 
@@ -101,6 +114,15 @@ export default function HomePage() {
     }
   }
 
+  async function handleUndoSwipe() {
+    try {
+      await undoLastSwipe()
+      toast.add({ type: "success", title: "Анкету повернуто" })
+    } catch (nextError: unknown) {
+      toast.add({ type: "error", title: "Не вдалося повернути анкету", description: getApiErrorMessage(nextError, "Спробуйте ще раз.") })
+    }
+  }
+
   const currentStatus = statusContent[status]
   const showStatus = isLoading || !currentCandidate || status !== "Ready"
 
@@ -111,16 +133,24 @@ export default function HomePage() {
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
       <FilterMatchPanel matches={matches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto bg-muted/20 px-2 py-4">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-muted/20 px-2 py-4">
         {showStatus ? (
           <div className="flex max-w-sm flex-1 flex-col justify-center items-center gap-4 text-center">
             <h2 className="text-xl font-semibold">{isLoading ? "Завантаження..." : currentStatus.title}</h2>
             {!isLoading && <p className="text-sm text-muted-foreground">{currentStatus.description}</p>}
             {!isLoading && currentStatus.action && <Button onClick={() => navigate(status === "PhotoRequired" ? "/me" : "/settings")}>{currentStatus.action}</Button>}
+            {canUndo && <Button variant="outline" disabled={isUndoing || isSwiping} onClick={() => void handleUndoSwipe()}><Undo2 /> Повернути попередню анкету</Button>}
             {/* {error && <p className="text-sm text-destructive">{getApiErrorMessage(error, "Не вдалося завантажити анкети.")}</p>} */}
           </div>
         ) : (
-          <PersonCard candidate={currentCandidate} isSwiping={isSwiping} onSwipe={(direction) => void swipe(direction)} />
+          <PersonCard
+            candidate={currentCandidate}
+            isSwiping={isSwiping || isUndoing}
+            isUndoing={isUndoing}
+            canUndo={canUndo}
+            onSwipe={(direction) => void swipe(direction)}
+            onUndo={() => void handleUndoSwipe()}
+          />
         )}
       </main>
       <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} distanceKm={currentCandidate?.distanceKm ?? null} compatibilityPercent={compatibilityScore} />

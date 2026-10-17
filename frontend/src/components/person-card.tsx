@@ -31,10 +31,20 @@ const SWIPE_THRESHOLD = 100
 interface PersonCardProps {
   candidate: DiscoveryCandidate
   isSwiping?: boolean
+  isUndoing?: boolean
+  canUndo?: boolean
   onSwipe: (direction: SwipeDirection) => void
+  onUndo: () => void
 }
 
-export default function PersonCard({ candidate, isSwiping = false, onSwipe }: PersonCardProps) {
+export default function PersonCard({
+  candidate,
+  isSwiping = false,
+  isUndoing = false,
+  canUndo = false,
+  onSwipe,
+  onUndo,
+}: PersonCardProps) {
   const [dragOffset, setDragOffset] = useState(0)
   const [exitDirection, setExitDirection] = useState<SwipeDirection | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -204,16 +214,25 @@ export default function PersonCard({ candidate, isSwiping = false, onSwipe }: Pe
 
       <div className="flex flex-row gap-4 justify-center items-center" >
         <Card className="flex flex-row items-center gap-4 py-2 px-2">
-          <Button variant={"outline"} size={"icon-lg"} className="h-11 w-11 cursor-pointer" disabled>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-lg"
+            className="h-11 w-11 cursor-pointer"
+            disabled={!canUndo || isSwiping || isUndoing}
+            aria-label="Повернути попередню анкету"
+            title="Повернути попередню анкету"
+            onClick={onUndo}
+          >
             <Undo2 />
           </Button>
-          <Button variant={"outline"} size={"icon-lg"} className="h-12 w-12 cursor-pointer" disabled={isSwiping} onClick={() => onSwipe("Dislike")}>
+          <Button variant={"outline"} size={"icon-lg"} className="h-12 w-12 cursor-pointer" disabled={isSwiping || isUndoing} onClick={() => onSwipe("Dislike")}>
             <X />
           </Button>
           <Button variant={"outline"} size={"icon-lg"} className="h-11 w-11 cursor-pointer" disabled>
             <Star />
           </Button>
-          <Button size={"icon-lg"} className="h-12 w-12 cursor-pointer" disabled={isSwiping} onClick={() => onSwipe("Like")}>
+          <Button size={"icon-lg"} className="h-12 w-12 cursor-pointer" disabled={isSwiping || isUndoing} onClick={() => onSwipe("Like")}>
             <Heart />
           </Button>
         </Card>
