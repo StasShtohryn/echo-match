@@ -12,8 +12,16 @@ import {
 } from "@/components/ui/attachment"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/components/ui/toast"
@@ -56,6 +64,8 @@ const enumFields: Array<{ key: keyof UpdateProfileRequest; label: string; option
   { key: "smoking", label: "Куріння", optionKey: "smoking" },
   { key: "workout", label: "Спорт", optionKey: "workout" },
 ]
+
+const noSelectionValue = "__not_specified__"
 
 function emptyForm(): UpdateProfileRequest {
   return {
@@ -234,12 +244,12 @@ export default function ProfileEditPage() {
           </FieldGroup></CardContent></Card>
 
           <Card><CardHeader><CardTitle>Вподобання анкети</CardTitle></CardHeader><CardContent><FieldGroup className="grid gap-4 md:grid-cols-2">
-            {enumFields.map(({ key, label, optionKey }) => <Field key={key}><FieldLabel htmlFor={key}>{label}</FieldLabel><select id={key} className="h-9 rounded-2xl border border-transparent bg-input/50 px-3 text-sm" value={form[key] ?? ""} onChange={(event) => updateField(key, event.target.value)}><option value="">Не вказано</option>{(lookups.options[optionKey] ?? []).map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>)}
+            {enumFields.map(({ key, label, optionKey }) => <Field key={key}><FieldLabel htmlFor={key}>{label}</FieldLabel><Select value={form[key] ?? ""} onValueChange={(value) => updateField(key, value === noSelectionValue ? "" : value ?? "")}><SelectTrigger id={key} className="w-full"><SelectValue placeholder="Не вказано" /></SelectTrigger><SelectContent><SelectItem value={noSelectionValue}>Не вказано</SelectItem>{(lookups.options[optionKey] ?? []).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></Field>)}
           </FieldGroup></CardContent></Card>
 
           <Card><CardHeader><CardTitle>Інтереси та мови</CardTitle></CardHeader><CardContent className="grid gap-6 md:grid-cols-2"><ChoiceList title="Інтереси, до 5" items={lookups.interests} selected={interestIds} onToggle={(id) => toggleId(interestIds, id, 5, setInterestIds)} /><ChoiceList title="Мови, до 10" items={lookups.languages} selected={languageIds} onToggle={(id) => toggleId(languageIds, id, 10, setLanguageIds)} /></CardContent></Card>
 
-          <Card><CardHeader><CardTitle>Запитання</CardTitle></CardHeader><CardContent className="space-y-4">{[0, 1, 2].map((index) => { const answer = promptAnswers[index] ?? { promptId: 0, answer: "" }; return <div className="grid gap-2 md:grid-cols-2" key={index}><select className="h-9 rounded-2xl border border-transparent bg-input/50 px-3 text-sm" value={answer.promptId || ""} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, promptId: Number(event.target.value) }; return next })}><option value="">Оберіть запитання</option>{lookups.prompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}</select><Textarea placeholder="Ваша відповідь" maxLength={124} value={answer.answer} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, answer: event.target.value }; return next })} /></div> })}</CardContent></Card>
+          <Card><CardHeader><CardTitle>Запитання</CardTitle></CardHeader><CardContent className="space-y-4">{[0, 1, 2].map((index) => { const answer = promptAnswers[index] ?? { promptId: 0, answer: "" }; return <div className="grid gap-2 md:grid-cols-2" key={index}><Select value={answer.promptId ? String(answer.promptId) : "0"} onValueChange={(value) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, promptId: Number(value ?? 0) }; return next })}><SelectTrigger className="w-full"><SelectValue placeholder="Оберіть запитання" /></SelectTrigger><SelectContent><SelectItem value="0">Оберіть запитання</SelectItem>{lookups.prompts.map((prompt) => <SelectItem key={prompt.id} value={String(prompt.id)}>{prompt.name}</SelectItem>)}</SelectContent></Select><Textarea placeholder="Ваша відповідь" maxLength={124} value={answer.answer} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, answer: event.target.value }; return next })} /></div> })}</CardContent></Card>
 
           <Card><CardHeader><CardTitle>Фотографії</CardTitle></CardHeader><CardContent className="space-y-4"><label className="inline-flex cursor-pointer items-center rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground"><ImagePlus className="mr-2 size-4" />Додати фото<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={!!uploadingPhoto} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void handlePhoto(file) }} /></label>{uploadingPhoto && <Attachment state="uploading" className="w-full max-w-md"><AttachmentMedia><LoaderCircle className="animate-spin" /></AttachmentMedia><AttachmentContent><AttachmentTitle>{uploadingPhoto.fileName}</AttachmentTitle><AttachmentDescription>Завантаження · {uploadingPhoto.progress}%</AttachmentDescription></AttachmentContent><AttachmentActions><AttachmentAction type="button" aria-label="Скасувати завантаження" onClick={cancelPhotoUpload}><X /></AttachmentAction></AttachmentActions></Attachment>}<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{profile.photos.map((photo) => <div className="space-y-2" key={photo.id}><img src={photo.url} alt="Фото профілю" className="aspect-square w-full rounded-2xl object-cover" /> <div className="flex gap-1"><Button size="sm" variant={photo.isMain ? "secondary" : "outline"} disabled={photo.isMain} onClick={() => void makeMain(photo.id)}>{photo.isMain ? "Головне" : "Зробити головним"}</Button><Button size="icon" variant="ghost" aria-label="Видалити фото" onClick={() => void removePhoto(photo.id)}><Trash2 className="size-4" /></Button></div></div>)}</div></CardContent></Card>
           <div className="flex justify-end"><Link to="/settings"><Button variant="outline">Перейти до налаштувань</Button></Link></div>
@@ -250,5 +260,5 @@ export default function ProfileEditPage() {
 }
 
 function ChoiceList({ title, items, selected, onToggle }: { title: string; items: { id: number; name: string }[]; selected: number[]; onToggle: (id: number) => void }) {
-  return <fieldset><legend className="mb-3 text-sm font-medium">{title}</legend><div className="grid gap-2 sm:grid-cols-2">{items.map((item) => <label className="flex items-center gap-2 text-sm" key={item.id}><input type="checkbox" checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} />{item.name}</label>)}</div></fieldset>
+  return <fieldset><legend className="mb-3 text-sm font-medium">{title}</legend><div className="grid gap-2 sm:grid-cols-2">{items.map((item) => { const id = `${title}-${item.id}`; return <div className="flex items-center gap-2 text-sm" key={item.id}><Checkbox id={id} checked={selected.includes(item.id)} onCheckedChange={() => onToggle(item.id)} /><label htmlFor={id} className="cursor-pointer">{item.name}</label></div> })}</div></fieldset>
 }
