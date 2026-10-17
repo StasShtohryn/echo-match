@@ -97,6 +97,7 @@ export default function Header() {
 
   const displayName = profile?.displayName ?? user?.name ?? "Користувач";
   const userAge = profile?.age;
+  const mainPhoto = profile?.photos.find((photo) => photo.isMain) ?? profile?.photos[0];
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -167,7 +168,7 @@ export default function Header() {
                 style={{ borderColor: "var(--header-accent-border)" }}
               >
                 <AvatarImage
-                  src={profile?.photos?.[0]?.url ?? user?.picture ?? undefined}
+                  src={mainPhoto?.url ?? user?.picture ?? undefined}
                   alt={displayName}
                   className="object-cover"
                 />

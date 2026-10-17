@@ -195,9 +195,9 @@ Clears IsMain on every photo of the profile, then sets it on the target, so the
 Discovery Settings
 
 Three endpoints instead of one, because they belong to different screens and
-change at different rates: the phone sends location on every app open, the
-user edits preferences rarely, and visibility is a single switch. A merged
-payload would make every screen resend fields it does not show.
+change at different rates: the client refreshes location after successful
+authentication, users edit preferences rarely, and visibility is a single
+switch. A merged payload would make every screen resend fields it does not show.
 
 PUT /api/profiles/me/preferences
 
@@ -223,13 +223,13 @@ omitted field is rejected instead of silently becoming 0, a real point in the
 Gulf of Guinea. Stamps LastLocationUpdatedAt. 204 No Content.
 
 city is optional, up to 100 characters. The client resolves it from the
-coordinates by reverse geocoding and sends both together, so the stored city
-can never belong to an older position. Omitted or blank means the lookup did
-not succeed and leaves the current city untouched: losing a name the user may
-have typed by hand, because a third-party service failed, would be worse than
-keeping an older one. The server does not check the name against the
-coordinates — the city is display only, while every distance filter reads the
-coordinates.
+coordinates with OpenStreetMap Nominatim reverse geocoding and sends both
+together, so the stored city can never belong to an older position. Omitted or
+blank means the lookup did not succeed and leaves the current city untouched:
+losing a name the user may have typed by hand because a third-party service
+failed would be worse than keeping an older one. The server does not check the
+name against the coordinates — the city is display only, while every distance
+filter reads the coordinates.
 
 The same field is also writable through PUT /api/profiles/me, which is the
 manual path: a full profile replacement is the wrong shape for a background
