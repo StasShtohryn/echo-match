@@ -35,13 +35,14 @@ public static class DependencyInjection
         services.AddScoped<IDiscoveryRepository, DiscoveryRepository>();
 
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IEventRepository, EventRepository>();
 
         services.Configure<CloudinarySettings>(configuration.GetSection(CloudinarySettings.SectionName));
         services.AddSingleton<IPhotoStorage, CloudinaryPhotoStorage>();
 
         services.Configure<AiSettings>(configuration.GetSection(AiSettings.SectionName));
-        // Клієнт один на застосунок; BaseUrl у налаштуваннях, щоб у перевірках
-        // можна було підставити заглушку замість справжнього API
+        // Клієнт один на весь застосунок; BaseUrl береться з налаштувань, щоб
+        // у перевірках замість справжнього API можна було підставити заглушку
         services.AddSingleton(provider =>
         {
             var settings = provider.GetRequiredService<IOptions<AiSettings>>().Value;

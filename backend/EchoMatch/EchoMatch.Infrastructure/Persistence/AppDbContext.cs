@@ -25,6 +25,12 @@ public class AppDbContext : DbContext
 
     public DbSet<MessageReaction> MessageReactions => Set<MessageReaction>();
 
+
+    public DbSet<EventCategory> EventCategories => Set<EventCategory>();
+    public DbSet<Event> Events => Set<Event>();
+    public DbSet<EventParticipant> EventParticipants => Set<EventParticipant>();
+    public DbSet<EventMessage> EventMessages => Set<EventMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

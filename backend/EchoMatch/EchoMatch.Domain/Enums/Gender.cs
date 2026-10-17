@@ -65,3 +65,9 @@ public enum ReactionType { Heart, Laugh, Wow, Sad, Like, Fire }
 public enum AiSuggestionKind { FirstMessage, Reply, Rewrite, Grammar }
 
 public enum MessageTone { Friendly, Playful, Flirty, Sincere }
+
+public enum EventJoinPolicy { Open, ApprovalRequired }
+
+public enum EventParticipantStatus { Pending, Approved, Rejected }
+
+public enum EventRole { Organizer, Member }

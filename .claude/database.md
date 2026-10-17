@@ -32,7 +32,7 @@ LookupEntity
   Retire an item with IsActive = false. Never delete it, or existing
   references break.
   Not covered by the soft delete filter.
-  Interest, Language, ProfilePrompt
+  Interest, Language, ProfilePrompt, EventCategory
 
 No base class
   For pure join tables. Composite key, no audit, no soft delete.
@@ -276,6 +276,60 @@ MessageReaction
   One row per person rather than a column on Message, so a conversation of more
   than two people would need no schema change — only a different response shape.
   MessageId cascades with the message; ProfileId is Restrict.
+
+Events
+
+EventCategory (lookup)
+  Code, Name, IsActive. Seeded with fixed ids: party, sport, music, food,
+  outdoors, games, culture, learning, networking.
+
+Event
+  OrganizerProfileId, CategoryId, Title (max 100), Description (max 2000),
+  StartsAt, EndsAt, City, PlaceName, Capacity, JoinPolicy (Open |
+  ApprovalRequired), CoverUrl, CoverPublicId, CancelledAt
+  The place is text only. Coordinates would need a map to pick a point on, which
+  means a third-party service; until search by radius arrives they would be
+  stored and never read. Adding them later is two nullable columns.
+  The organizer lives here and not as a role on EventParticipant, so the fact
+  is stored once; the participants list derives the role by comparing ids.
+  Cancelling sets CancelledAt rather than deleting: participants must still see
+  the event and read its chat. IsDeleted stays for removal proper.
+  Capacity counts approved participants, the organizer included; null means no
+  limit. Check constraints: Capacity is null or 2..500, EndsAt is null or later
+  than StartsAt.
+  Index on StartsAt filtered to IsDeleted = 0 and CancelledAt IS NULL — the list
+  of upcoming events reads exactly that.
+  OrganizerProfileId and CategoryId are Restrict.
+
+EventParticipant
+  EventId, ProfileId, Status (Pending | Approved | Rejected), LastReadAt
+  Created only through Event.EnrolOrganizer and Event.Join, because the status
+  of a new participation follows the event's join policy.
+  The organizer has a row too, Approved, so participants, chat members and the
+  people whose unread count is kept are one set.
+  Unique index on (EventId, ProfileId) filtered to IsDeleted = 0. Leaving marks
+  the row deleted and frees the pair, as an undone swipe does. Rejected stays an
+  active row and keeps the pair, so a declined request cannot be sent again.
+  LastReadAt is the per-participant read mark of the event chat — the same idea
+  as Match.ProfileOneLastReadAt, moved onto the participant because there are
+  more than two.
+  EventId cascades; ProfileId is Restrict.
+
+EventMessage
+  EventId, SenderProfileId, Text (max Message.MaxTextLength), Sequence
+  The same physical layout as Message: nonclustered key, clustered unique
+  (EventId, Sequence), Sequence a bigint identity used as the paging cursor.
+  A table of its own rather than a nullable MatchId on Message: Messages is
+  clustered on MatchId and every chat query depends on it, and a second kind of
+  conversation is not worth reworking the busiest table.
+  Several messages added in one SaveChanges get their Sequence in EF's command
+  order, not in the order they were added. The app inserts one message per
+  request; anything that inserts in bulk (a seeder) must save one at a time
+  when the order matters.
+  A page joins the sender's profile for the name and photo, so the messages of
+  a soft-deleted profile drop out of the history along with it. Removing a
+  participant from the event does not touch their messages.
+  EventId cascades; SenderProfileId is Restrict.
 
 Required profile fields
 

@@ -12,5 +12,7 @@ namespace EchoMatch.Application.Common.Interfaces
         Task<IReadOnlyList<Interest>> GetActiveInterestsAsync(CancellationToken cancellationToken);
         Task<IReadOnlyList<Language>> GetActiveLanguagesAsync(CancellationToken cancellationToken);
         Task<IReadOnlyList<ProfilePrompt>> GetActivePromptsAsync(CancellationToken cancellationToken);
+
+        Task<IReadOnlyList<EventCategory>> GetActiveEventCategoriesAsync(CancellationToken cancellationToken);
     }
 }

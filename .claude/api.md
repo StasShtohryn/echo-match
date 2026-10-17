@@ -538,6 +538,231 @@ percentage in the feed is the client's own calculation and is unrelated to this.
 
 404  a match the caller is not part of, or one already ended
 
+Event Endpoints
+
+Status: contract agreed, implementation in progress. Shapes below are what the
+frontend builds against; anything that changes during implementation is
+changed here first.
+
+An event is an open meeting with a time, a place and a group chat for everyone
+who is going. The organizer is a participant too, with the role Organizer, so
+"participants", "members of the chat" and "whose unread count to keep" are one
+and the same set.
+
+Event categories come with GET /api/lookups as eventCategories, { id, code,
+name } like every other lookup, in the order of the seed. The join policies are
+listed there too, as options.eventJoinPolicy.
+
+Join policy and membership
+
+joinPolicy    Open              joining is immediate
+              ApprovalRequired  joining creates a request the organizer decides
+
+myStatus      null      no relation to the event
+              Pending   request sent, waiting for the organizer
+              Approved  going: sees participants, reads and writes the chat
+              Rejected  request declined or removed by the organizer
+
+Rejected is kept rather than deleted, so a declined person cannot send the same
+request again a second later. Leaving or withdrawing a request deletes the row,
+which frees the pair: joining again later starts over — through the organizer
+again when the event requires approval.
+
+capacity counts Approved participants, the organizer included. null means no
+limit. A full event still accepts requests under ApprovalRequired; the limit is
+checked when the organizer approves.
+
+EventCardDto
+
+{ id, title, category: { id, code, name }, startsAt, endsAt, city, placeName,
+  coverUrl, joinPolicy, capacity, participantsCount, myStatus, isOrganizer,
+  organizer: { profileId, displayName, mainPhotoUrl } }
+
+coverUrl is optional; without it the client shows the category's own picture.
+
+The place is text, not coordinates: city plus placeName, an address or a venue
+name as the organizer writes it. Nobody types coordinates by hand, and a map to
+pick a point on would mean a third-party map service. "Open on the map" is a
+plain link the client builds, with no API key and no integration:
+
+  https://www.google.com/maps/search/?api=1&query=<encodeURIComponent(placeName + ", " + city)>
+
+GET /api/events?categoryId=&city=&search=&from=&to=&page=1&limit=20
+
+Upcoming events, soonest first: not cancelled and not started yet. { items,
+hasMore }. city is an exact match, ignoring case — it stands in for "near me"
+until events carry coordinates. search matches the title, 2..100 characters.
+from and to bound startsAt. limit 1..50.
+
+Offset paging is acceptable here, unlike the feed: nothing the caller does
+removes an event from the list, so a page does not shift under them.
+
+GET /api/events/mine
+
+Events the caller organizes, is going to or waits for, past and cancelled ones
+included; Rejected ones are left out. Most recent activity first:
+
+[ { ...EventCardDto, cancelledAt,
+    lastMessage: { text, sentAt, senderDisplayName, isMine },
+    unreadCount } ]
+
+lastMessage and unreadCount are null and 0 for a Pending request: the chat is
+closed until approval, so neither the text nor the count may leak.
+
+Activity is the last message for an Approved participant and the moment of
+joining otherwise — a pending request must not climb the list because of a
+conversation its owner cannot see. Ties go to the sooner event. No paging: one
+person's events are few, like their matches.
+
+unreadCount counts other people's messages after the caller's read mark, the
+same rule as in the match list. The response is two queries — the cards through
+the same projection as the event list, and the chat state per participation —
+joined in memory.
+
+GET /api/events/{id}
+
+EventCardDto plus { description, cancelledAt, pendingCount }. pendingCount is
+filled for the organizer only.
+
+A cancelled event answers 404 to everyone except its participants, who still
+need to see that it was cancelled.
+
+POST /api/events
+
+Body: { title, description, categoryId, startsAt, endsAt, city, placeName,
+capacity, joinPolicy }. 201 with the event; the caller becomes its organizer.
+
+title up to 100, description up to 2000, city required up to 100, placeName up
+to 200. startsAt in the future and at most a year ahead; endsAt optional and
+later than startsAt. capacity 2..500 or null. joinPolicy is required: an
+omitted value would read as Open, the first enum member, and publish an event
+the organizer meant to screen.
+
+PUT /api/events/{id}
+
+The same body, organizer only (403). 409 once the event has started, and when
+capacity would drop below the number already approved. Switching to Open
+leaves existing requests pending for the organizer to decide.
+
+PUT /api/events/{id}/cover
+
+multipart/form-data, field file. The same formats and size limit as profile
+photos — both commands include one PhotoFileValidator, so the rules cannot
+drift apart. { coverUrl }. Organizer only (403).
+
+The new file is saved on the event first and the previous one is removed from
+storage afterwards. A failure to remove it is ignored: the replacement already
+succeeded, and an orphaned file nobody can see is not worth an error.
+
+DELETE /api/events/{id}
+
+Cancels the event. Organizer only. 204. It leaves the list and search; its chat
+stays readable for the participants and closed for writing.
+
+POST /api/events/{id}/join
+
+{ status } — Approved for an Open event, Pending otherwise.
+
+404  no such event, or cancelled
+409  already Pending, Approved or Rejected; the organizer joining their own
+     event; the event already started; an Open event is full
+
+Joining, approving a request and editing the event all take a lock on the
+event's row (UPDLOCK inside a transaction, IEventSeatLock) before they count
+seats. Without it, two people pressing "Go" for the last seat at the same
+moment would both see one seat free and both get in. The lock is taken for
+every join, not only for open events: a double click then queues up and gets a
+409 for the request already sent, instead of hitting the unique index as a 500.
+
+DELETE /api/events/{id}/join
+
+Leaves the event or withdraws a pending request. 204. The organizer cannot
+leave (409) — an event without an organizer would be nobody's; cancel it
+instead. A Rejected caller gets 409 too, so a rejection cannot be wiped and
+re-sent.
+
+GET /api/events/{id}/participants
+
+Approved participants, organizer first:
+
+[ { profileId, displayName, age, mainPhotoUrl, isFaceVerified, role } ]
+
+Everyone sees participantsCount; only Approved participants see who they are
+(403 otherwise). Where somebody goes is their own business until they meet the
+people going there.
+
+Organizer actions
+
+GET    /api/events/{id}/requests
+POST   /api/events/{id}/requests/{profileId}/approve
+POST   /api/events/{id}/requests/{profileId}/reject
+DELETE /api/events/{id}/participants/{profileId}
+
+The requests list is pending only, oldest first, with the participant shape
+plus requestedAt. Approve answers 409 when the event is full. Removing a
+participant makes them Rejected, so the person cannot simply join again.
+All four: organizer only (403), 404 for a request or participant that is not
+there. 204 for the three writes.
+
+Event chat
+
+GET  /api/events/{id}/messages?before=&limit=30
+POST /api/events/{id}/messages
+POST /api/events/{id}/messages/read
+
+The same rules as the match chat — sequence as the cursor, text up to 2000,
+nothing marked read implicitly — with two differences.
+
+A message names its sender, since there are more than two people:
+
+{ items: [ { id, sequence, sender: { profileId, displayName, mainPhotoUrl },
+             isMine, text, sentAt } ],
+  readMarks: [ { profileId, lastReadAt } ] }
+
+Read state is a mark per participant instead of a partner's mark. One tick
+means nothing in a group, so the client shows how many people have read a
+message: those whose lastReadAt is not earlier than its sentAt. readMarks lists
+every Approved participant except the caller; lastReadAt is null for someone who
+has read nothing yet.
+
+POST messages answers 201 with the stored message in exactly the shape a page
+returns, sender included, so the client can append it without a refetch.
+
+Access, shared with GET participants (EventGuards.RequireApprovedParticipantAsync):
+
+404  no such event, or a cancelled event the caller had no part in
+403  the caller is not Approved — a stranger, a pending request, a rejected or
+     removed participant
+409  POST messages into a cancelled event: its chat stays readable, not writable
+
+A removed participant's messages stay in the history. The text rules are one
+MessageTextValidator shared with the match chat, so the limit cannot drift.
+No reactions in event chats yet.
+
+Live updates for events
+
+The same hub, /hubs/chat. Event messages are not sent to a SignalR group but
+to the users who are Approved at the moment of sending. A group would keep a
+removed participant's open connection subscribed until they reconnect, and they
+would go on receiving the chat they were just removed from.
+
+Server to client:
+
+  EventMessageReceived   { eventId, id, sequence, sender, text, sentAt }
+  EventMessagesRead      { eventId, readerProfileId, readAt }
+  EventTyping            { eventId, profileId, displayName }
+  EventParticipantJoined { eventId, profileId, displayName, mainPhotoUrl }
+  EventParticipantLeft   { eventId, profileId }   left or removed
+  EventJoinRequested     { eventId, profileId, displayName }   organizer only
+  EventRequestDecided    { eventId, status }   the requester only
+  EventCancelled         { eventId }
+
+Client to server:
+
+  TypingInEvent(eventId)   relayed to the other participants, never stored
+
+There is nothing to subscribe to: being Approved is the subscription.
+
 Development Endpoints
 
 POST   /api/dev/seed?count=30&likeEmail=…

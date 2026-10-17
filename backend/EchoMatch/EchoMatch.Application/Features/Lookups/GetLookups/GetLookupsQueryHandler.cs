@@ -23,11 +23,14 @@ namespace EchoMatch.Application.Features.Lookups.GetLookups
 
             var prompts = await _lookupRepository.GetActivePromptsAsync(cancellationToken);
 
+            var eventCategories = await _lookupRepository.GetActiveEventCategoriesAsync(cancellationToken);
+
             return new LookupsDto
             {
                 Interests = interests.Select(i => new LookupItemDto(i.Id, i.Code, i.Name)).ToList(),
                 Languages = languages.Select(l => new LookupItemDto(l.Id, l.Code, l.Name)).ToList(),
                 Prompts = prompts.Select(p => new LookupItemDto(p.Id, p.Code, p.Question)).ToList(),
+                EventCategories = eventCategories.Select(c => new LookupItemDto(c.Id, c.Code, c.Name)).ToList(),
                 Options = new EnumOptionsDto
                 {
                     Gender = Enum.GetNames<Gender>(),
@@ -40,7 +43,8 @@ namespace EchoMatch.Application.Features.Lookups.GetLookups
                     Pets = Enum.GetNames<PetPreference>(),
                     Drinking = Enum.GetNames<DrinkingHabit>(),
                     Smoking = Enum.GetNames<SmokingHabit>(),
-                    Workout = Enum.GetNames<WorkoutHabit>()
+                    Workout = Enum.GetNames<WorkoutHabit>(),
+                    EventJoinPolicy = Enum.GetNames<EventJoinPolicy>()
                 }
             };
         }
