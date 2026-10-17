@@ -14,6 +14,7 @@ import { getSessionExpiration, hasValidSession, useAuthStore } from "@/store/use
 import TestPage from "./pages/steps/test-page.tsx"
 import PsychologicalQuizPage from "./pages/steps/psycologic-tests.tsx"
 import VerificationPage from "./pages/verification-page.tsx"
+import EventsPage from "./pages/events-page.tsx"
 
 function SessionMonitor() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -49,6 +50,7 @@ function App() {
       <Routes>
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/events" element={<EventsPage />} />
           <Route path="/tests" element={<TestPage />} />
           <Route path="/me" element={<ProfilePage />} />
           <Route path="/me/edit" element={<ProfileEditPage />} />
