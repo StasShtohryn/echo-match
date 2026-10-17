@@ -78,35 +78,41 @@ export async function saveMyLocation(latitude: number, longitude: number): Promi
   await updateMyLocation(latitude, longitude, city)
 }
 
-export function updateLocationAfterAuthentication() {
+function getPositionErrorMessage(error: GeolocationPositionError): string {
+  if (error.code === error.PERMISSION_DENIED) {
+    return "Дозвольте доступ до геолокації в налаштуваннях браузера та спробуйте знову."
+  }
+  if (error.code === error.POSITION_UNAVAILABLE) {
+    return "Браузер не зміг визначити ваше місцезнаходження."
+  }
+  return "Час очікування геолокації минув. Спробуйте ще раз."
+}
+
+function getCurrentPosition(): Promise<GeolocationPosition> {
   if (!navigator.geolocation) {
-    showLocationError("Браузер не підтримує визначення місцезнаходження.")
-    return
+    return Promise.reject(new Error("Браузер не підтримує визначення місцезнаходження."))
   }
 
-  navigator.geolocation.getCurrentPosition(
-    ({ coords }) => {
-      void saveMyLocation(coords.latitude, coords.longitude).catch((error: unknown) => {
-        toast.add({
-          type: "error",
-          title: "Не вдалося зберегти геолокацію",
-          description: getApiErrorMessage(error, "Спробуйте ще раз."),
-        })
-      })
-    },
-    (error) => {
-      const description = error.code === error.PERMISSION_DENIED
-        ? "Дозвольте доступ до геолокації в налаштуваннях браузера та спробуйте знову."
-        : error.code === error.POSITION_UNAVAILABLE
-          ? "Браузер не зміг визначити ваше місцезнаходження."
-          : "Час очікування геолокації минув. Спробуйте ще раз."
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (error) => reject(new Error(getPositionErrorMessage(error))),
+      {
+        enableHighAccuracy: false,
+        maximumAge: 0,
+        timeout: 10000,
+      },
+    )
+  })
+}
 
-      showLocationError(description)
-    },
-    {
-      enableHighAccuracy: false,
-      maximumAge: 0,
-      timeout: 10000,
-    },
-  )
+export async function updateLocationFromDevice(): Promise<void> {
+  const { coords } = await getCurrentPosition()
+  await saveMyLocation(coords.latitude, coords.longitude)
+}
+
+export function updateLocationAfterAuthentication() {
+  void updateLocationFromDevice().catch((error: unknown) => {
+    showLocationError(getApiErrorMessage(error, "Не вдалося оновити геолокацію."))
+  })
 }

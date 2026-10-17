@@ -461,7 +461,7 @@ export default function ProfilePage() {
               <Card className="mt-4 p-0">
                 <CardContent className="space-y-4 p-6">
                   {/* Заголовок та кнопка редагування */}
-                  <div className="flex items-center justify-center border-b border-border/60 pb-3">
+                  <div className="flex items-center justify-center">
                     <h3 className="text-lg font-semibold">Мої налаштування</h3>
                   </div>
 

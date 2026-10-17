@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react"
-import { ArrowLeft, Save } from "lucide-react"
+import { ArrowLeft, LocateFixed, Save } from "lucide-react"
 import { useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { saveMyLocation } from "@/lib/location"
+import { updateLocationFromDevice } from "@/lib/location"
 import { getLookups, getMyProfile, updateMyPreferences, updateMyVisibility, type Lookups, type MyProfile } from "@/services/auth-service"
 
 export default function ProfileSettingsPage() {
@@ -20,10 +28,9 @@ export default function ProfileSettingsPage() {
   const [maxAge, setMaxAge] = useState(99)
   const [maxDistanceKm, setMaxDistanceKm] = useState<number | null>(50)
   const [isPrivate, setIsPrivate] = useState(false)
-  const [latitude, setLatitude] = useState("")
-  const [longitude, setLongitude] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false)
 
   useEffect(() => {
     Promise.all([getMyProfile(), getLookups()]).then(([nextProfile, nextLookups]) => {
@@ -48,9 +55,6 @@ export default function ProfileSettingsPage() {
     try {
       await updateMyPreferences({ showMe, minAge, maxAge, maxDistanceKm })
       await updateMyVisibility(isPrivate)
-      if (latitude.trim() && longitude.trim()) {
-        await saveMyLocation(Number(latitude), Number(longitude))
-      }
       const nextProfile = await getMyProfile()
       setProfile(nextProfile)
       toast.add({ type: "success", title: "Налаштування збережено" })
@@ -58,6 +62,24 @@ export default function ProfileSettingsPage() {
       toast.add({ type: "error", title: "Не вдалося зберегти налаштування", description: getApiErrorMessage(error, "Перевірте значення полів.") })
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  async function updateLocation() {
+    setIsUpdatingLocation(true)
+    try {
+      await updateLocationFromDevice()
+      const nextProfile = await getMyProfile()
+      setProfile(nextProfile)
+      toast.add({ type: "success", title: "Локацію оновлено" })
+    } catch (error: unknown) {
+      toast.add({
+        type: "error",
+        title: "Не вдалося оновити локацію",
+        description: getApiErrorMessage(error, "Перевірте дозвіл браузера та спробуйте ще раз."),
+      })
+    } finally {
+      setIsUpdatingLocation(false)
     }
   }
 
@@ -93,19 +115,18 @@ export default function ProfileSettingsPage() {
               <FieldGroup className="grid gap-4 md:grid-cols-2">
                 <Field>
                   <FieldLabel htmlFor="showMe">Показувати</FieldLabel>
-                  <select
-                    id="showMe"
-                    className="h-9 rounded-2xl border border-transparent bg-input/50 px-3 text-sm"
-                    value={showMe}
-                    onChange={(event) => setShowMe(event.target.value)}
-                  >
-                    <option value="">Виберіть варіант</option>
-                    {lookups.options.showMe?.map((value) => (
-                      <option value={value} key={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={showMe} onValueChange={(value) => setShowMe(value ?? "")}>
+                    <SelectTrigger id="showMe" className="w-full">
+                      <SelectValue placeholder="Виберіть варіант" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {lookups.options.showMe?.map((value) => (
+                        <SelectItem value={value} key={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </Field>
 
                 <Field>
@@ -120,14 +141,14 @@ export default function ProfileSettingsPage() {
                     onChange={(event) => setMaxDistanceKm(event.target.value ? Number(event.target.value) : null)}
                   />
 
-                  <label className="mt-2 flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    <Checkbox
+                      id="unlimitedDistance"
                       checked={maxDistanceKm === null}
-                      onChange={(event) => setMaxDistanceKm(event.target.checked ? null : 50)}
+                      onCheckedChange={(checked) => setMaxDistanceKm(checked === true ? null : 50)}
                     />
-                    Без обмежень
-                  </label>
+                    <label htmlFor="unlimitedDistance" className="cursor-pointer">Без обмежень</label>
+                  </div>
                 </Field>
 
                 <Field>
@@ -154,21 +175,6 @@ export default function ProfileSettingsPage() {
                   />
                 </Field>
               </FieldGroup>
-              <p className="mt-3 text-sm text-muted-foreground">
-                Місто в профілі: <span className="font-medium text-foreground">{profile.city ?? "не визначено"}</span>.
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Місто визначається за координатами через{" "}
-                <a
-                  href="https://www.openstreetmap.org/copyright"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-4"
-                >
-                  OpenStreetMap
-                </a>
-                .
-              </p>
             </CardContent>
           </Card>
 
@@ -178,14 +184,14 @@ export default function ProfileSettingsPage() {
             </CardHeader>
 
             <CardContent>
-              <label className="flex items-center gap-3 text-sm">
-                <input
-                  type="checkbox"
+              <div className="flex items-center gap-3 text-sm">
+                <Checkbox
+                  id="isPrivate"
                   checked={isPrivate}
-                  onChange={(event) => setIsPrivate(event.target.checked)}
+                  onCheckedChange={(checked) => setIsPrivate(checked === true)}
                 />
-                Приховати мій профіль з пошуку
-              </label>
+                <label htmlFor="isPrivate" className="cursor-pointer">Приховати мій профіль з пошуку</label>
+              </div>
             </CardContent>
           </Card>
 
@@ -195,33 +201,36 @@ export default function ProfileSettingsPage() {
             </CardHeader>
 
             <CardContent>
-              <FieldGroup className="grid gap-4 md:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="latitude">Широта</FieldLabel>
-                  <Input
-                    id="latitude"
-                    type="number"
-                    min={-90}
-                    max={90}
-                    placeholder="Наприклад, 50.45"
-                    value={latitude}
-                    onChange={(event) => setLatitude(event.target.value)}
-                  />
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="longitude">Довгота</FieldLabel>
-                  <Input
-                    id="longitude"
-                    type="number"
-                    min={-180}
-                    max={180}
-                    placeholder="Наприклад, 30.52"
-                    value={longitude}
-                    onChange={(event) => setLongitude(event.target.value)}
-                  />
-                </Field>
-              </FieldGroup>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Поточне місто:{" "}
+                    <span className="font-medium text-foreground">
+                      {profile.city ?? "не визначено"}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Місто визначається за координатами через{" "}
+                    <a
+                      href="https://www.openstreetmap.org/copyright"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-4"
+                    >
+                      OpenStreetMap
+                    </a>
+                    .
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => void updateLocation()}
+                  disabled={isUpdatingLocation || isSaving}
+                >
+                  <LocateFixed className="size-4" />
+                  {isUpdatingLocation ? "Оновлюємо локацію..." : "Оновити локацію"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </main>
