@@ -69,8 +69,13 @@ namespace EchoMatch.Api
 
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-            builder.Services.AddSignalR();
+            // У SignalR власні налаштування JSON, і AddJsonOptions вище його не
+            // стосується: без цього перелічення йшли б числами, а в REST — рядками
+            builder.Services.AddSignalR()
+                .AddJsonProtocol(options =>
+                    options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
             builder.Services.AddScoped<IChatNotifier, SignalRChatNotifier>();
+            builder.Services.AddScoped<IEventNotifier, SignalREventNotifier>();
 
             builder.Services.AddScoped<DevDataSeeder>();
 

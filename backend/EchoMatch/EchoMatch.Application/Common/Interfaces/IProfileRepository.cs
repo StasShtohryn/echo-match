@@ -20,6 +20,8 @@ namespace EchoMatch.Application.Common.Interfaces
         Task<UserProfile?> GetByUserIdWithPhotosAsync(Guid userId, CancellationToken cancellationToken);
         Task<Guid?> GetIdByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 
+        // Зворотне до GetIdByUserIdAsync: живі оновлення адресуються користувачу
+        Task<Guid?> GetUserIdAsync(Guid profileId, CancellationToken cancellationToken);
         Task<bool> ExistsAsync(Guid profileId, CancellationToken cancellationToken);
 
         Task<IReadOnlyList<UserProfile>> GetManyWithDetailsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);

@@ -32,6 +32,29 @@ namespace EchoMatch.Application.Common.Interfaces
             EventParticipantStatus status,
             CancellationToken cancellationToken);
 
+
+        // Один учасник чи заявник будь-якого статусу: щоб сказати іншим,
+        // хто саме приєднався чи друкує
+        Task<EventMemberItem?> GetMemberAsync(Guid eventId, Guid profileId, CancellationToken cancellationToken);
+
+        // Кому слати живі оновлення: Id користувачів прийнятих учасників,
+        // а з includePending — ще й тих, чия заявка чекає рішення
+        Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(
+            Guid eventId,
+            bool includePending,
+            CancellationToken cancellationToken);
+
+
+        // Позначки прочитання прийнятих учасників, крім того, хто питає
+        Task<IReadOnlyList<EventReadMark>> GetReadMarksAsync(
+            Guid eventId,
+            Guid exceptProfileId,
+            CancellationToken cancellationToken);
+
+        // Події, які людина організує, на які йде або чекає рішення; минулі
+        // й скасовані теж, відхилені — ні
+        Task<IReadOnlyList<EventMineItem>> GetMineAsync(Guid myProfileId, CancellationToken cancellationToken);
+
         Task<IEventSeatLock> LockSeatsAsync(Guid eventId, CancellationToken cancellationToken);
 
         Task SaveChangesAsync(CancellationToken cancellationToken);

@@ -1,4 +1,5 @@
-﻿using EchoMatch.Application.Common.Exceptions;
+﻿using EchoMatch.Application.Common.Dtos;
+using EchoMatch.Application.Common.Exceptions;
 using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Application.Features.Events.Common;
 using EchoMatch.Domain.Enums;
@@ -10,15 +11,18 @@ namespace EchoMatch.Application.Features.Events.RejectJoinRequest
     {
         private readonly IProfileRepository _profileRepository;
         private readonly IEventRepository _eventRepository;
+        private readonly IEventNotifier _eventNotifier;
         private readonly ICurrentUserService _currentUserService;
 
         public RejectJoinRequestCommandHandler(
             IProfileRepository profileRepository,
             IEventRepository eventRepository,
+            IEventNotifier eventNotifier,
             ICurrentUserService currentUserService)
         {
             _profileRepository = profileRepository;
             _eventRepository = eventRepository;
+            _eventNotifier = eventNotifier;
             _currentUserService = currentUserService;
         }
 
@@ -42,6 +46,14 @@ namespace EchoMatch.Application.Features.Events.RejectJoinRequest
             participation.Reject();
 
             await _eventRepository.SaveChangesAsync(cancellationToken);
+
+            if (await _profileRepository.GetUserIdAsync(request.ProfileId, cancellationToken) is { } requesterUserId)
+            {
+                await _eventNotifier.RequestDecidedAsync(
+                    requesterUserId,
+                    new EventRequestDecidedEvent(@event.Id, EventParticipantStatus.Rejected),
+                    cancellationToken);
+            }
 
             return Unit.Value;
         }

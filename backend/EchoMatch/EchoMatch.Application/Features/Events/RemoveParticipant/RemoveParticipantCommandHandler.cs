@@ -1,4 +1,5 @@
-﻿using EchoMatch.Application.Common.Exceptions;
+﻿using EchoMatch.Application.Common.Dtos;
+using EchoMatch.Application.Common.Exceptions;
 using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Application.Features.Events.Common;
 using EchoMatch.Domain.Enums;
@@ -10,15 +11,18 @@ namespace EchoMatch.Application.Features.Events.RemoveParticipant
     {
         private readonly IProfileRepository _profileRepository;
         private readonly IEventRepository _eventRepository;
+        private readonly IEventNotifier _eventNotifier;
         private readonly ICurrentUserService _currentUserService;
 
         public RemoveParticipantCommandHandler(
             IProfileRepository profileRepository,
             IEventRepository eventRepository,
+            IEventNotifier eventNotifier,
             ICurrentUserService currentUserService)
         {
             _profileRepository = profileRepository;
             _eventRepository = eventRepository;
+            _eventNotifier = eventNotifier;
             _currentUserService = currentUserService;
         }
 
@@ -48,6 +52,21 @@ namespace EchoMatch.Application.Features.Events.RemoveParticipant
             participation.Reject();
 
             await _eventRepository.SaveChangesAsync(cancellationToken);
+
+            // Решта бачить, що людини більше немає, а сам вигнаний — що чат
+            // треба закрити: прийнятим він уже не є, тому додається окремо
+            var audience = (await _eventRepository
+                .GetMemberUserIdsAsync(@event.Id, includePending: false, cancellationToken)).ToList();
+
+            if (await _profileRepository.GetUserIdAsync(request.ProfileId, cancellationToken) is { } removedUserId)
+            {
+                audience.Add(removedUserId);
+            }
+
+            await _eventNotifier.ParticipantLeftAsync(
+                audience,
+                new EventParticipantLeftEvent(@event.Id, request.ProfileId),
+                cancellationToken);
 
             return Unit.Value;
         }
