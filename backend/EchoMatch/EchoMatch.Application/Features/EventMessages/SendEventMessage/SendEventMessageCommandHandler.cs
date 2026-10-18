@@ -13,17 +13,20 @@ namespace EchoMatch.Application.Features.EventMessages.SendEventMessage
         private readonly IProfileRepository _profileRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IEventMessageRepository _eventMessageRepository;
+        private readonly IEventNotifier _eventNotifier;
         private readonly ICurrentUserService _currentUserService;
 
         public SendEventMessageCommandHandler(
             IProfileRepository profileRepository,
             IEventRepository eventRepository,
             IEventMessageRepository eventMessageRepository,
+            IEventNotifier eventNotifier,
             ICurrentUserService currentUserService)
         {
             _profileRepository = profileRepository;
             _eventRepository = eventRepository;
             _eventMessageRepository = eventMessageRepository;
+            _eventNotifier = eventNotifier;
             _currentUserService = currentUserService;
         }
 
@@ -54,8 +57,17 @@ namespace EchoMatch.Application.Features.EventMessages.SendEventMessage
 
             // Та сама проєкція, що й у сторінці історії: відповідь не відрізняється
             // від того, що клієнт побачить, коли перезавантажить чат
-            var stored = await _eventMessageRepository.GetItemAsync(message.Id, cancellationToken);
-            return stored!.ToMessageDto(myProfileId);
+            var stored = (await _eventMessageRepository.GetItemAsync(message.Id, cancellationToken))!;
+
+            // Сповіщення після збереження: жива доставка не впливає на те, чи
+            // повідомлення записане. Автор теж серед адресатів — так
+            // синхронізуються його інші вкладки, а клієнт відкидає дубль за id
+            var audience = await _eventRepository
+                .GetMemberUserIdsAsync(@event.Id, includePending: false, cancellationToken);
+
+            await _eventNotifier.MessageSentAsync(audience, stored.ToReceivedEvent(@event.Id), cancellationToken);
+
+            return stored.ToMessageDto(myProfileId);
         }
     }
 }

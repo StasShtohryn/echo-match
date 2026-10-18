@@ -65,6 +65,23 @@ namespace EchoMatch.Application.Common.Mappings
             item.Text,
             DateTime.SpecifyKind(item.SentAt, DateTimeKind.Utc));
 
+
+        public static EventMessageReceivedEvent ToReceivedEvent(this EventMessageListItem item, Guid eventId) => new(
+            eventId,
+            item.Id,
+            item.Sequence,
+            new EventMessageSenderDto(item.SenderProfileId, item.SenderName, item.SenderPhotoUrl),
+            item.Text,
+            DateTime.SpecifyKind(item.SentAt, DateTimeKind.Utc));
+
+        public static EventParticipantJoinedEvent ToJoinedEvent(this EventMemberItem member, Guid eventId) => new(
+            eventId,
+            member.ProfileId,
+            member.DisplayName,
+            member.MainPhotoUrl);
+
+
+
         public static EventMineDto ToMineDto(this EventMineItem item, Guid myProfileId)
         {
             // Хто ще чекає рішення, чату не бачить — ані тексту, ані лічильника

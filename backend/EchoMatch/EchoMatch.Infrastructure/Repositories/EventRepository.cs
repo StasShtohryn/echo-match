@@ -134,13 +134,30 @@ namespace EchoMatch.Infrastructure.Repositories
             return await _context.EventParticipants
                 .AsNoTracking()
                 .Where(p => p.EventId == eventId && p.Status == status)
-                .Select(p => new EventMemberItem(
-                    p.ProfileId,
-                    p.Profile.DisplayName,
-                    p.Profile.DateOfBirth,
-                    p.Profile.Photos.Where(photo => photo.IsMain).Select(photo => photo.Url).FirstOrDefault(),
-                    p.Profile.IsFaceVerified,
-                    p.CreatedAt))
+                .Select(ToMemberItem)
+                .ToListAsync(cancellationToken);
+        }
+
+        public Task<EventMemberItem?> GetMemberAsync(Guid eventId, Guid profileId, CancellationToken cancellationToken)
+        {
+            return _context.EventParticipants
+                .AsNoTracking()
+                .Where(p => p.EventId == eventId && p.ProfileId == profileId)
+                .Select(ToMemberItem)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(
+            Guid eventId,
+            bool includePending,
+            CancellationToken cancellationToken)
+        {
+            return await _context.EventParticipants
+                .AsNoTracking()
+                .Where(p => p.EventId == eventId
+                    && (p.Status == EventParticipantStatus.Approved
+                        || (includePending && p.Status == EventParticipantStatus.Pending)))
+                .Select(p => p.Profile.UserId)
                 .ToListAsync(cancellationToken);
         }
 
@@ -251,6 +268,18 @@ namespace EchoMatch.Infrastructure.Repositories
         {
             return _context.SaveChangesAsync(cancellationToken);
         }
+
+
+        // Одна проєкція на список учасників, заявок і на одного учасника
+        private static readonly Expression<Func<EventParticipant, EventMemberItem>> ToMemberItem =
+            p => new EventMemberItem(
+                p.ProfileId,
+                p.Profile.DisplayName,
+                p.Profile.DateOfBirth,
+                p.Profile.Photos.Where(photo => photo.IsMain).Select(photo => photo.Url).FirstOrDefault(),
+                p.Profile.IsFaceVerified,
+                p.CreatedAt,
+                p.Status);
 
         // Одна проєкція на список і на сторінку події, щоб картка не розійшлася
         private static Expression<Func<Event, EventListItem>> ToListItem(Guid myProfileId) =>

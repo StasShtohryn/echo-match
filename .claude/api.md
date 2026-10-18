@@ -487,6 +487,14 @@ Client to server:
 MessageReceived carries no isMine: one event serves both sides, and each client
 compares senderProfileId with its own profile id.
 
+Typing is relayed only when the caller is part of the match. OthersInGroup does
+not check that the caller belongs to the group, so without the check anyone who
+knew a match id could show "typing…" in someone else's conversation.
+
+Enum values (ReactionChanged.type) are strings, the same as in REST. Until the
+event work they went out as numbers, because SignalR does not read the
+controllers' JSON options; a client that accepts both keeps working.
+
 Everything that matters is written through REST first and only then announced,
 so a lost connection costs immediacy, never data. The hub delivers nothing on
 its own: a client that never connects still sees every message through GET.
@@ -762,6 +770,38 @@ Client to server:
   TypingInEvent(eventId)   relayed to the other participants, never stored
 
 There is nothing to subscribe to: being Approved is the subscription.
+
+Who receives what — decided in the handlers, because it is an access rule:
+
+  EventMessageReceived, EventMessagesRead   Approved participants, the sender
+                                            included (other tabs; the client
+                                            drops a message it already has by id)
+  EventTyping                               Approved participants except the
+                                            typist; anyone else typing is ignored
+  EventParticipantJoined                    Approved participants, the newcomer
+                                            included; on an open join and on
+                                            approval
+  EventParticipantLeft                      Approved participants plus the person
+                                            who left or was removed, so their
+                                            open chat closes
+  EventJoinRequested                        the organizer
+  EventRequestDecided                       the requester; status Approved or
+                                            Rejected
+  EventCancelled                            Approved and Pending, once; cancelling
+                                            again sends nothing
+
+Withdrawing a pending request sends nothing: only the organizer saw it, and
+the requests list is fresh the next time it is opened.
+
+Delivery goes to users, not profiles: SignalR finds a user's connections by the
+NameIdentifier claim of the token, which is the user id. The audience is read
+from the database on every send, after the change is saved, so a person
+approved a moment ago already receives the event about it, and a person removed
+a moment ago no longer receives the chat.
+
+Enums travel as strings here too (status "Approved", reaction "Heart").
+SignalR has its own JSON settings, so the converter is added to AddJsonProtocol
+as well as to the controllers.
 
 Development Endpoints
 
