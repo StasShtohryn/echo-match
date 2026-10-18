@@ -1,4 +1,5 @@
-﻿using EchoMatch.Domain.Entities;
+﻿using EchoMatch.Application.Common.Validation;
+using EchoMatch.Domain.Entities;
 using FluentValidation;
 
 namespace EchoMatch.Application.Features.Messages.SendMessage
@@ -7,11 +8,7 @@ namespace EchoMatch.Application.Features.Messages.SendMessage
     {
         public SendMessageCommandValidator()
         {
-            RuleFor(x => x.Text)
-                .Cascade(CascadeMode.Stop)
-                .NotEmpty().WithMessage("Повідомлення не може бути порожнім.")
-                .MaximumLength(Message.MaxTextLength)
-                    .WithMessage($"Повідомлення — до {Message.MaxTextLength} символів.");
+            Include(new MessageTextValidator<SendMessageCommand>());
         }
     }
 }

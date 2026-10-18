@@ -2,6 +2,7 @@
 using EchoMatch.Application.Common.Exceptions;
 using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Application.Common.Mappings;
+using EchoMatch.Application.Features.Events.Common;
 using EchoMatch.Domain.Enums;
 using MediatR;
 
@@ -32,22 +33,10 @@ namespace EchoMatch.Application.Features.Events.GetParticipants
                 .GetIdByUserIdAsync(_currentUserService.UserId, cancellationToken)
                 ?? throw new NotFoundException("Профіль ще не створено.");
 
-            var @event = await _eventRepository.GetByIdAsync(request.EventId, cancellationToken)
-                ?? throw new NotFoundException("Подію не знайдено.");
-
-            var mine = await _eventRepository.GetParticipationAsync(@event.Id, myProfileId, cancellationToken);
-
-            if (@event.CancelledAt is not null && mine is null)
-            {
-                throw new NotFoundException("Подію не знайдено.");
-            }
-
             // Кількість бачать усі, імена — лише ті, хто йде: куди людина
             // збирається, її справа, доки вона не зустрінеться з рештою
-            if (mine?.Status != EventParticipantStatus.Approved)
-            {
-                throw new ForbiddenException("Учасників бачать лише ті, хто йде на подію.");
-            }
+            var (@event, _) = await _eventRepository
+                .RequireApprovedParticipantAsync(request.EventId, myProfileId, cancellationToken);
 
             var members = await _eventRepository
                 .GetMembersAsync(@event.Id, EventParticipantStatus.Approved, cancellationToken);

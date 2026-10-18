@@ -5,6 +5,7 @@ using EchoMatch.Application.Features.Events.CreateEvent;
 using EchoMatch.Application.Features.Events.GetEvent;
 using EchoMatch.Application.Features.Events.GetEvents;
 using EchoMatch.Application.Features.Events.GetJoinRequests;
+using EchoMatch.Application.Features.Events.GetMyEvents;
 using EchoMatch.Application.Features.Events.GetParticipants;
 using EchoMatch.Application.Features.Events.JoinEvent;
 using EchoMatch.Application.Features.Events.LeaveEvent;
@@ -48,6 +49,17 @@ namespace EchoMatch.Api.Controllers
 
             return Ok(result);
         }
+
+
+        [HttpGet("mine")]
+        [ProducesResponseType(typeof(IReadOnlyList<EventMineDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IReadOnlyList<EventMineDto>>> GetMine(CancellationToken cancellationToken)
+        {
+            var result = await _sender.Send(new GetMyEventsQuery(), cancellationToken);
+            return Ok(result);
+        }
+
 
         [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(EventDetailsDto), StatusCodes.Status200OK)]
