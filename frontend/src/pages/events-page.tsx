@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useNavigate } from "react-router";
 import { formatDistanceStrict } from "date-fns"
 import { uk } from "date-fns/locale"
-import { CalendarDays, Clock3, MapPin, Plus, Search, Users, X } from "lucide-react"
+import { CalendarDays, Clock3, Link, MapPin, Plus, Search, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -125,12 +126,12 @@ function EventForm({
     )
     const endsAt = endsAtDate
       ? new Date(
-          endsAtDate.getFullYear(),
-          endsAtDate.getMonth(),
-          endsAtDate.getDate(),
-          Number(endsAtTime.slice(0, 2)),
-          Number(endsAtTime.slice(3, 5)),
-        )
+        endsAtDate.getFullYear(),
+        endsAtDate.getMonth(),
+        endsAtDate.getDate(),
+        Number(endsAtTime.slice(0, 2)),
+        Number(endsAtTime.slice(3, 5)),
+      )
       : null
     const request: CreateEventRequest = {
       title: String(form.get("title") ?? "").trim(),
@@ -330,6 +331,8 @@ function EventDetailsDialog({
 }) {
   if (!event && !isLoading) return null
 
+  const navigate = useNavigate();
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/45 p-4 backdrop-blur-sm" onClick={onClose}>
       <section
@@ -352,10 +355,58 @@ function EventDetailsDialog({
             )}
             <div className="space-y-5 p-6 sm:p-8">
               <div>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{event.category.name}</span>
-                <h2 className="mt-3 font-heading text-3xl" id="event-details-title">{event.title}</h2>
-                <p className="mt-2 text-sm text-muted-foreground">Організатор: {event.organizer.displayName}</p>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  {event.category.name}
+                </span>
+                <h2 className="mt-3 font-heading text-3xl" id="event-details-title">
+                  {event.title}
+                </h2>
+
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Організатор:</span>
+
+                  {/* Клікабельний блок з аватаркою та ім'ям */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="group flex items-center gap-2 cursor-pointer outline-none"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const targetId = event.organizer.profileId ?? event.organizer.profileId;
+                      if (targetId) navigate(`/profile/${targetId}`);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.stopPropagation();
+                        const targetId = event.organizer.profileId ?? event.organizer.profileId;
+                        if (targetId) navigate(`/profile/${targetId}`);
+                      }
+                    }}
+                  >
+                    <Avatar className="size-7 transition-transform group-hover:scale-105">
+                      <AvatarImage
+                        src={event.organizer.mainPhotoUrl ?? event.organizer.mainPhotoUrl ?? undefined}
+                        alt={event.organizer.displayName}
+                      />
+                      <AvatarFallback className="text-[10px] font-semibold">
+                        {event.organizer.displayName
+                          ? event.organizer.displayName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)
+                          : "U"}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <span className="text-sm font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors group-hover:text-primary">
+                      {event.organizer.displayName || "Організатор"}
+                    </span>
+                  </div>
+                </div>
               </div>
+
               {event.description && <p className="whitespace-pre-wrap text-sm leading-6">{event.description}</p>}
               <div className="grid gap-3 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2"><CalendarDays className="size-4 text-primary" />{formatDate(event.startsAt)}</p>
@@ -441,7 +492,7 @@ function EventDetailsDialog({
           </>
         )}
       </section>
-    </div>
+    </div >
   )
 }
 
@@ -488,7 +539,9 @@ function EventCardView({
           <h3 className="line-clamp-1 text-left font-heading text-2xl transition group-hover:text-primary">
             {event.title}
           </h3>
-          <p className="mt-1 text-sm text-muted-foreground">Організатор: {event.organizer.displayName}</p>
+          <Link to={`/profile/${event.organizer.profileId}`} className="hover:opacity-80 cursor-pointer transition">
+            <p className="mt-1 text-sm text-muted-foreground">Організатор: {event.organizer.displayName}</p>
+          </Link>
         </div>
         <div className="space-y-2 text-sm text-muted-foreground">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -664,10 +717,10 @@ export default function EventsPage() {
       setJoinRequests((current) => current.filter((item) => item.profileId !== request.profileId))
       setSelectedEvent((current) => current && current.id === eventId
         ? {
-            ...current,
-            participantsCount: current.participantsCount + (action === "approve" ? 1 : 0),
-            pendingCount: Math.max(0, (current.pendingCount ?? 1) - 1),
-          }
+          ...current,
+          participantsCount: current.participantsCount + (action === "approve" ? 1 : 0),
+          pendingCount: Math.max(0, (current.pendingCount ?? 1) - 1),
+        }
         : current)
       toast.add({
         type: "success",

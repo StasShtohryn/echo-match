@@ -749,39 +749,42 @@ export default function MessengerPage() {
                   const interests = profile?.interests ?? []
 
                   return (
-                <div className="px-2 py-2">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="size-12 rounded-xl">
-                      <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
-                      <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">
-                        {profile?.displayName ?? match.partner.displayName}{(profile?.age ?? match.partner.age) ? `, ${profile?.age ?? match.partner.age}` : ""}
-                      </p>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="size-3" /> {profile?.city || "Місто не вказано"}
-                      </p>
+                    <div className="px-2 py-2">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-12 rounded-xl">
+                          <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
+                          <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
+                        </Avatar>
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">
+                            {profile?.displayName ?? match.partner.displayName}{(profile?.age ?? match.partner.age) ? `, ${profile?.age ?? match.partner.age}` : ""}
+                          </p>
+                          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="size-3" /> {profile?.city || "Місто не вказано"}
+                          </p>
+                        </div>
+                      </div>
+                      {profile?.bio && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{profile.bio}</p>}
+                      <p className="mt-3 text-xs text-muted-foreground">Інтереси</p>
+                      {
+                        isProfileLoading ? (
+                          <p className="mt-1.5 text-xs text-muted-foreground">Завантаження профілю...</p>
+                        ) : profileError ? (
+                          <p role="alert" className="mt-1.5 text-xs text-destructive">{profileError}</p>
+                        ) : interests.length > 0 ? (
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {interests.map((interest) => (
+                              <span key={interest.id} className="rounded-full bg-muted px-2 py-1 text-xs">{interest.name}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-1.5 text-xs text-muted-foreground">
+                            {profile ? "Інтереси не вказані" : "Профіль поки не завантажено"}
+                          </p>
+                        )
+                      }
                     </div>
-                  </div>
-                  {profile?.bio && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{profile.bio}</p>}
-                  <p className="mt-3 text-xs text-muted-foreground">Інтереси</p>
-                  {isProfileLoading ? (
-                    <p className="mt-1.5 text-xs text-muted-foreground">Завантаження профілю...</p>
-                  ) : profileError ? (
-                    <p role="alert" className="mt-1.5 text-xs text-destructive">{profileError}</p>
-                  ) : interests.length > 0 ? (
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {interests.map((interest) => (
-                        <span key={interest.id} className="rounded-full bg-muted px-2 py-1 text-xs">{interest.name}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      {profile ? "Інтереси не вказані" : "Профіль поки не завантажено"}
-                    </p>
-                  )}
-                </div>
                   )
                 })()}
                 <ContextMenuSeparator />
@@ -818,26 +821,32 @@ export default function MessengerPage() {
             </ContextMenu>
           ))}
         </div>
-      </aside>
+      </aside >
 
       <section className={`${matchId ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col`}>
         {selectedMatch ? (
           <>
-            <header className="flex shrink-0 items-center gap-3 border-b border-border/70 px-4 py-3 md:px-6">
-              <Button nativeButton={false} render={<Link to="/messenger" />} variant="ghost" size="icon" className="md:hidden" aria-label="До списку чатів">
-                <ArrowLeft />
-              </Button>
-              <Avatar className="size-10 rounded-xl">
-                <AvatarImage src={selectedMatch.partner.mainPhotoUrl ?? undefined} alt={selectedMatch.partner.displayName} />
-                <AvatarFallback className="rounded-xl">{initials(selectedMatch.partner.displayName)}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <h2 className="truncate font-semibold">{selectedMatch.partner.displayName}</h2>
-                <p className="text-xs text-muted-foreground">
-                  {!user?.token || connectionStatus === "disconnected" ? "Немає live-підключення" : connectionStatus === "connected" ? "Підключено" : "Підключення..."}
-                </p>
-              </div>
-            </header>
+            <Link to={`/profile/${selectedMatch.partner.profileId}`} className="hover:opacity-80">
+
+              <header className="flex shrink-0 items-center gap-3 border-b border-border/70 px-4 py-3 md:px-6">
+                <Button nativeButton={false} render={<Link to="/messenger" />} variant="ghost" size="icon" className="md:hidden" aria-label="До списку чатів">
+                  <ArrowLeft />
+                </Button>
+
+                <Avatar className="size-10 rounded-xl">
+                  <AvatarImage src={selectedMatch.partner.mainPhotoUrl ?? undefined} alt={selectedMatch.partner.displayName} />
+                  <AvatarFallback className="rounded-xl">{initials(selectedMatch.partner.displayName)}</AvatarFallback>
+                </Avatar>
+
+                <div className="min-w-0">
+                  <h2 className="truncate font-semibold">{selectedMatch.partner.displayName}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {!user?.token || connectionStatus === "disconnected" ? "Немає live-підключення" : connectionStatus === "connected" ? "Підключено" : "Підключення..."}
+                  </p>
+                </div>
+
+              </header>
+            </Link>
 
             {chatError && <p role="alert" className="border-b border-destructive/20 bg-destructive/5 px-5 py-2 text-sm text-destructive">{chatError}</p>}
 
@@ -1080,6 +1089,6 @@ export default function MessengerPage() {
           </div>
         )}
       </section>
-    </div>
+    </div >
   )
 }
