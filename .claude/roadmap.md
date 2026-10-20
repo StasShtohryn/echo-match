@@ -123,9 +123,9 @@ Contract in api.md (Event Endpoints). Target: the defense, end of October.
 - [x] Organizer Approval, per event (joinPolicy Open | ApprovalRequired):
       requests, approve, reject, remove a participant
 - [x] Participants, visible to approved participants only
-- [ ] GET /api/events/mine with last message and unread count
-- [ ] Event Chat with a read mark per participant
-- [ ] Live updates, addressed to approved users rather than a group
+- [x] GET /api/events/mine with last message and unread count
+- [x] Event Chat with a read mark per participant
+- [x] Live updates, addressed to approved users rather than a group
 - [ ] Seed: events from seeded profiles
 - [ ] Tags beyond the single category (Interests as tags)
 - [ ] Geo Search: coordinates on Event (two nullable columns) picked on a map,

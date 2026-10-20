@@ -54,5 +54,53 @@ namespace EchoMatch.Application.Common.Mappings
             member.MainPhotoUrl,
             member.IsFaceVerified,
             DateTime.SpecifyKind(member.JoinedAt, DateTimeKind.Utc));
+
+
+
+        public static EventMessageDto ToMessageDto(this EventMessageListItem item, Guid myProfileId) => new(
+            item.Id,
+            item.Sequence,
+            new EventMessageSenderDto(item.SenderProfileId, item.SenderName, item.SenderPhotoUrl),
+            item.SenderProfileId == myProfileId,
+            item.Text,
+            DateTime.SpecifyKind(item.SentAt, DateTimeKind.Utc));
+
+
+        public static EventMessageReceivedEvent ToReceivedEvent(this EventMessageListItem item, Guid eventId) => new(
+            eventId,
+            item.Id,
+            item.Sequence,
+            new EventMessageSenderDto(item.SenderProfileId, item.SenderName, item.SenderPhotoUrl),
+            item.Text,
+            DateTime.SpecifyKind(item.SentAt, DateTimeKind.Utc));
+
+        public static EventParticipantJoinedEvent ToJoinedEvent(this EventMemberItem member, Guid eventId) => new(
+            eventId,
+            member.ProfileId,
+            member.DisplayName,
+            member.MainPhotoUrl);
+
+
+
+        public static EventMineDto ToMineDto(this EventMineItem item, Guid myProfileId)
+        {
+            // Хто ще чекає рішення, чату не бачить — ані тексту, ані лічильника
+            var chatOpen = item.Card.MyStatus == EventParticipantStatus.Approved;
+
+            return new EventMineDto(item.Card.ToCardDto())
+            {
+                CancelledAt = item.CancelledAt is { } cancelledAt
+                    ? DateTime.SpecifyKind(cancelledAt, DateTimeKind.Utc)
+                    : null,
+                LastMessage = chatOpen && item.LastMessageText is not null && item.LastMessageSentAt is not null
+                    ? new EventLastMessageDto(
+                        item.LastMessageText,
+                        DateTime.SpecifyKind(item.LastMessageSentAt.Value, DateTimeKind.Utc),
+                        item.LastMessageSenderName ?? string.Empty,
+                        item.LastMessageSenderProfileId == myProfileId)
+                    : null,
+                UnreadCount = chatOpen ? item.UnreadCount : 0
+            };
+        }
     }
 }

@@ -134,15 +134,122 @@ namespace EchoMatch.Infrastructure.Repositories
             return await _context.EventParticipants
                 .AsNoTracking()
                 .Where(p => p.EventId == eventId && p.Status == status)
-                .Select(p => new EventMemberItem(
-                    p.ProfileId,
-                    p.Profile.DisplayName,
-                    p.Profile.DateOfBirth,
-                    p.Profile.Photos.Where(photo => photo.IsMain).Select(photo => photo.Url).FirstOrDefault(),
-                    p.Profile.IsFaceVerified,
-                    p.CreatedAt))
+                .Select(ToMemberItem)
                 .ToListAsync(cancellationToken);
         }
+
+        public Task<EventMemberItem?> GetMemberAsync(Guid eventId, Guid profileId, CancellationToken cancellationToken)
+        {
+            return _context.EventParticipants
+                .AsNoTracking()
+                .Where(p => p.EventId == eventId && p.ProfileId == profileId)
+                .Select(ToMemberItem)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(
+            Guid eventId,
+            bool includePending,
+            CancellationToken cancellationToken)
+        {
+            return await _context.EventParticipants
+                .AsNoTracking()
+                .Where(p => p.EventId == eventId
+                    && (p.Status == EventParticipantStatus.Approved
+                        || (includePending && p.Status == EventParticipantStatus.Pending)))
+                .Select(p => p.Profile.UserId)
+                .ToListAsync(cancellationToken);
+        }
+
+
+        public async Task<IReadOnlyList<EventReadMark>> GetReadMarksAsync(
+            Guid eventId,
+            Guid exceptProfileId,
+            CancellationToken cancellationToken)
+        {
+            return await _context.EventParticipants
+                .AsNoTracking()
+                .Where(p => p.EventId == eventId
+                    && p.Status == EventParticipantStatus.Approved
+                    && p.ProfileId != exceptProfileId)
+                .Select(p => new EventReadMark(p.ProfileId, p.LastReadAt))
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<EventMineItem>> GetMineAsync(
+            Guid myProfileId,
+            CancellationToken cancellationToken)
+        {
+            // Картки — тією самою проєкцією, що й у списку подій
+            var cards = await _context.Events
+                .AsNoTracking()
+                .Where(e => e.Participants.Any(p => p.ProfileId == myProfileId
+                    && p.Status != EventParticipantStatus.Rejected))
+                .Select(ToListItem(myProfileId))
+                .ToListAsync(cancellationToken);
+
+            // Стан чату — окремим запитом від моєї участі, бо позначка прочитання
+            // лежить на ній. Останнє повідомлення — кількома підзапитами TOP(1),
+            // як у списку метчів: вони дешевші за одну вибірку з ROW_NUMBER
+            var chats = await _context.EventParticipants
+                .AsNoTracking()
+                .Where(p => p.ProfileId == myProfileId && p.Status != EventParticipantStatus.Rejected)
+                .Select(p => new
+                {
+                    p.EventId,
+                    p.Event.CancelledAt,
+                    JoinedAt = p.CreatedAt,
+                    LastText = _context.EventMessages
+                        .Where(m => m.EventId == p.EventId)
+                        .OrderByDescending(m => m.Sequence)
+                        .Select(m => m.Text)
+                        .FirstOrDefault(),
+                    LastSentAt = _context.EventMessages
+                        .Where(m => m.EventId == p.EventId)
+                        .OrderByDescending(m => m.Sequence)
+                        .Select(m => (DateTime?)m.CreatedAt)
+                        .FirstOrDefault(),
+                    LastSenderId = _context.EventMessages
+                        .Where(m => m.EventId == p.EventId)
+                        .OrderByDescending(m => m.Sequence)
+                        .Select(m => (Guid?)m.SenderProfileId)
+                        .FirstOrDefault(),
+                    LastSenderName = _context.EventMessages
+                        .Where(m => m.EventId == p.EventId)
+                        .OrderByDescending(m => m.Sequence)
+                        .Select(m => m.SenderProfile.DisplayName)
+                        .FirstOrDefault(),
+
+                    // Свої повідомлення прочитані за визначенням
+                    Unread = _context.EventMessages.Count(m => m.EventId == p.EventId
+                        && m.SenderProfileId != myProfileId
+                        && (p.LastReadAt == null || m.CreatedAt > p.LastReadAt))
+                })
+                .ToListAsync(cancellationToken);
+
+            var chatByEvent = chats.ToDictionary(c => c.EventId);
+
+            // Між двома запитами людина могла вийти: таку подію просто пропускаємо
+            return cards
+                .Where(card => chatByEvent.ContainsKey(card.Id))
+                .Select(card =>
+                {
+                    var chat = chatByEvent[card.Id];
+
+                    return new EventMineItem(
+                        card,
+                        chat.CancelledAt,
+                        chat.JoinedAt,
+                        chat.LastText,
+                        chat.LastSentAt,
+                        chat.LastSenderId,
+                        chat.LastSenderName,
+                        chat.Unread);
+                })
+                .ToList();
+        }
+
+
 
         public async Task<IEventSeatLock> LockSeatsAsync(Guid eventId, CancellationToken cancellationToken)
         {
@@ -161,6 +268,18 @@ namespace EchoMatch.Infrastructure.Repositories
         {
             return _context.SaveChangesAsync(cancellationToken);
         }
+
+
+        // Одна проєкція на список учасників, заявок і на одного учасника
+        private static readonly Expression<Func<EventParticipant, EventMemberItem>> ToMemberItem =
+            p => new EventMemberItem(
+                p.ProfileId,
+                p.Profile.DisplayName,
+                p.Profile.DateOfBirth,
+                p.Profile.Photos.Where(photo => photo.IsMain).Select(photo => photo.Url).FirstOrDefault(),
+                p.Profile.IsFaceVerified,
+                p.CreatedAt,
+                p.Status);
 
         // Одна проєкція на список і на сторінку події, щоб картка не розійшлася
         private static Expression<Func<Event, EventListItem>> ToListItem(Guid myProfileId) =>

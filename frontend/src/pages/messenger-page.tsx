@@ -850,26 +850,32 @@ export default function MessengerPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </aside>
+      </aside >
 
       <section className={`${matchId ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col`}>
         {selectedMatch ? (
           <>
-            <header className="flex shrink-0 items-center gap-3 border-b border-border/70 px-4 py-3 md:px-6">
-              <Button nativeButton={false} render={<Link to="/messenger" />} variant="ghost" size="icon" className="md:hidden" aria-label="До списку чатів">
-                <ArrowLeft />
-              </Button>
-              <Avatar className="size-10 rounded-xl">
-                <AvatarImage src={selectedMatch.partner.mainPhotoUrl ?? undefined} alt={selectedMatch.partner.displayName} />
-                <AvatarFallback className="rounded-xl">{initials(selectedMatch.partner.displayName)}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <h2 className="truncate font-semibold">{selectedMatch.partner.displayName}</h2>
-                <p className="text-xs text-muted-foreground">
-                  {!user?.token || connectionStatus === "disconnected" ? "Немає live-підключення" : connectionStatus === "connected" ? "Підключено" : "Підключення..."}
-                </p>
-              </div>
-            </header>
+            <Link to={`/profile/${selectedMatch.partner.profileId}`} className="hover:opacity-80">
+
+              <header className="flex shrink-0 items-center gap-3 border-b border-border/70 px-4 py-3 md:px-6">
+                <Button nativeButton={false} render={<Link to="/messenger" />} variant="ghost" size="icon" className="md:hidden" aria-label="До списку чатів">
+                  <ArrowLeft />
+                </Button>
+
+                <Avatar className="size-10 rounded-xl">
+                  <AvatarImage src={selectedMatch.partner.mainPhotoUrl ?? undefined} alt={selectedMatch.partner.displayName} />
+                  <AvatarFallback className="rounded-xl">{initials(selectedMatch.partner.displayName)}</AvatarFallback>
+                </Avatar>
+
+                <div className="min-w-0">
+                  <h2 className="truncate font-semibold">{selectedMatch.partner.displayName}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {!user?.token || connectionStatus === "disconnected" ? "Немає live-підключення" : connectionStatus === "connected" ? "Підключено" : "Підключення..."}
+                  </p>
+                </div>
+
+              </header>
+            </Link>
 
             {chatError && <p role="alert" className="border-b border-destructive/20 bg-destructive/5 px-5 py-2 text-sm text-destructive">{chatError}</p>}
 
@@ -1112,6 +1118,6 @@ export default function MessengerPage() {
           </div>
         )}
       </section>
-    </div>
+    </div >
   )
 }

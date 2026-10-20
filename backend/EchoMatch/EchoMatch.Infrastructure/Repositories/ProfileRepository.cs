@@ -93,6 +93,15 @@ namespace EchoMatch.Infrastructure.Repositories
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
+
+        public Task<Guid?> GetUserIdAsync(Guid profileId, CancellationToken cancellationToken)
+        {
+            return _context.UserProfiles
+                .Where(p => p.Id == profileId)
+                .Select(p => (Guid?)p.UserId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
         public Task<bool> ExistsAsync(Guid profileId, CancellationToken cancellationToken)
         {
             return _context.UserProfiles.AnyAsync(p => p.Id == profileId, cancellationToken);
