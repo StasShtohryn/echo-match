@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { saveMyLocation } from "@/lib/location"
+import { updateLocationFromDevice } from "@/lib/location"
 import { getLookups, getMyProfile, updateMyPreferences, updateMyVisibility, type Lookups, type MyProfile } from "@/services/auth-service"
 
 export default function ProfileSettingsPage() {
@@ -55,9 +55,6 @@ export default function ProfileSettingsPage() {
     try {
       await updateMyPreferences({ showMe, minAge, maxAge, maxDistanceKm })
       await updateMyVisibility(isPrivate)
-      if (latitude.trim() && longitude.trim()) {
-        await saveMyLocation(Number(latitude), Number(longitude))
-      }
       const nextProfile = await getMyProfile()
       setProfile(nextProfile)
       toast.add({ type: "success", title: "Налаштування збережено" })
