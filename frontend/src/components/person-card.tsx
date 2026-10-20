@@ -178,7 +178,7 @@ export default function PersonCard({
     : "U"
 
   return (
-    <div className="my-auto flex w-full max-w-[360px] shrink-0 flex-col gap-4 py-1 select-none">
+    <div className="my-auto flex w-full max-w-110 shrink-0 flex-col gap-4 py-1 select-none">
       <Card
         className="relative flex flex-col touch-pan-y overflow-hidden pt-0 select-none"
         style={{

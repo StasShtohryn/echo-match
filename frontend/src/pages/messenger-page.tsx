@@ -46,6 +46,17 @@ import {
   type AiSuggestions,
   type ReactionType,
 } from "@/services/message-service"
+
+import { SearchIcon } from "lucide-react"
+import { Field } from "@/components/ui/field"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 const PAGE_SIZE = 30
 const REACTION_OPTIONS: { type: ReactionType; emoji: string; label: string }[] = [
   { type: "Heart", emoji: "❤️", label: "Сердце" },
@@ -693,133 +704,151 @@ export default function MessengerPage() {
           <h1 className="text-xl font-semibold">Повідомлення</h1>
           <p className="mt-1 text-sm text-muted-foreground">Ваші розмови та нові знайомства</p>
         </div>
-        {matchesError && (
-          <div role="alert" className="flex items-center justify-between gap-2 px-5 py-3 text-sm text-destructive">
-            <span>{matchesError}</span>
-            <Button variant="outline" size="sm" onClick={() => void refreshMatches()}>Повторити</Button>
-          </div>
-        )}
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {isMatchesLoading ? (
-            <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
-              <LoaderCircle className="size-4 animate-spin" /> Завантаження чатів...
-            </div>
-          ) : matches.length === 0 ? (
-            <p className="p-5 text-sm text-muted-foreground">Поки немає мэтчів. Коли з кимось співпадуть симпатії, тут з’явиться чат.</p>
-          ) : sortedMatches.map((match) => (
-            <ContextMenu key={match.id} onOpenChange={(open) => {
-              if (open) void loadPartnerProfile(match.partner.profileId)
-            }}>
-              <ContextMenuTrigger
-                render={
-                  <Link
-                    to={`/messenger/${match.id}`}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/70 ${match.id === matchId ? "bg-muted" : ""}`}
-                  >
-                    <Avatar className="size-12 shrink-0 rounded-xl">
-                      <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
-                      <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-semibold">{match.partner.displayName}</span>
-                        {match.lastMessage && <span className="shrink-0 text-[11px] text-muted-foreground">{formatConversationTime(match.lastMessage.sentAt)}</span>}
-                      </div>
-                      <div className="mt-1 flex items-center justify-between gap-2">
-                        <span className="truncate text-xs text-muted-foreground">
-                          {match.lastMessage
-                            ? `${match.lastMessage.isMine ? "Ви: " : ""}${match.lastMessage.text}`
-                            : "Почніть розмову"}
-                        </span>
-                        {match.unreadCount > 0 && (
-                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                            {match.unreadCount > 99 ? "99+" : match.unreadCount}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                }
-              />
-              <ContextMenuContent className="w-72 bg-popover/55 backdrop-blur-xl">
-                {(() => {
-                  const profile = partnerProfiles[match.partner.profileId]
-                  const isProfileLoading = loadingPartnerProfileIds.has(match.partner.profileId)
-                  const profileError = partnerProfileErrors[match.partner.profileId]
-                  const interests = profile?.interests ?? []
-
-                  return (
-                    <div className="px-2 py-2">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-12 rounded-xl">
-                          <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
-                          <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
-                        </Avatar>
-
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold">
-                            {profile?.displayName ?? match.partner.displayName}{(profile?.age ?? match.partner.age) ? `, ${profile?.age ?? match.partner.age}` : ""}
-                          </p>
-                          <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <MapPin className="size-3" /> {profile?.city || "Місто не вказано"}
-                          </p>
-                        </div>
-                      </div>
-                      {profile?.bio && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{profile.bio}</p>}
-                      <p className="mt-3 text-xs text-muted-foreground">Інтереси</p>
-                      {
-                        isProfileLoading ? (
-                          <p className="mt-1.5 text-xs text-muted-foreground">Завантаження профілю...</p>
-                        ) : profileError ? (
-                          <p role="alert" className="mt-1.5 text-xs text-destructive">{profileError}</p>
-                        ) : interests.length > 0 ? (
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {interests.map((interest) => (
-                              <span key={interest.id} className="rounded-full bg-muted px-2 py-1 text-xs">{interest.name}</span>
-                            ))}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+          <Field className="max-w-sm">
+            <InputGroup>
+              <InputGroupInput id="inline-start-input" placeholder="Пошук..." />
+              <InputGroupAddon align="inline-start">
+                <SearchIcon className="text-muted-foreground" />
+              </InputGroupAddon>
+            </InputGroup>
+          </Field>
+          <Tabs defaultValue="account" className="min-h-0 flex-1">
+            <TabsList className="w-full">
+              <TabsTrigger value="account">Особисті</TabsTrigger>
+              <TabsTrigger value="password">Події</TabsTrigger>
+            </TabsList>
+            <TabsContent value="account" className="flex min-h-0 flex-1 flex-col">
+              {matchesError && (
+                <div role="alert" className="flex items-center justify-between gap-2 px-1 py-3 text-sm text-destructive">
+                  <span>{matchesError}</span>
+                  <Button variant="outline" size="sm" onClick={() => void refreshMatches()}>Повторити</Button>
+                </div>
+              )}
+              <div className="min-h-0 flex-1 overflow-y-auto p-2">
+                {isMatchesLoading ? (
+                  <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+                    <LoaderCircle className="size-4 animate-spin" /> Завантаження чатів...
+                  </div>
+                ) : matches.length === 0 ? (
+                  <p className="p-5 text-sm text-muted-foreground">Поки немає мэтчів. Коли з кимось співпадуть симпатії, тут з’явиться чат.</p>
+                ) : sortedMatches.map((match) => (
+                  <ContextMenu key={match.id} onOpenChange={(open) => {
+                    if (open) void loadPartnerProfile(match.partner.profileId)
+                  }}>
+                    <ContextMenuTrigger
+                      render={
+                        <Link
+                          to={`/messenger/${match.id}`}
+                          className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/70 ${match.id === matchId ? "bg-muted" : ""}`}
+                        >
+                          <Avatar className="size-12 shrink-0 rounded-xl">
+                            <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
+                            <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate text-sm font-semibold">{match.partner.displayName}</span>
+                              {match.lastMessage && <span className="shrink-0 text-[11px] text-muted-foreground">{formatConversationTime(match.lastMessage.sentAt)}</span>}
+                            </div>
+                            <div className="mt-1 flex items-center justify-between gap-2">
+                              <span className="truncate text-xs text-muted-foreground">
+                                {match.lastMessage
+                                  ? `${match.lastMessage.isMine ? "Ви: " : ""}${match.lastMessage.text}`
+                                  : "Почніть розмову"}
+                              </span>
+                              {match.unreadCount > 0 && (
+                                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                                  {match.unreadCount > 99 ? "99+" : match.unreadCount}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        ) : (
-                          <p className="mt-1.5 text-xs text-muted-foreground">
-                            {profile ? "Інтереси не вказані" : "Профіль поки не завантажено"}
-                          </p>
-                        )
+                        </Link>
                       }
-                    </div>
-                  )
-                })()}
-                <ContextMenuSeparator />
-                <ContextMenuGroup>
-                  <ContextMenuItem onClick={() => navigate(`/messenger/${match.id}`)}>
-                    <MessageCircle />
-                    Перейти до чату
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => markMatchUnread(match.id)}>
-                    <Eye />
-                    Позначити як непрочитане
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => togglePinnedMatch(match.id)}>
-                    {pinnedMatchIds.has(match.id) ? <PinOff /> : <Pin />}
-                    {pinnedMatchIds.has(match.id) ? "Відкріпити чат" : "Закріпити чат"}
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => toggleMutedMatch(match.id)}>
-                    {mutedMatchIds.has(match.id) ? <Bell /> : <BellOff />}
-                    {mutedMatchIds.has(match.id) ? "Увімкнути сповіщення" : "Вимкнути сповіщення"}
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => clearMatchHistory(match.id)}>
-                    <CircleX />
-                    Очистити історію
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    variant="destructive"
-                    onClick={() => deleteMatch(match.id)}
-                  >
-                    <Trash2 />
-                    Видалити чат
-                  </ContextMenuItem>
-                </ContextMenuGroup>
-              </ContextMenuContent>
-            </ContextMenu>
-          ))}
+                    />
+                    <ContextMenuContent className="w-72 bg-popover/55 backdrop-blur-xl">
+                      {(() => {
+                        const profile = partnerProfiles[match.partner.profileId]
+                        const isProfileLoading = loadingPartnerProfileIds.has(match.partner.profileId)
+                        const profileError = partnerProfileErrors[match.partner.profileId]
+                        const interests = profile?.interests ?? []
+
+                        return (
+                          <div className="px-2 py-2">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="size-12 rounded-xl">
+                                <AvatarImage src={match.partner.mainPhotoUrl ?? undefined} alt={match.partner.displayName} />
+                                <AvatarFallback className="rounded-xl">{initials(match.partner.displayName)}</AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold">
+                                  {profile?.displayName ?? match.partner.displayName}{(profile?.age ?? match.partner.age) ? `, ${profile?.age ?? match.partner.age}` : ""}
+                                </p>
+                                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <MapPin className="size-3" /> {profile?.city || "Місто не вказано"}
+                                </p>
+                              </div>
+                            </div>
+                            {profile?.bio && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{profile.bio}</p>}
+                            <p className="mt-3 text-xs text-muted-foreground">Інтереси</p>
+                            {isProfileLoading ? (
+                              <p className="mt-1.5 text-xs text-muted-foreground">Завантаження профілю...</p>
+                            ) : profileError ? (
+                              <p role="alert" className="mt-1.5 text-xs text-destructive">{profileError}</p>
+                            ) : interests.length > 0 ? (
+                              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                {interests.map((interest) => (
+                                  <span key={interest.id} className="rounded-full bg-muted px-2 py-1 text-xs">{interest.name}</span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="mt-1.5 text-xs text-muted-foreground">
+                                {profile ? "Інтереси не вказані" : "Профіль поки не завантажено"}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })()}
+                      <ContextMenuSeparator />
+                      <ContextMenuGroup>
+                        <ContextMenuItem onClick={() => navigate(`/messenger/${match.id}`)}>
+                          <MessageCircle />
+                          Перейти до чату
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => markMatchUnread(match.id)}>
+                          <Eye />
+                          Позначити як непрочитане
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => togglePinnedMatch(match.id)}>
+                          {pinnedMatchIds.has(match.id) ? <PinOff /> : <Pin />}
+                          {pinnedMatchIds.has(match.id) ? "Відкріпити чат" : "Закріпити чат"}
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => toggleMutedMatch(match.id)}>
+                          {mutedMatchIds.has(match.id) ? <Bell /> : <BellOff />}
+                          {mutedMatchIds.has(match.id) ? "Увімкнути сповіщення" : "Вимкнути сповіщення"}
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => clearMatchHistory(match.id)}>
+                          <CircleX />
+                          Очистити історію
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          variant="destructive"
+                          onClick={() => deleteMatch(match.id)}
+                        >
+                          <Trash2 />
+                          Видалити чат
+                        </ContextMenuItem>
+                      </ContextMenuGroup>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="password" className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
+              Тут поки порожньо
+            </TabsContent>
+          </Tabs>
         </div>
       </aside >
 

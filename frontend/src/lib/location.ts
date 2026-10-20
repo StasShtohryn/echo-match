@@ -78,6 +78,34 @@ export async function saveMyLocation(latitude: number, longitude: number): Promi
   await updateMyLocation(latitude, longitude, city)
 }
 
+export async function updateLocationFromDevice(): Promise<void> {
+  if (!navigator.geolocation) {
+    throw new Error("Браузер не підтримує визначення місцезнаходження.")
+  }
+
+  const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (error) => {
+        const description = error.code === error.PERMISSION_DENIED
+          ? "Дозвольте доступ до геолокації в налаштуваннях браузера та спробуйте знову."
+          : error.code === error.POSITION_UNAVAILABLE
+            ? "Браузер не зміг визначити ваше місцезнаходження."
+            : "Час очікування геолокації минув. Спробуйте ще раз."
+
+        reject(new Error(description))
+      },
+      {
+        enableHighAccuracy: false,
+        maximumAge: 0,
+        timeout: 10000,
+      },
+    )
+  })
+
+  await saveMyLocation(position.coords.latitude, position.coords.longitude)
+}
+
 export function updateLocationAfterAuthentication() {
   if (!navigator.geolocation) {
     showLocationError("Браузер не підтримує визначення місцезнаходження.")
