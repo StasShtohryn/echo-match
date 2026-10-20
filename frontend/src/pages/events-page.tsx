@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { formatDistanceStrict } from "date-fns"
 import { uk } from "date-fns/locale"
-import { CalendarDays, Clock3, Link, MapPin, Plus, Search, Users, X } from "lucide-react"
+import { CalendarDays, Clock3, MapPin, Plus, Search, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +26,7 @@ import {
   getEvent,
   getEventCategories,
   getEventJoinRequests,
+  getEventParticipants,
   getEvents,
   joinEvent,
   leaveEvent,
@@ -38,6 +39,7 @@ import type {
   EventFilters,
   EventJoinPolicy,
   EventJoinRequest,
+  EventParticipant,
   EventCategory,
 } from "@/types/event.types"
 import type { DateRange } from "react-day-picker"
@@ -306,6 +308,9 @@ function EventDetailsDialog({
   joinRequests,
   joinRequestsError,
   isLoadingRequests,
+  participants,
+  participantsError,
+  isLoadingParticipants,
   busyRequestProfileId,
   onClose,
   onJoin,
@@ -313,6 +318,7 @@ function EventDetailsDialog({
   onApproveRequest,
   onRejectRequest,
   onRetryRequests,
+  onRetryParticipants,
   busy,
 }: {
   event: EventDetails | null
@@ -320,6 +326,9 @@ function EventDetailsDialog({
   joinRequests: EventJoinRequest[]
   joinRequestsError: string | null
   isLoadingRequests: boolean
+  participants: EventParticipant[]
+  participantsError: string | null
+  isLoadingParticipants: boolean
   busyRequestProfileId: string | null
   onClose: () => void
   onJoin: (event: EventCard) => void
@@ -327,18 +336,18 @@ function EventDetailsDialog({
   onApproveRequest: (request: EventJoinRequest) => void
   onRejectRequest: (request: EventJoinRequest) => void
   onRetryRequests: () => void
+  onRetryParticipants: () => void
   busy: boolean
 }) {
-  if (!event && !isLoading) return null
-
   const navigate = useNavigate();
+  if (!event && !isLoading) return null
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/45 p-4 backdrop-blur-sm" onClick={onClose}>
       <section
         aria-labelledby="event-details-title"
         aria-modal="true"
-        className="my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-background shadow-2xl"
+        className="no-scrollbar my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-background shadow-2xl"
         onClick={(clickEvent) => clickEvent.stopPropagation()}
         role="dialog"
       >
@@ -414,6 +423,49 @@ function EventDetailsDialog({
                 <p className="flex items-center gap-2"><MapPin className="size-4 text-primary" />{event.city}{event.placeName ? ` · ${event.placeName}` : ""}</p>
                 <p className="flex items-center gap-2"><Users className="size-4 text-primary" />{event.participantsCount}{event.capacity ? ` з ${event.capacity}` : ""} учасників</p>
               </div>
+              {(event.isOrganizer || event.myStatus === "Approved") && (
+                <section aria-labelledby="event-participants-title" className="space-y-3 border-t border-border pt-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-heading text-xl" id="event-participants-title">Учасники</h3>
+                    <Badge variant="secondary">{participants.length}</Badge>
+                  </div>
+                  {isLoadingParticipants ? (
+                    <p className="py-4 text-center text-sm text-muted-foreground">Завантажуємо учасників…</p>
+                  ) : participantsError ? (
+                    <div className="space-y-3 rounded-2xl bg-muted/50 px-4 py-5 text-center">
+                      <p className="text-sm text-destructive">{participantsError}</p>
+                      <Button onClick={onRetryParticipants} size="sm" variant="outline">Спробувати ще</Button>
+                    </div>
+                  ) : participants.length === 0 ? (
+                    <p className="rounded-2xl bg-muted/50 px-4 py-5 text-center text-sm text-muted-foreground">
+                      Підтверджених учасників поки немає.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {participants.map((participant) => (
+                        <Card className="rounded-2xl py-3 shadow-none" key={participant.profileId}>
+                          <CardContent className="px-3">
+                            <Link className="flex items-center gap-3" to={`/profile/${participant.profileId}`}>
+                            <Avatar className="size-11">
+                              <AvatarImage alt={participant.displayName} src={participant.mainPhotoUrl ?? undefined} />
+                              <AvatarFallback>{participant.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold">
+                                {participant.displayName}{participant.age ? `, ${participant.age}` : ""}
+                              </p>
+                              {participant.role === "Organizer" && (
+                                <p className="text-xs text-muted-foreground">Організатор</p>
+                              )}
+                            </div>
+                            </Link>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
               {event.isOrganizer && (
                 <section aria-labelledby="event-requests-title" className="space-y-3 border-t border-border pt-5">
                   <div className="flex items-center justify-between gap-3">
@@ -539,9 +591,6 @@ function EventCardView({
           <h3 className="line-clamp-1 text-left font-heading text-2xl transition group-hover:text-primary">
             {event.title}
           </h3>
-          <Link to={`/profile/${event.organizer.profileId}`} className="hover:opacity-80 cursor-pointer transition">
-            <p className="mt-1 text-sm text-muted-foreground">Організатор: {event.organizer.displayName}</p>
-          </Link>
         </div>
         <div className="space-y-2 text-sm text-muted-foreground">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -586,8 +635,11 @@ export default function EventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null)
   const [joinRequests, setJoinRequests] = useState<EventJoinRequest[]>([])
   const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null)
+  const [participants, setParticipants] = useState<EventParticipant[]>([])
+  const [participantsError, setParticipantsError] = useState<string | null>(null)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
   const [isLoadingRequests, setIsLoadingRequests] = useState(false)
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false)
   const [isDetailsBusy, setIsDetailsBusy] = useState(false)
   const [busyRequestProfileId, setBusyRequestProfileId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -682,18 +734,33 @@ export default function EventsPage() {
     }
   }
 
+  async function loadParticipants(eventId: string) {
+    setIsLoadingParticipants(true)
+    setParticipantsError(null)
+    try {
+      setParticipants(await getEventParticipants(eventId))
+    } catch (error) {
+      setParticipantsError(getApiErrorMessage(error, "Спробуйте завантажити список учасників ще раз."))
+    } finally {
+      setIsLoadingParticipants(false)
+    }
+  }
+
   async function handleOpenEvent(id: string) {
     setSelectedEvent(null)
     setJoinRequests([])
     setJoinRequestsError(null)
+    setParticipants([])
+    setParticipantsError(null)
     setIsLoadingDetails(true)
     try {
       const details = await getEvent(id)
       setSelectedEvent(details)
 
-      if (details.isOrganizer) {
-        await loadJoinRequests(id)
-      }
+      await Promise.all([
+        details.isOrganizer ? loadJoinRequests(id) : Promise.resolve(),
+        details.isOrganizer || details.myStatus === "Approved" ? loadParticipants(id) : Promise.resolve(),
+      ])
     } catch (error) {
       toast.add({
         type: "error",
@@ -738,6 +805,7 @@ export default function EventsPage() {
         })
       }
       await loadJoinRequests(eventId)
+      await loadParticipants(eventId)
     } catch (error) {
       toast.add({
         type: "error",
@@ -871,6 +939,9 @@ export default function EventsPage() {
           event={selectedEvent}
           isLoading={isLoadingDetails}
           isLoadingRequests={isLoadingRequests}
+          participants={participants}
+          participantsError={participantsError}
+          isLoadingParticipants={isLoadingParticipants}
           joinRequests={joinRequests}
           joinRequestsError={joinRequestsError}
           busyRequestProfileId={busyRequestProfileId}
@@ -881,6 +952,9 @@ export default function EventsPage() {
           onRejectRequest={(request) => void handleRequestDecision(request, "reject")}
           onRetryRequests={() => {
             if (selectedEvent) void loadJoinRequests(selectedEvent.id)
+          }}
+          onRetryParticipants={() => {
+            if (selectedEvent) void loadParticipants(selectedEvent.id)
           }}
         />
       )}

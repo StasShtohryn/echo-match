@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/signalr"
-import { ArrowLeft, Bell, BellOff, Camera, Check, CheckCheck, CircleX, Eye, FileText, ImageIcon, LoaderCircle, MapPin, MessageCircle, Paperclip, Pin, PinOff, Send, Sparkles, Trash2, X } from "lucide-react"
+import { ArrowLeft, Bell, BellOff, CalendarDays, Camera, Check, CheckCheck, CircleX, Clock3, Eye, FileText, ImageIcon, LoaderCircle, MapPin, MessageCircle, Paperclip, Pin, PinOff, Send, Sparkles, Trash2, Users, X } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble"
@@ -25,7 +25,7 @@ import { Marker, MarkerContent } from "@/components/ui/marker"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { getPublicProfile, type PublicProfile } from "@/services/auth-service"
+import { getMyProfile, getPublicProfile, type PublicProfile } from "@/services/auth-service"
 import { useAuthStore } from "@/store/useAuthStore"
 import type { Match } from "@/types/match.types"
 import { getMatches } from "@/services/match-service"
@@ -46,6 +46,26 @@ import {
   type AiSuggestions,
   type ReactionType,
 } from "@/services/message-service"
+import {
+  getEvent,
+  getEventMessages,
+  getEventJoinRequests,
+  getMyEventChats,
+  getEventParticipants,
+  approveEventJoinRequest,
+  markEventMessagesRead,
+  rejectEventJoinRequest,
+  sendEventMessage,
+} from "@/services/event-service"
+import type {
+  EventChat,
+  EventChatMessage,
+  EventChatMessageReceived,
+  EventDetails,
+  EventJoinRequest,
+  EventParticipant,
+  EventChatReadMark,
+} from "@/types/event.types"
 
 import { SearchIcon } from "lucide-react"
 import { Field } from "@/components/ui/field"
@@ -90,6 +110,18 @@ function sortByRecentActivity(matches: Match[]): Match[] {
   })
 }
 
+function sortEventChatsByRecentActivity(events: EventChat[]): EventChat[] {
+  return [...events].sort((left, right) => {
+    const leftActivity = left.lastMessage?.sentAt ?? left.startsAt
+    const rightActivity = right.lastMessage?.sentAt ?? right.startsAt
+    return new Date(rightActivity).getTime() - new Date(leftActivity).getTime()
+  })
+}
+
+function formatEventDate(value: string): string {
+  return new Intl.DateTimeFormat("uk-UA", { day: "numeric", month: "short" }).format(new Date(value))
+}
+
 function reactionEmoji(reaction: string): string {
   const emoji: Record<string, string> = {
     Heart: "❤️",
@@ -112,6 +144,30 @@ export default function MessengerPage() {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const [matches, setMatches] = useState<Match[]>([])
+  const [eventChats, setEventChats] = useState<EventChat[]>([])
+  const [eventChatsError, setEventChatsError] = useState<string | null>(null)
+  const [isEventChatsLoading, setIsEventChatsLoading] = useState(true)
+  const [eventConversationId, setEventConversationId] = useState<string | null>(null)
+  const [eventDetails, setEventDetails] = useState<EventDetails | null>(null)
+  const [eventDetailsParticipants, setEventDetailsParticipants] = useState<EventParticipant[]>([])
+  const [eventDetailsRequests, setEventDetailsRequests] = useState<EventJoinRequest[]>([])
+  const [eventDetailsDataError, setEventDetailsDataError] = useState<string | null>(null)
+  const [busyEventRequestProfileId, setBusyEventRequestProfileId] = useState<string | null>(null)
+  const [isEventDetailsOpen, setIsEventDetailsOpen] = useState(false)
+  const [isEventDetailsLoading, setIsEventDetailsLoading] = useState(false)
+  const [eventDetailsError, setEventDetailsError] = useState<string | null>(null)
+  const [eventMessages, setEventMessages] = useState<EventChatMessage[]>([])
+  const [eventReadMarks, setEventReadMarks] = useState<EventChatReadMark[]>([])
+  const [eventParticipants, setEventParticipants] = useState<EventParticipant[]>([])
+  const [isEventMessagesLoading, setIsEventMessagesLoading] = useState(false)
+  const [isLoadingOlderEventMessages, setIsLoadingOlderEventMessages] = useState(false)
+  const [hasOlderEventMessages, setHasOlderEventMessages] = useState(false)
+  const [eventMessageText, setEventMessageText] = useState("")
+  const [isSendingEventMessage, setIsSendingEventMessage] = useState(false)
+  const [eventChatError, setEventChatError] = useState<string | null>(null)
+  const [eventTypingName, setEventTypingName] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("account")
+  const [myProfileId, setMyProfileId] = useState<string | null>(null)
   const [partnerProfiles, setPartnerProfiles] = useState<Record<string, PublicProfile>>({})
   const [loadingPartnerProfileIds, setLoadingPartnerProfileIds] = useState<Set<string>>(() => new Set())
   const [partnerProfileErrors, setPartnerProfileErrors] = useState<Record<string, string>>({})
@@ -140,7 +196,10 @@ export default function MessengerPage() {
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("connecting")
   const connectionRef = useRef<HubConnection | null>(null)
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
+  const eventMessageInputRef = useRef<HTMLTextAreaElement>(null)
   const selectedMatchIdRef = useRef(matchId)
+  const selectedEventIdRef = useRef(eventConversationId)
+  const myProfileIdRef = useRef(myProfileId)
   const aiRequestVersionRef = useRef(0)
   const loadingPartnerProfileIdsRef = useRef(new Set<string>())
   const partnerProfileIdRef = useRef<string | null>(null)
@@ -155,6 +214,11 @@ export default function MessengerPage() {
   const viewportRef = useRef<HTMLDivElement>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const eventMessagesEndRef = useRef<HTMLDivElement>(null)
+  const eventViewportRef = useRef<HTMLDivElement>(null)
+  const eventTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastEventTypingSentAtRef = useRef(0)
+  const eventMessagesScrollToBottomRef = useRef(false)
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     // Даємо браузеру завершити рендер списку повідомлень у DOM
@@ -179,6 +243,12 @@ export default function MessengerPage() {
     }
   }, [matchId, isLoadingMessages])
 
+  useEffect(() => {
+    if (eventConversationId && !isEventMessagesLoading) {
+      requestAnimationFrame(() => eventMessageInputRef.current?.focus())
+    }
+  }, [eventConversationId, isEventMessagesLoading])
+
   // Скролимо, коли повідомлення реально завантажені і відображаються
   useEffect(() => {
     if (loadedMatchId === matchId && !isLoadingMessages && messages.length > 0) {
@@ -189,6 +259,10 @@ export default function MessengerPage() {
   const selectedMatch = useMemo(
     () => matches.find((match) => match.id === matchId) ?? null,
     [matches, matchId],
+  )
+  const selectedEventChat = useMemo(
+    () => eventChats.find((event) => event.id === eventConversationId) ?? null,
+    [eventChats, eventConversationId],
   )
   const sortedMatches = useMemo(
     () => [...matches].sort((left, right) => {
@@ -218,6 +292,15 @@ export default function MessengerPage() {
     selectedMatchIdRef.current = matchId
     partnerProfileIdRef.current = selectedMatch?.partner.profileId ?? null
   }, [matchId, selectedMatch?.partner.profileId])
+
+  useEffect(() => {
+    selectedEventIdRef.current = eventConversationId
+    myProfileIdRef.current = myProfileId
+  }, [eventConversationId, myProfileId])
+
+  useEffect(() => {
+    if (matchId && activeTab === "account") setEventConversationId(null)
+  }, [activeTab, matchId])
 
 
   useEffect(() => {
@@ -280,6 +363,25 @@ export default function MessengerPage() {
     void Promise.resolve().then(refreshMatches)
   }, [refreshMatches])
 
+  const refreshEventChats = useCallback(async () => {
+    setIsEventChatsLoading(true)
+    setEventChatsError(null)
+    try {
+      const [events, profile] = await Promise.all([getMyEventChats(), getMyProfile()])
+      myProfileIdRef.current = profile.id
+      setMyProfileId(profile.id)
+      setEventChats(sortEventChatsByRecentActivity(events))
+    } catch (error: unknown) {
+      setEventChatsError(getApiErrorMessage(error, "Не вдалося завантажити чати подій."))
+    } finally {
+      setIsEventChatsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void Promise.resolve().then(refreshEventChats)
+  }, [refreshEventChats])
+
   const markRead = useCallback(async (id: string) => {
     try {
       await markMessagesRead(id)
@@ -288,6 +390,17 @@ export default function MessengerPage() {
       )))
     } catch (error: unknown) {
       setChatError(getApiErrorMessage(error, "Не вдалося позначити повідомлення прочитаними."))
+    }
+  }, [])
+
+  const markEventRead = useCallback(async (id: string) => {
+    try {
+      await markEventMessagesRead(id)
+      setEventChats((current) => current.map((event) => (
+        event.id === id ? { ...event, unreadCount: 0 } : event
+      )))
+    } catch (error: unknown) {
+      setEventChatError(getApiErrorMessage(error, "Не вдалося позначити повідомлення події прочитаними."))
     }
   }, [])
 
@@ -336,6 +449,44 @@ export default function MessengerPage() {
       cancelled = true
     }
   }, [matchId, markRead])
+
+  useEffect(() => {
+    if (!eventConversationId) return
+
+    const activeEventId = eventConversationId
+    let cancelled = false
+
+    async function loadEventConversation() {
+      setEventMessages([])
+      setEventParticipants([])
+      setEventChatError(null)
+      setIsEventMessagesLoading(true)
+      setHasOlderEventMessages(false)
+      try {
+        const page = await getEventMessages(activeEventId)
+        if (cancelled) return
+        setEventMessages([...page.items].reverse())
+        setEventReadMarks(page.readMarks)
+        const participants = await getEventParticipants(activeEventId)
+        if (cancelled) return
+        setEventParticipants(participants)
+        setHasOlderEventMessages(page.items.length === PAGE_SIZE)
+        eventMessagesScrollToBottomRef.current = true
+        await markEventRead(activeEventId)
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setEventChatError(getApiErrorMessage(error, "Не вдалося завантажити повідомлення події."))
+        }
+      } finally {
+        if (!cancelled) setIsEventMessagesLoading(false)
+      }
+    }
+
+    void Promise.resolve().then(loadEventConversation)
+    return () => {
+      cancelled = true
+    }
+  }, [eventConversationId, markEventRead])
 
   useEffect(() => {
     const token = user?.token
@@ -410,6 +561,81 @@ export default function MessengerPage() {
       }
     })
 
+    connection.on("EventMessageReceived", (event: EventChatMessageReceived) => {
+      const isMine = event.sender.profileId === myProfileIdRef.current
+      setEventChats((current) => sortEventChatsByRecentActivity(current.map((item) => (
+        item.id === event.eventId
+          ? {
+              ...item,
+              lastMessage: {
+                text: event.text,
+                sentAt: event.sentAt,
+                senderDisplayName: event.sender.displayName,
+                isMine,
+              },
+              unreadCount: selectedEventIdRef.current === event.eventId || isMine
+                ? item.unreadCount
+                : item.unreadCount + 1,
+            }
+          : item
+      ))))
+
+      if (selectedEventIdRef.current !== event.eventId) return
+
+      const message: EventChatMessage = { ...event, isMine }
+      setEventMessages((current) => current.some((item) => item.id === message.id)
+        ? current
+        : [...current, message].sort((left, right) => left.sequence - right.sequence))
+      if (!isMine) {
+        eventMessagesScrollToBottomRef.current = true
+        void markEventRead(event.eventId)
+      }
+    })
+
+    connection.on("EventMessagesRead", (event: { eventId: string; readerProfileId: string; readAt: string }) => {
+      if (event.eventId !== selectedEventIdRef.current) return
+      setEventReadMarks((current) => {
+        const existing = current.some((mark) => mark.profileId === event.readerProfileId)
+        if (existing) {
+          return current.map((mark) => mark.profileId === event.readerProfileId
+            ? { ...mark, lastReadAt: event.readAt }
+            : mark)
+        }
+        return [...current, { profileId: event.readerProfileId, lastReadAt: event.readAt }]
+      })
+    })
+
+    connection.on("EventTyping", (event: { eventId: string; profileId: string; displayName: string }) => {
+      if (event.eventId !== selectedEventIdRef.current || event.profileId === myProfileIdRef.current) return
+      if (eventTypingTimeoutRef.current) clearTimeout(eventTypingTimeoutRef.current)
+      setEventTypingName(event.displayName)
+      eventTypingTimeoutRef.current = setTimeout(() => {
+        setEventTypingName(null)
+        eventTypingTimeoutRef.current = null
+      }, 2200)
+    })
+
+    connection.on("EventCancelled", (event: { eventId: string }) => {
+      setEventChats((current) => current.map((item) => (
+        item.id === event.eventId ? { ...item, cancelledAt: new Date().toISOString() } : item
+      )))
+    })
+
+    connection.on("EventParticipantJoined", (event: { eventId: string; profileId: string }) => {
+      if (event.profileId === myProfileIdRef.current) void refreshEventChats()
+    })
+
+    connection.on("EventRequestDecided", (event: { eventId: string; status: string }) => {
+      if (event.status === "Approved") void refreshEventChats()
+    })
+
+    connection.on("EventParticipantLeft", (event: { eventId: string; profileId: string }) => {
+      if (event.profileId === myProfileIdRef.current) {
+        setEventChats((current) => current.filter((item) => item.id !== event.eventId))
+        setEventConversationId((current) => current === event.eventId ? null : current)
+      }
+    })
+
     connection.on("MessagesRead", (event: ChatReadEvent) => {
       if (event.matchId === selectedMatchIdRef.current
         && event.readerProfileId === partnerProfileIdRef.current) {
@@ -473,10 +699,11 @@ export default function MessengerPage() {
       disposed = true
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
       if (typingExitTimeoutRef.current) clearTimeout(typingExitTimeoutRef.current)
+      if (eventTypingTimeoutRef.current) clearTimeout(eventTypingTimeoutRef.current)
       connectionRef.current = null
       void connection.stop()
     }
-  }, [markRead, user?.token])
+  }, [markEventRead, markRead, refreshEventChats, user?.token])
 
   useEffect(() => {
     const connection = connectionRef.current
@@ -501,6 +728,14 @@ export default function MessengerPage() {
     }
   }, [messages])
 
+  useLayoutEffect(() => {
+    const viewport = eventViewportRef.current
+    if (viewport && eventMessagesScrollToBottomRef.current) {
+      viewport.scrollTop = viewport.scrollHeight
+      eventMessagesScrollToBottomRef.current = false
+    }
+  }, [eventMessages])
+
   async function loadOlderMessages() {
     if (!matchId || !hasOlderMessages || isLoadingOlder || visibleMessages.length === 0) return
     const viewport = viewportRef.current
@@ -522,6 +757,175 @@ export default function MessengerPage() {
     } finally {
       setIsLoadingOlder(false)
     }
+  }
+
+  async function loadOlderEventMessages() {
+    if (!eventConversationId || !hasOlderEventMessages || isLoadingOlderEventMessages || eventMessages.length === 0) return
+    const viewport = eventViewportRef.current
+    if (!viewport) return
+
+    setIsLoadingOlderEventMessages(true)
+    setEventChatError(null)
+    const previousHeight = viewport.scrollHeight
+    const previousTop = viewport.scrollTop
+    try {
+      const page = await getEventMessages(eventConversationId, eventMessages[0].sequence)
+      const olderMessages = [...page.items].reverse()
+      setEventMessages((current) => {
+        const existingIds = new Set(current.map((message) => message.id))
+        return [...olderMessages.filter((message) => !existingIds.has(message.id)), ...current]
+      })
+      setHasOlderEventMessages(page.items.length === PAGE_SIZE)
+      requestAnimationFrame(() => {
+        if (eventViewportRef.current) {
+          eventViewportRef.current.scrollTop = eventViewportRef.current.scrollHeight - previousHeight + previousTop
+        }
+      })
+    } catch (error: unknown) {
+      setEventChatError(getApiErrorMessage(error, "Не вдалося завантажити попередні повідомлення події."))
+    } finally {
+      setIsLoadingOlderEventMessages(false)
+    }
+  }
+
+  async function handleSendEventMessage(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const text = eventMessageText.trim()
+    const activeEvent = selectedEventChat
+    if (!activeEvent || !text || isSendingEventMessage || activeEvent.cancelledAt) return
+
+    setIsSendingEventMessage(true)
+    setEventChatError(null)
+    try {
+      const message = await sendEventMessage(activeEvent.id, text)
+      setEventMessages((current) => current.some((item) => item.id === message.id)
+        ? current
+        : [...current, message].sort((left, right) => left.sequence - right.sequence))
+      eventMessagesScrollToBottomRef.current = true
+      setEventMessageText("")
+      setEventChats((current) => sortEventChatsByRecentActivity(current.map((item) => (
+        item.id === activeEvent.id
+          ? {
+              ...item,
+              lastMessage: {
+                text: message.text,
+                sentAt: message.sentAt,
+                senderDisplayName: message.sender.displayName,
+                isMine: true,
+              },
+              unreadCount: 0,
+            }
+          : item
+      ))))
+    } catch (error: unknown) {
+      setEventChatError(getApiErrorMessage(error, "Не вдалося надіслати повідомлення."))
+    } finally {
+      setIsSendingEventMessage(false)
+      requestAnimationFrame(() => eventMessageInputRef.current?.focus())
+    }
+  }
+
+  function handleEventMessageInputChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
+    const text = event.currentTarget.value
+    setEventMessageText(text)
+    const connection = connectionRef.current
+    const now = Date.now()
+    if (!text.trim() || !eventConversationId || now - lastEventTypingSentAtRef.current < 1000
+      || connection?.state !== "Connected") return
+
+    lastEventTypingSentAtRef.current = now
+    void connection.invoke("TypingInEvent", eventConversationId).catch((error: unknown) => {
+      setEventChatError(getApiErrorMessage(error, "Не вдалося надіслати статус набору тексту."))
+    })
+  }
+
+  function openEventChat(id: string) {
+    selectedEventIdRef.current = id
+    setEventConversationId(id)
+    setActiveTab("password")
+    setEventTypingName(null)
+    setEventChatError(null)
+    if (matchId) navigate("/messenger")
+  }
+
+  async function openEventDetails() {
+    if (!eventConversationId) return
+    setIsEventDetailsOpen(true)
+    setIsEventDetailsLoading(true)
+    setEventDetailsError(null)
+    setEventDetailsDataError(null)
+    try {
+      const details = await getEvent(eventConversationId)
+      setEventDetails(details)
+      setEventDetailsParticipants([])
+      setEventDetailsRequests([])
+
+      const requests = details.isOrganizer
+        ? getEventJoinRequests(eventConversationId)
+        : Promise.resolve<EventJoinRequest[]>([])
+      const [participantsResult, requestsResult] = await Promise.allSettled([
+        getEventParticipants(eventConversationId),
+        requests,
+      ])
+
+      if (participantsResult.status === "fulfilled") {
+        setEventDetailsParticipants(participantsResult.value)
+      }
+      if (requestsResult.status === "fulfilled") {
+        setEventDetailsRequests(requestsResult.value)
+      }
+      if (participantsResult.status === "rejected" || requestsResult.status === "rejected") {
+        setEventDetailsDataError(getApiErrorMessage(
+          participantsResult.status === "rejected" ? participantsResult.reason : requestsResult.status === "rejected" ? requestsResult.reason : null,
+          "Не вдалося завантажити учасників або заявки.",
+        ))
+      }
+    } catch (error: unknown) {
+      setEventDetailsError(getApiErrorMessage(error, "Не вдалося завантажити деталі події."))
+    } finally {
+      setIsEventDetailsLoading(false)
+    }
+  }
+
+  async function handleEventRequestDecision(request: EventJoinRequest, action: "approve" | "reject") {
+    if (!eventDetails) return
+    const eventId = eventDetails.id
+    setBusyEventRequestProfileId(request.profileId)
+    setEventDetailsDataError(null)
+    try {
+      if (action === "approve") await approveEventJoinRequest(eventId, request.profileId)
+      else await rejectEventJoinRequest(eventId, request.profileId)
+
+      const [details, requests, participants] = await Promise.all([
+        getEvent(eventId),
+        getEventJoinRequests(eventId),
+        getEventParticipants(eventId),
+      ])
+      setEventDetails(details)
+      setEventDetailsRequests(requests)
+      setEventDetailsParticipants(participants)
+      await refreshEventChats()
+    } catch (error: unknown) {
+      setEventDetailsDataError(getApiErrorMessage(error, "Не вдалося оновити заявку. Спробуйте ще раз."))
+    } finally {
+      setBusyEventRequestProfileId(null)
+    }
+  }
+
+  function closeEventDetails() {
+    setIsEventDetailsOpen(false)
+    setEventDetails(null)
+    setEventDetailsParticipants([])
+    setEventDetailsRequests([])
+    setEventDetailsDataError(null)
+    setEventDetailsError(null)
+  }
+
+  function closeEventChat() {
+    selectedEventIdRef.current = null
+    setEventConversationId(null)
+    setActiveTab("password")
+    setEventMessages([])
   }
 
   async function handleSendMessage(event: React.FormEvent<HTMLFormElement>) {
@@ -699,7 +1103,7 @@ export default function MessengerPage() {
 
   return (
     <div className="flex min-h-0 flex-1 bg-background">
-      <aside className={`${matchId ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-r border-border/80 bg-card/50 md:w-80`}>
+      <aside className={`${matchId || eventConversationId ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-r border-border/80 bg-card/50 md:w-80`}>
         <div className="border-b border-border/70 px-5 py-4">
           <h1 className="text-xl font-semibold">Повідомлення</h1>
           <p className="mt-1 text-sm text-muted-foreground">Ваші розмови та нові знайомства</p>
@@ -713,7 +1117,14 @@ export default function MessengerPage() {
               </InputGroupAddon>
             </InputGroup>
           </Field>
-          <Tabs defaultValue="account" className="min-h-0 flex-1">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => {
+              setActiveTab(value)
+              if (value === "account") setEventConversationId(null)
+            }}
+            className="min-h-0 flex-1"
+          >
             <TabsList className="w-full">
               <TabsTrigger value="account">Особисті</TabsTrigger>
               <TabsTrigger value="password">Події</TabsTrigger>
@@ -845,15 +1256,413 @@ export default function MessengerPage() {
                 ))}
               </div>
             </TabsContent>
-            <TabsContent value="password" className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
-              Тут поки порожньо
+            <TabsContent value="password" className="flex min-h-0 flex-1 flex-col">
+              {eventChatsError && (
+                <div role="alert" className="flex items-center justify-between gap-2 px-1 py-3 text-sm text-destructive">
+                  <span>{eventChatsError}</span>
+                  <Button variant="outline" size="sm" onClick={() => void refreshEventChats()}>Повторити</Button>
+                </div>
+              )}
+              <div className="min-h-0 flex-1 overflow-y-auto p-2">
+                {isEventChatsLoading ? (
+                  <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+                    <LoaderCircle className="size-4 animate-spin" /> Завантаження подій...
+                  </div>
+                ) : eventChats.length === 0 ? (
+                  <div className="p-5 text-sm text-muted-foreground">
+                    Підтверджених чатів подій поки немає. Вони з’являться тут, коли вас приймуть на подію або ви створите власну.
+                  </div>
+                ) : sortEventChatsByRecentActivity(eventChats).map((event) => (
+                  <button
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/70 ${event.id === eventConversationId ? "bg-muted" : ""}`}
+                    key={event.id}
+                    onClick={() => openEventChat(event.id)}
+                    type="button"
+                  >
+                    <Avatar className="size-12 shrink-0 rounded-xl">
+                      <AvatarImage alt={event.title} src={event.coverUrl ?? undefined} />
+                      <AvatarFallback className="rounded-xl"><CalendarDays className="size-5" /></AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-semibold">{event.title}</span>
+                        {event.lastMessage && (
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            {formatConversationTime(event.lastMessage.sentAt)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <span className="truncate text-xs text-muted-foreground">
+                          {event.lastMessage
+                            ? `${event.lastMessage.isMine ? "Ви: " : `${event.lastMessage.senderDisplayName}: `}${event.lastMessage.text}`
+                            : `${formatEventDate(event.startsAt)} · ${event.city}`}
+                        </span>
+                        {event.unreadCount > 0 && (
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                            {event.unreadCount > 99 ? "99+" : event.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </TabsContent>
           </Tabs>
         </div>
       </aside >
 
-      <section className={`${matchId ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col`}>
-        {selectedMatch ? (
+      <section className={`${matchId || eventConversationId ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col`}>
+        {eventConversationId ? (
+          <>
+            <header className="flex shrink-0 items-center gap-3 border-b border-border/70 px-4 py-3 md:px-6">
+              <Button
+                onClick={closeEventChat}
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                aria-label="До списку чатів подій"
+              >
+                <ArrowLeft />
+              </Button>
+              <button
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-xl text-left transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => void openEventDetails()}
+                type="button"
+              >
+                <Avatar className="size-10 shrink-0 rounded-xl">
+                  <AvatarImage alt={selectedEventChat?.title ?? "Подія"} src={selectedEventChat?.coverUrl ?? undefined} />
+                  <AvatarFallback className="rounded-xl"><CalendarDays className="size-5" /></AvatarFallback>
+                </Avatar>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{selectedEventChat?.title ?? "Чат події"}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {selectedEventChat
+                      ? `${formatEventDate(selectedEventChat.startsAt)} · ${selectedEventChat.city}`
+                      : "Завантаження події..."}
+                  </span>
+                </span>
+              </button>
+              <span className="hidden text-xs text-muted-foreground sm:block">
+                {!user?.token || connectionStatus === "disconnected"
+                  ? "Немає live-підключення"
+                  : connectionStatus === "connected" ? "Підключено" : "Підключення..."}
+              </span>
+            </header>
+            {selectedEventChat?.cancelledAt && (
+              <p className="border-b border-border/70 bg-muted/50 px-5 py-2 text-center text-sm text-muted-foreground">
+                Подію скасовано. Чат доступний лише для читання.
+              </p>
+            )}
+            {eventChatError && (
+              <p role="alert" className="border-b border-destructive/20 bg-destructive/5 px-5 py-2 text-sm text-destructive">
+                {eventChatError}
+              </p>
+            )}
+            <ScrollArea viewportRef={eventViewportRef} className="min-h-0 flex-1 px-4 md:px-8">
+              <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end gap-3 py-5">
+                {hasOlderEventMessages && (
+                  <div className="flex justify-center">
+                    <Button
+                      disabled={isLoadingOlderEventMessages}
+                      onClick={() => void loadOlderEventMessages()}
+                      size="sm"
+                      variant="outline"
+                    >
+                      {isLoadingOlderEventMessages && <LoaderCircle className="animate-spin" />}
+                      Завантажити попередні
+                    </Button>
+                  </div>
+                )}
+                {isEventMessagesLoading ? (
+                  <div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <LoaderCircle className="size-4 animate-spin" /> Завантаження повідомлень...
+                  </div>
+                ) : eventMessages.length === 0 ? (
+                  <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
+                    Це початок чату події. Напишіть перше повідомлення учасникам!
+                  </div>
+                ) : eventMessages.map((message) => {
+                  const readCount = eventParticipants.filter((participant) => (
+                    participant.profileId !== myProfileId
+                    && eventReadMarks.some((mark) => (
+                    mark.profileId === participant.profileId
+                    && mark.lastReadAt !== null
+                    && new Date(mark.lastReadAt).getTime() >= new Date(message.sentAt).getTime()
+                    ))
+                  )).length
+                  const otherParticipantsCount = Math.max((selectedEventChat?.participantsCount ?? 1) - 1, 0)
+
+                  return (
+                    <div className={`flex items-end gap-2 ${message.isMine ? "justify-end" : "justify-start"}`} key={message.id}>
+                      {!message.isMine && (
+                        <Link
+                          aria-label={`Відкрити профіль ${message.sender.displayName}`}
+                          className="shrink-0"
+                          to={`/profile/${message.sender.profileId}`}
+                        >
+                          <Avatar className="size-11">
+                            <AvatarImage alt={message.sender.displayName} src={message.sender.mainPhotoUrl ?? undefined} />
+                            <AvatarFallback className="text-xs">{initials(message.sender.displayName)}</AvatarFallback>
+                          </Avatar>
+                        </Link>
+                      )}
+                      {message.isMine ? (
+                        <div className="max-w-[min(78%,34rem)] rounded-2xl rounded-br-xs bg-primary px-3 py-2 text-primary-foreground">
+                          <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+                            <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{message.text}</p>
+                            <time className="ml-auto shrink-0 text-[10px] opacity-70" dateTime={message.sentAt}>
+                              {formatTime(message.sentAt)}
+                            </time>
+                          </div>
+                          {otherParticipantsCount > 0 && (
+                            <div
+                              aria-label={readCount > 0
+                                ? `Переглянули ${readCount} з ${otherParticipantsCount}`
+                                : "Не переглянуто"}
+                              className="mt-1 flex items-center justify-end gap-1 text-[10px] text-primary-foreground/75"
+                              title={readCount > 0
+                                ? `Переглянули ${readCount} з ${otherParticipantsCount}`
+                                : "Не переглянуто"}
+                            >
+                              {readCount > 0
+                                ? <><CheckCheck className="size-3" />{readCount}/{otherParticipantsCount}</>
+                                : <><Check className="size-3" />Не переглянуто</>}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="max-w-[min(78%,34rem)] rounded-2xl rounded-bl-xs border border-border bg-card px-3 py-2">
+                          <p className="mb-1 text-xs font-semibold text-primary">{message.sender.displayName}</p>
+                          <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+                            <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{message.text}</p>
+                            <time className="ml-auto shrink-0 text-[10px] text-muted-foreground" dateTime={message.sentAt}>
+                              {formatTime(message.sentAt)}
+                            </time>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                <div ref={eventMessagesEndRef} className="h-px w-full" />
+              </div>
+            </ScrollArea>
+            <div className="mx-auto w-full max-w-4xl shrink-0">
+              <div className="flex h-7 items-center px-4 md:px-6">
+                {eventTypingName && (
+                  <span className="text-xs text-muted-foreground" role="status">{eventTypingName} пише...</span>
+                )}
+              </div>
+              <form onSubmit={(event) => void handleSendEventMessage(event)} className="flex w-full items-center gap-2 border-t border-border/70 p-3 md:px-6 md:py-4">
+                <Textarea
+                  ref={eventMessageInputRef}
+                  value={eventMessageText}
+                  onChange={handleEventMessageInputChange}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault()
+                      event.currentTarget.form?.requestSubmit()
+                    }
+                  }}
+                  placeholder={selectedEventChat?.cancelledAt ? "Чат лише для читання" : "Повідомлення учасникам..."}
+                  aria-label="Повідомлення в чаті події"
+                  maxLength={2000}
+                  disabled={!selectedEventChat || !!selectedEventChat.cancelledAt || isSendingEventMessage}
+                  className="min-h-10 max-h-32 flex-1 overflow-y-auto rounded-xl border-border bg-card px-3 py-2 text-sm shadow-sm"
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 shadow-sm"
+                  disabled={!eventMessageText.trim() || !selectedEventChat || !!selectedEventChat.cancelledAt || isSendingEventMessage}
+                  aria-label="Надіслати повідомлення"
+                >
+                  {isSendingEventMessage ? <LoaderCircle className="animate-spin" /> : <Send />}
+                </Button>
+              </form>
+            </div>
+            {isEventDetailsOpen && (
+              <div
+                className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/45 p-4 backdrop-blur-sm"
+                onClick={closeEventDetails}
+              >
+                <section
+                  aria-labelledby="messenger-event-details-title"
+                  aria-modal="true"
+                  className="no-scrollbar my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-background shadow-2xl"
+                  onClick={(event) => event.stopPropagation()}
+                  role="dialog"
+                >
+                  {isEventDetailsLoading ? (
+                    <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
+                      <LoaderCircle className="size-4 animate-spin" /> Завантажуємо деталі події...
+                    </div>
+                  ) : eventDetailsError ? (
+                    <div className="space-y-4 p-8 text-center">
+                      <p className="text-sm text-destructive" role="alert">{eventDetailsError}</p>
+                      <Button onClick={closeEventDetails} variant="outline">Закрити</Button>
+                    </div>
+                  ) : eventDetails ? (
+                    <>
+                      {eventDetails.coverUrl ? (
+                        <img alt="" className="h-52 w-full object-cover" src={eventDetails.coverUrl} />
+                      ) : (
+                        <div className="flex h-40 items-center justify-center bg-gradient-to-br from-primary/20 via-primary/10 to-muted">
+                          <CalendarDays aria-hidden="true" className="size-14 text-primary/70" />
+                        </div>
+                      )}
+                      <div className="space-y-5 p-6 sm:p-8">
+                        <div>
+                          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                            {eventDetails.category.name}
+                          </span>
+                          <h2 className="mt-3 font-heading text-3xl" id="messenger-event-details-title">
+                            {eventDetails.title}
+                          </h2>
+                          <Link
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium hover:text-primary"
+                            to={`/profile/${eventDetails.organizer.profileId}`}
+                            onClick={closeEventDetails}
+                          >
+                            <Avatar className="size-8">
+                              <AvatarImage alt={eventDetails.organizer.displayName} src={eventDetails.organizer.mainPhotoUrl ?? undefined} />
+                              <AvatarFallback className="text-xs">{initials(eventDetails.organizer.displayName)}</AvatarFallback>
+                            </Avatar>
+                            Організатор: {eventDetails.organizer.displayName}
+                          </Link>
+                        </div>
+                        {eventDetails.description && (
+                          <p className="whitespace-pre-wrap text-sm leading-6">{eventDetails.description}</p>
+                        )}
+                        <div className="grid gap-3 text-sm text-muted-foreground">
+                          <p className="flex items-center gap-2">
+                            <CalendarDays className="size-4 text-primary" />
+                            {new Intl.DateTimeFormat("uk-UA", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            }).format(new Date(eventDetails.startsAt))}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Clock3 className="size-4 text-primary" />
+                            {formatTime(eventDetails.startsAt)}
+                            {eventDetails.endsAt ? ` — ${formatTime(eventDetails.endsAt)}` : ""}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <MapPin className="size-4 text-primary" />
+                            {eventDetails.city}{eventDetails.placeName ? ` · ${eventDetails.placeName}` : ""}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Users className="size-4 text-primary" />
+                            {eventDetails.participantsCount}
+                            {eventDetails.capacity ? ` з ${eventDetails.capacity}` : ""} учасників
+                          </p>
+                        </div>
+                        {eventDetailsDataError && (
+                          <p className="text-sm text-destructive" role="alert">{eventDetailsDataError}</p>
+                        )}
+                        <section aria-labelledby="messenger-event-participants-title" className="space-y-3 border-t border-border pt-5">
+                          <div className="flex items-center justify-between gap-3">
+                            <h3 className="font-heading text-xl" id="messenger-event-participants-title">Учасники</h3>
+                            <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
+                              {eventDetailsParticipants.length || eventDetails.participantsCount}
+                            </span>
+                          </div>
+                          {eventDetailsParticipants.length === 0 ? (
+                            <p className="rounded-2xl bg-muted/50 px-4 py-5 text-center text-sm text-muted-foreground">
+                              Учасників поки немає або список недоступний.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {eventDetailsParticipants.map((participant) => (
+                                <Link
+                                  className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted"
+                                  key={participant.profileId}
+                                  onClick={closeEventDetails}
+                                  to={`/profile/${participant.profileId}`}
+                                >
+                                  <Avatar className="size-10">
+                                    <AvatarImage alt={participant.displayName} src={participant.mainPhotoUrl ?? undefined} />
+                                    <AvatarFallback className="text-xs">{initials(participant.displayName)}</AvatarFallback>
+                                  </Avatar>
+                                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                                    {participant.displayName}{participant.age ? `, ${participant.age}` : ""}
+                                  </span>
+                                  {participant.role === "Organizer" && (
+                                    <span className="text-xs text-muted-foreground">Організатор</span>
+                                  )}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </section>
+                        {eventDetails.isOrganizer && (
+                          <section aria-labelledby="messenger-event-requests-title" className="space-y-3 border-t border-border pt-5">
+                            <div className="flex items-center justify-between gap-3">
+                              <h3 className="font-heading text-xl" id="messenger-event-requests-title">Заявки на участь</h3>
+                              {eventDetailsRequests.length > 0 && (
+                                <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
+                                  {eventDetailsRequests.length}
+                                </span>
+                              )}
+                            </div>
+                            {eventDetailsRequests.length === 0 ? (
+                              <p className="rounded-2xl bg-muted/50 px-4 py-5 text-center text-sm text-muted-foreground">
+                                Нових заявок поки немає.
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {eventDetailsRequests.map((request) => (
+                                  <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3" key={request.profileId}>
+                                    <Link
+                                      className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary"
+                                      onClick={closeEventDetails}
+                                      to={`/profile/${request.profileId}`}
+                                    >
+                                      <Avatar className="size-10">
+                                        <AvatarImage alt={request.displayName} src={request.mainPhotoUrl ?? undefined} />
+                                        <AvatarFallback className="text-xs">{initials(request.displayName)}</AvatarFallback>
+                                      </Avatar>
+                                      <span className="truncate text-sm font-medium">
+                                        {request.displayName}{request.age ? `, ${request.age}` : ""}
+                                      </span>
+                                    </Link>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        disabled={busyEventRequestProfileId !== null || !!eventDetails.cancelledAt}
+                                        onClick={() => void handleEventRequestDecision(request, "approve")}
+                                        size="sm"
+                                      >
+                                        {busyEventRequestProfileId === request.profileId ? <LoaderCircle className="animate-spin" /> : "Прийняти"}
+                                      </Button>
+                                      <Button
+                                        disabled={busyEventRequestProfileId !== null || !!eventDetails.cancelledAt}
+                                        onClick={() => void handleEventRequestDecision(request, "reject")}
+                                        size="sm"
+                                        variant="outline"
+                                      >
+                                        Відхилити
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </section>
+                        )}
+                        <div className="flex justify-end border-t border-border pt-4">
+                          <Button onClick={closeEventDetails} variant="outline">Закрити</Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                </section>
+              </div>
+            )}
+          </>
+        ) : selectedMatch ? (
           <>
             <Link to={`/profile/${selectedMatch.partner.profileId}`} className="hover:opacity-80">
 
