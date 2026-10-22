@@ -30,11 +30,11 @@ export function TestPage({
 }: TestStepLayoutProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
   return (
-    <div className="flex min-h-screen justify-center bg-background px-4 px-4 pt-2 pb-16">
-      <div className="flex w-full max-w-xl flex-col justify-between border-x border-border pb-8 sm:px-10">
-        <div>
+    <div className="flex h-full min-h-0 w-full justify-center bg-background px-4 pt-2 pb-6">
+      <div className="flex h-full min-h-0 w-full max-w-xl flex-col justify-between border-x border-border sm:px-10">
 
-          <div className="mb-10 flex items-center justify-center gap-1.5">
+        <div className="shrink-0 pt-2">
+          <div className="mb-6 flex items-center justify-center gap-1.5">
             {Array.from({ length: totalSteps }).map((_, idx) => (
               <div
                 key={idx}
@@ -45,21 +45,22 @@ export function TestPage({
           </div>
 
 
-          <div className="mb-8 text-center">
-            <h1 className="pb-3 text-xl font-bold tracking-wide font-heading text-foreground sm:text-2xl">
+          <div className="text-center">
+            <h1 className="pb-3 text-xl font-semibold tracking-wide text-foreground sm:text-2xl">
               {title}
             </h1>
             <div className="h-px w-full bg-border" />
           </div>
         </div>
-        <ScrollArea viewportRef={viewportRef} className="relative h-full min-h-0 flex-1 px-4 w-full mb-6 mt-3">
-          <div className="my-auto w-full py-6">
+
+        <ScrollArea viewportRef={viewportRef} className="relative min-h-0 flex-1 px-4 w-full mb-6 mt-3">
+          <div className="w-full py-4">
             {children}
           </div>
         </ScrollArea>
 
 
-        <div className="mt-8 flex w-full items-center justify-between gap-4">
+        <div className="shrink-0 pt-4 pb-2 flex w-full items-center justify-between gap-4">
           {onBack ? (
             <Button
               type="button"

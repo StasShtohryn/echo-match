@@ -43,6 +43,12 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
   const communicationLabel = getLabel(COMMUNICATION_OPTIONS, communication);
   const petsLabel = getLabel(PET_OPTIONS, pets);
 
+  console.log(displayName)
+  console.log(orientation)
+  console.log(loveLanguage)
+  console.log(communication)
+  console.log(pets)
+
   return (
     <ScrollArea className="flex h-full w-80 shrink-0 flex-col justify-between border-l border-border/80 bg-card/55 p-6 font-sans select-none">
       <div className="space-y-4">
@@ -60,41 +66,8 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
 
         {/* Опис профілю */}
         <p className="text-xs leading-relaxed text-foreground">
-          {bio ?? "Користувач ще не додав опис профілю."}
+          {bio ?? ""}
         </p>
-
-        {/* Орієнтація та Мова кохання / Спілкування (компактні значки) */}
-        {(orientationLabel || loveLanguageLabel || communicationLabel) && (
-          <>
-            <Separator />
-            <div className="space-y-2">
-              <h2 className="text-xs font-bold tracking-wider text-foreground uppercase">
-                Особисте
-              </h2>
-              <div className="flex flex-wrap gap-1.5">
-                {orientationLabel && (
-                  <Badge variant="secondary" className="gap-1 text-[11px] font-medium py-0.5">
-                    <Compass className="size-3 text-primary" />
-                    {orientationLabel}
-                  </Badge>
-                )}
-                {loveLanguageLabel && (
-                  <Badge variant="secondary" className="gap-1 text-[11px] font-medium py-0.5">
-                    <Heart className="size-3 text-rose-500" />
-                    {loveLanguageLabel}
-                  </Badge>
-                )}
-                {communicationLabel && (
-                  <Badge variant="outline" className="gap-1 text-[11px] font-medium py-0.5">
-                    <MessageCircle className="size-3 text-primary" />
-                    {communicationLabel}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
         {/* Сумісність */}
         {compatibilityPercent !== null && (
           <>
@@ -131,6 +104,42 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
             </div>
           </>
         )}
+
+        {/* Орієнтація та Мова кохання / Спілкування (компактні значки) */}
+        {(orientationLabel || loveLanguageLabel || communicationLabel) && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h2 className="text-xs font-bold tracking-wider text-foreground uppercase">
+                Особисте
+              </h2>
+              <div className="flex flex-wrap gap-1.5">
+                {orientationLabel && (
+                  <Badge variant="secondary" className="gap-1 text-[11px] font-medium py-0.5">
+                    <Compass className="size-3 text-primary" />
+                    {orientationLabel}
+                  </Badge>
+                )}
+                {loveLanguageLabel && (
+                  <Badge variant="secondary" className="gap-1 text-[11px] font-medium py-0.5">
+                    <Heart className="size-3 text-rose-500" />
+                    {loveLanguageLabel}
+                  </Badge>
+                )}
+                {communicationLabel && (
+                  <Badge variant="outline" className="gap-1 text-[11px] font-medium py-0.5">
+                    <MessageCircle className="size-3 text-primary" />
+                    {communicationLabel}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+
+
+
 
         {/* Секція: Домашні тварини */}
         {petsLabel && (

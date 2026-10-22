@@ -22,12 +22,14 @@ import {
   loginWithPassword,
   signInWithGoogle,
 } from "@/services/auth-service"
+import { Eye, EyeOff } from "lucide-react"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const [formData, setFormData] = useState({ email: "", password: "" })
+  const [showPassword, setShowPassword] = useState(false)
 
   const navigate = useNavigate()
 
@@ -102,8 +104,8 @@ export function LoginForm({
     } catch (error: unknown) {
       const errorMessage =
         error && typeof error === "object" && "response" in error &&
-        error.response && typeof error.response === "object" &&
-        "status" in error.response && error.response.status === 401
+          error.response && typeof error.response === "object" &&
+          "status" in error.response && error.response.status === 401
           ? "Неправильна електронна пошта або пароль"
           : getApiErrorMessage(error, "Щось пішло не так")
 
@@ -142,15 +144,30 @@ export function LoginForm({
           <div className="flex items-center">
             <FieldLabel htmlFor="password">Пароль</FieldLabel>
           </div>
-          <Input
-            id="password"
-            type="password"
-            className="border-border bg-card shadow-sm"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              className="border-border bg-card shadow-sm pr-10"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
+              aria-label={showPassword ? "Приховати пароль" : "Показати пароль"}
+            >
+              {showPassword ? (
+                <EyeOff className="size-5" />
+              ) : (
+                <Eye className="size-5" />
+              )}
+            </button>
+          </div>
         </Field>
+
         <Field>
           <Button type="submit">Увійти</Button>
         </Field>

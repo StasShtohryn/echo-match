@@ -566,17 +566,17 @@ export default function MessengerPage() {
       setEventChats((current) => sortEventChatsByRecentActivity(current.map((item) => (
         item.id === event.eventId
           ? {
-              ...item,
-              lastMessage: {
-                text: event.text,
-                sentAt: event.sentAt,
-                senderDisplayName: event.sender.displayName,
-                isMine,
-              },
-              unreadCount: selectedEventIdRef.current === event.eventId || isMine
-                ? item.unreadCount
-                : item.unreadCount + 1,
-            }
+            ...item,
+            lastMessage: {
+              text: event.text,
+              sentAt: event.sentAt,
+              senderDisplayName: event.sender.displayName,
+              isMine,
+            },
+            unreadCount: selectedEventIdRef.current === event.eventId || isMine
+              ? item.unreadCount
+              : item.unreadCount + 1,
+          }
           : item
       ))))
 
@@ -806,15 +806,15 @@ export default function MessengerPage() {
       setEventChats((current) => sortEventChatsByRecentActivity(current.map((item) => (
         item.id === activeEvent.id
           ? {
-              ...item,
-              lastMessage: {
-                text: message.text,
-                sentAt: message.sentAt,
-                senderDisplayName: message.sender.displayName,
-                isMine: true,
-              },
-              unreadCount: 0,
-            }
+            ...item,
+            lastMessage: {
+              text: message.text,
+              sentAt: message.sentAt,
+              senderDisplayName: message.sender.displayName,
+              isMine: true,
+            },
+            unreadCount: 0,
+          }
           : item
       ))))
     } catch (error: unknown) {
@@ -1142,7 +1142,7 @@ export default function MessengerPage() {
                     <LoaderCircle className="size-4 animate-spin" /> Завантаження чатів...
                   </div>
                 ) : matches.length === 0 ? (
-                  <p className="p-5 text-sm text-muted-foreground">Поки немає мэтчів. Коли з кимось співпадуть симпатії, тут з’явиться чат.</p>
+                  <p className="p-5 text-sm text-muted-foreground">Поки немає чатів.</p>
                 ) : sortedMatches.map((match) => (
                   <ContextMenu key={match.id} onOpenChange={(open) => {
                     if (open) void loadPartnerProfile(match.partner.profileId)
@@ -1387,9 +1387,9 @@ export default function MessengerPage() {
                   const readCount = eventParticipants.filter((participant) => (
                     participant.profileId !== myProfileId
                     && eventReadMarks.some((mark) => (
-                    mark.profileId === participant.profileId
-                    && mark.lastReadAt !== null
-                    && new Date(mark.lastReadAt).getTime() >= new Date(message.sentAt).getTime()
+                      mark.profileId === participant.profileId
+                      && mark.lastReadAt !== null
+                      && new Date(mark.lastReadAt).getTime() >= new Date(message.sentAt).getTime()
                     ))
                   )).length
                   const otherParticipantsCount = Math.max((selectedEventChat?.participantsCount ?? 1) - 1, 0)
