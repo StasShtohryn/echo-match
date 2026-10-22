@@ -166,6 +166,7 @@ export interface PublicProfile {
   company: string | null
   school: string | null
   heightCm: number | null
+  city: string | null
   lookingFor: string | null
   familyPlans: string | null
   communication: string | null
@@ -244,6 +245,11 @@ export async function getMyProfile(): Promise<MyProfile> {
   return response.data
 }
 
+export async function getPublicProfile(profileId: string): Promise<PublicProfile> {
+  const response = await api.get<PublicProfile>(`/profiles/${profileId}`)
+  return response.data
+}
+
 export async function getLookups(): Promise<Lookups> {
   const response = await api.get<Lookups>("/lookups")
   return response.data
@@ -315,8 +321,16 @@ export async function createSwipe(
   return response.data
 }
 
-export async function updateMyLocation(latitude: number, longitude: number): Promise<void> {
-  await api.put("/profiles/me/location", { latitude, longitude })
+export async function undoSwipe(targetProfileId: string): Promise<void> {
+  await api.delete(`/swipes/${targetProfileId}`)
+}
+
+export async function updateMyLocation(
+  latitude: number,
+  longitude: number,
+  city?: string,
+): Promise<void> {
+  await api.put("/profiles/me/location", { latitude, longitude, city })
 }
 
 export async function updateMyVisibility(isPrivate: boolean): Promise<void> {

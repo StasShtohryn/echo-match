@@ -41,6 +41,8 @@
 
 :root {
   --background: #FFF6EE;
+  --header-accent: #F37936;
+  --header-accent-border: color-mix(in srgb, var(--header-accent) 25%, transparent);
   --foreground: oklch(0.28 0.055 240);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.28 0.055 240);
@@ -76,6 +78,7 @@
 
 .dark {
   --background: oklch(15.434% 0.00002 271.152);
+  --header-accent: #18B7A0;
   --foreground: oklch(0.82 0.06 230);
   --card: oklch(0.214 0.009 43.1);
   --card-foreground: oklch(0.82 0.06 230);
@@ -106,6 +109,26 @@
   --sidebar-accent-foreground: oklch(0.986 0.002 67.8);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.68 0.14 175);
+}
+
+.rose {
+  --header-accent: #D94D6A;
+  --primary: #D94D6A;
+  --primary-foreground: #FFFFFF;
+  --ring: #D94D6A;
+  --sidebar-primary: #D94D6A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-ring: #D94D6A;
+}
+
+.dark-violet {
+  --header-accent: #B8A1FF;
+  --primary: #A78BFA;
+  --primary-foreground: #21183D;
+  --ring: #B8A1FF;
+  --sidebar-primary: #A78BFA;
+  --sidebar-primary-foreground: #21183D;
+  --sidebar-ring: #B8A1FF;
 }
 
 @theme inline {

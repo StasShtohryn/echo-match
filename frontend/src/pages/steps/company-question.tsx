@@ -37,7 +37,7 @@ export default function CompanyStep({
         <TestPage
             currentStep={currentStep}
             totalSteps={totalSteps}
-            title="Розкажіть про свіою компанію"
+            title="Розкажіть про свою компанію"
             canContinue={true}
             onNext={onNext}
             onBack={onBack}

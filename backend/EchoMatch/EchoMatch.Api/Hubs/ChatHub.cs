@@ -1,5 +1,6 @@
 ﻿using EchoMatch.Application.Common.Dtos;
 using EchoMatch.Application.Common.Interfaces;
+using EchoMatch.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
@@ -11,11 +12,16 @@ namespace EchoMatch.Api.Hubs
     {
         private readonly IProfileRepository _profileRepository;
         private readonly IMatchRepository _matchRepository;
+        private readonly IEventRepository _eventRepository;
 
-        public ChatHub(IProfileRepository profileRepository, IMatchRepository matchRepository)
+        public ChatHub(
+            IProfileRepository profileRepository,
+            IMatchRepository matchRepository,
+            IEventRepository eventRepository)
         {
             _profileRepository = profileRepository;
             _matchRepository = matchRepository;
+            _eventRepository = eventRepository;
         }
 
         public static string GroupFor(Guid matchId) => "match-" + matchId;
@@ -71,11 +77,57 @@ namespace EchoMatch.Api.Hubs
                 return;
             }
 
+            // Без цієї перевірки будь-хто, знаючи id метчу, міг би слати
+            // «друкує…» в чужу розмову: OthersInGroup не питає, чи ти в групі
+            var match = await _matchRepository.GetForParticipantAsync(matchId, myProfileId.Value, Context.ConnectionAborted);
+
+            if (match is null)
+            {
+                return;
+            }
+
             // Один об'єкт, як і решта подій: додати поле потім можна без правок клієнта
             await Clients
                 .OthersInGroup(GroupFor(matchId))
                 .SendAsync("PartnerTyping", new ChatTypingEvent(matchId, myProfileId.Value));
         }
+
+
+        // У групових чатах груп SignalR немає: адресати — прийняті учасники
+        // на цю мить, тож вигнаний перестає отримувати «друкує…» одразу
+        public async Task TypingInEvent(Guid eventId)
+        {
+            var myProfileId = await MyProfileIdAsync();
+
+            if (myProfileId is null)
+            {
+                return;
+            }
+
+            var me = await _eventRepository.GetMemberAsync(eventId, myProfileId.Value, Context.ConnectionAborted);
+
+            if (me?.Status != EventParticipantStatus.Approved)
+            {
+                return;
+            }
+
+            var others = (await _eventRepository
+                    .GetMemberUserIdsAsync(eventId, includePending: false, Context.ConnectionAborted))
+                .Select(id => id.ToString())
+                .Where(id => id != Context.UserIdentifier)
+                .ToList();
+
+            if (others.Count == 0)
+            {
+                return;
+            }
+
+            await Clients
+                .Users(others)
+                .SendAsync("EventTyping", new EventTypingEvent(eventId, myProfileId.Value, me.DisplayName));
+        }
+
+
 
         private Task<Guid?> MyProfileIdAsync()
         {

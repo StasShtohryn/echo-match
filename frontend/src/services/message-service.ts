@@ -18,6 +18,12 @@ export interface MessagePage {
   partnerLastReadAt: string | null
 }
 
+export interface AiSuggestions {
+  suggestions: string[]
+}
+
+export type AiSuggestionKind = "FirstMessage" | "Reply"
+
 export interface ChatMessageEvent {
   matchId: string
   id: string
@@ -58,6 +64,16 @@ export async function getMessages(
 
 export async function sendMessage(matchId: string, text: string): Promise<ChatMessage> {
   const response = await api.post<ChatMessage>(`/matches/${matchId}/messages`, { text })
+  return response.data
+}
+
+export async function suggestMessages(
+  matchId: string,
+  kind: AiSuggestionKind,
+): Promise<AiSuggestions> {
+  const response = await api.post<AiSuggestions>(`/matches/${matchId}/ai/suggestions`, {
+    kind,
+  })
   return response.data
 }
 

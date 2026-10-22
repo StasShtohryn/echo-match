@@ -82,6 +82,17 @@ than a person, and both participants receive the same call. Membership lives in
 the memory of one process, which is what a backplane would have to replace
 before a second instance is started.
 
+Events use the same hub but no groups. IEventNotifier takes the list of user ids
+to address, and the handler builds that list from the database right after it
+saves. Who may receive the chat is an access rule — a pending requester must
+not, a removed participant must stop at once — so it stays in Application,
+while the notifier only delivers. A group would have kept a removed person's
+open connection subscribed until it reconnected.
+
+    Handler ──► IEventRepository.GetMemberUserIdsAsync   (who, from the database)
+       └──────► IEventNotifier ──► SignalREventNotifier ──► Clients.Users(...)
+    (Application)                       (Api)
+
 AI Assistant
 
 The same shape as SignalR, for the same reason. Application depends on

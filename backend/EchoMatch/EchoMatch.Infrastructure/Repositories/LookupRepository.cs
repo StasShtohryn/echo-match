@@ -42,5 +42,15 @@ namespace EchoMatch.Infrastructure.Repositories
                 .OrderBy(p => p.Id)
                 .ToListAsync(cancellationToken);
         }
+
+        public async Task<IReadOnlyList<EventCategory>> GetActiveEventCategoriesAsync(CancellationToken cancellationToken)
+        {
+            // За Id, а не за назвою: порядок категорій задано в сиді навмисно
+            return await _context.EventCategories
+                .AsNoTracking()
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.Id)
+                .ToListAsync(cancellationToken);
+        }
     }
 }

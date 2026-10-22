@@ -11,6 +11,7 @@ namespace EchoMatch.Application.Common.Dtos
         public required IReadOnlyList<LookupItemDto> Interests { get; init; }
         public required IReadOnlyList<LookupItemDto> Languages { get; init; }
         public required IReadOnlyList<LookupItemDto> Prompts { get; init; }
+        public required IReadOnlyList<LookupItemDto> EventCategories { get; init; }
         public required EnumOptionsDto Options { get; init; }
     }
 }

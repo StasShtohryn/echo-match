@@ -17,3 +17,19 @@ api.interceptors.request.use((config) => {
 
   return config
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      const requestUrl = error.config?.url ?? ""
+      const isAuthenticationRequest = /(^|\/)auth\/(login|register|google)(\?|$)/.test(requestUrl)
+
+      if (!isAuthenticationRequest) {
+        useAuthStore.getState().logout()
+      }
+    }
+
+    return Promise.reject(error)
+  },
+)
