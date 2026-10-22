@@ -289,7 +289,6 @@ export default function PersonCard({
             <Badge key={interest.id}>{interest.name}</Badge>
           ))}
         </CardFooter>
-
       </Card >
 
       <div className="flex flex-row gap-4 justify-center items-center" >

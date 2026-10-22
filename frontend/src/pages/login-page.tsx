@@ -17,7 +17,7 @@ export default function LoginPage() {
           className="w-full h-full object-cover -scale-x-100"
         />
       </div>
-      <div className="flex flex-col gap-4 p-6 md:p-10">
+      <div className="flex flex-col gap-4 p-6 md:p-8">
         <div className="flex items-center justify-center">
           <img
             src={logo}

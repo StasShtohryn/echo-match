@@ -43,6 +43,7 @@ import {
   QuestionnaireTitle,
 } from "@/components/ui/questionnaire"
 import { WelcomeOnboardingDialog } from "./welcome-component"
+import { Eye, EyeOff } from "lucide-react"
 
 type RegistrationStep = "account" | "profile"
 
@@ -176,6 +177,10 @@ export function SignupForm({
 
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+
   useEffect(() => {
     if (isOnboarding) {
       setStep("profile")
@@ -222,6 +227,12 @@ export function SignupForm({
 
     const accountErrors = getAccountErrors(formData)
     if (Object.keys(accountErrors).length > 0) {
+      const firstError = Object.values(accountErrors)[0]
+      toast.add({
+        type: "error",
+        title: "Заповніть обов'язкові поля",
+        description: firstError,
+      })
       return false
     }
 
@@ -235,6 +246,13 @@ export function SignupForm({
         accessToken: response.accessToken,
         provider: "local",
       }, false)
+
+      toast.add({
+        type: "success",
+        title: "Акаунт створено",
+        description: "Тепер заповніть інформацію про профіль.",
+      })
+
       setStep("profile")
       return true
     } catch (error: unknown) {
@@ -259,6 +277,12 @@ export function SignupForm({
     setShowProfileErrors(true)
 
     if (Object.keys(profileErrors).length > 0) {
+      const firstError = Object.values(profileErrors)[0]
+      toast.add({
+        type: "error",
+        title: "Заповніть інформацію профілю",
+        description: firstError,
+      })
       return
     }
 
@@ -291,6 +315,9 @@ export function SignupForm({
         provider: user.provider,
       })
       updateLocationAfterAuthentication()
+
+
+
       setShowWelcomeModal(true)
     } catch (error: unknown) {
       toast.add({
@@ -347,7 +374,7 @@ export function SignupForm({
         />
         {!isOnboarding && (
           <QuestionnaireItem name="account" required>
-            <QuestionnaireTitle>Створіть обліковий запис</QuestionnaireTitle>
+            <QuestionnaireTitle className="text-2xl font-bold font-sans">Створіть обліковий запис</QuestionnaireTitle>
             <QuestionnaireDescription>
               Спочатку введіть email і пароль.
             </QuestionnaireDescription>
@@ -373,46 +400,78 @@ export function SignupForm({
                   required
                 />
               </Field>
+
               <Field>
                 <FieldLabel htmlFor="password">Пароль</FieldLabel>
-                <QuestionnaireInput
-                  id="password"
-                  type="password"
-                  minLength={8}
-                  value={formData.password}
-                  onChange={(event) =>
-                    setFormData({ ...formData, password: event.target.value })
-                  }
-                  aria-invalid={showAccountErrors && !!accountErrors.password}
-                  className={cn(
-                    "bg-card shadow-sm",
-                    showAccountErrors && accountErrors.password &&
-                    "border-destructive ring-3 ring-destructive/20"
-                  )}
-                  required
-                />
+                <div className="relative">
+                  <QuestionnaireInput
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    minLength={8}
+                    value={formData.password}
+                    onChange={(event) =>
+                      setFormData({ ...formData, password: event.target.value })
+                    }
+                    aria-invalid={showAccountErrors && !!accountErrors.password}
+                    className={cn(
+                      "bg-card shadow-sm pr-10",
+                      showAccountErrors &&
+                      accountErrors.password &&
+                      "border-destructive ring-3 ring-destructive/20"
+                    )}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                    aria-label={showPassword ? "Приховати пароль" : "Показати пароль"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
                 <FieldDescription>
                   8+ символів, велика і мала літери та цифра.
                 </FieldDescription>
               </Field>
+
               <Field>
                 <FieldLabel htmlFor="confirm-password">Підтвердіть пароль</FieldLabel>
-                <QuestionnaireInput
-                  id="confirm-password"
-                  type="password"
-                  minLength={8}
-                  value={formData.confirmPassword}
-                  onChange={(event) =>
-                    setFormData({ ...formData, confirmPassword: event.target.value })
-                  }
-                  aria-invalid={showAccountErrors && !!accountErrors.confirmPassword}
-                  className={cn(
-                    "bg-card shadow-sm",
-                    showAccountErrors && accountErrors.confirmPassword &&
-                    "border-destructive ring-3 ring-destructive/20"
-                  )}
-                  required
-                />
+                <div className="relative">
+                  <QuestionnaireInput
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    minLength={8}
+                    value={formData.confirmPassword}
+                    onChange={(event) =>
+                      setFormData({ ...formData, confirmPassword: event.target.value })
+                    }
+                    aria-invalid={showAccountErrors && !!accountErrors.confirmPassword}
+                    className={cn(
+                      "bg-card shadow-sm pr-10",
+                      showAccountErrors &&
+                      accountErrors.confirmPassword &&
+                      "border-destructive ring-3 ring-destructive/20"
+                    )}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                    aria-label={showConfirmPassword ? "Приховати пароль" : "Показати пароль"}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
               </Field>
             </FieldGroup>
             <QuestionnaireError />
@@ -420,7 +479,7 @@ export function SignupForm({
         )}
 
         <QuestionnaireItem name="profile" required>
-          <QuestionnaireTitle>Заповніть профіль</QuestionnaireTitle>
+          <QuestionnaireTitle className="text-2xl font-bold font-sans">Заповніть профіль</QuestionnaireTitle>
           <QuestionnaireDescription>
             Додайте дані про себе, щоб завершити реєстрацію.
           </QuestionnaireDescription>
