@@ -227,11 +227,11 @@ export default function ProfilePage() {
           <div className="mb-6 flex flex-col items-start justify-between gap-2 sm:flex-row">
             <h1 className="text-2xl font-semibold">Особистий Кабінет</h1>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/me/edit")}>
+              <Button variant="default" size="sm" onClick={() => navigate("/me/edit")}>
                 <Edit className="mr-2 size-4" />
                 Редагувати
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
+              <Button variant="default" size="sm" onClick={() => navigate("/settings")}>
                 <Settings className="mr-2 size-4" />
                 Налаштування
               </Button>
