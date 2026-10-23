@@ -43,6 +43,7 @@ import type {
   EventCategory,
 } from "@/types/event.types"
 import type { DateRange } from "react-day-picker"
+import { EVENT_CATEGORY_OPTIONS, getLabel } from "@/lib/some-lookups";
 
 const emptyFilters: EventFilters = { search: "", city: "", categoryId: "", from: "", to: "" }
 const fieldClass =
@@ -204,13 +205,20 @@ function EventForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 text-sm font-medium">
               <span className="block">Категорія</span>
-              <Select onValueChange={(value) => setCategoryId(value ?? "")} value={categoryId || null}>
+              <Select onValueChange={(value) => setCategoryId(value ?? "")} value={categoryId || "Оберіть категорію"}>
                 <SelectTrigger aria-label="Категорія події" className="h-10 w-full rounded-xl border-border bg-background data-[size=default]:h-10">
-                  <SelectValue placeholder="Оберіть категорію" />
+                  <SelectValue placeholder="Оберіть категорію">
+                    {(() => {
+                      const selected = categories.find((c) => String(c.id) === categoryId)
+                      return selected ? (getLabel(EVENT_CATEGORY_OPTIONS, selected.name) ?? selected.name) : null
+                    })()}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
-                    <SelectItem key={category.id} value={String(category.id)}>{category.name}</SelectItem>
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {getLabel(EVENT_CATEGORY_OPTIONS, category.name) ?? category.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -365,7 +373,7 @@ function EventDetailsDialog({
             <div className="space-y-5 p-6 sm:p-8">
               <div>
                 <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  {event.category.name}
+                  {getLabel(EVENT_CATEGORY_OPTIONS, event.category.name) ?? event.category.name}
                 </span>
                 <h2 className="mt-3 font-heading text-3xl" id="event-details-title">
                   {event.title}
@@ -446,18 +454,18 @@ function EventDetailsDialog({
                         <Card className="rounded-2xl py-3 shadow-none" key={participant.profileId}>
                           <CardContent className="px-3">
                             <Link className="flex items-center gap-3" to={`/profile/${participant.profileId}`}>
-                            <Avatar className="size-11">
-                              <AvatarImage alt={participant.displayName} src={participant.mainPhotoUrl ?? undefined} />
-                              <AvatarFallback>{participant.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold">
-                                {participant.displayName}{participant.age ? `, ${participant.age}` : ""}
-                              </p>
-                              {participant.role === "Organizer" && (
-                                <p className="text-xs text-muted-foreground">Організатор</p>
-                              )}
-                            </div>
+                              <Avatar className="size-11">
+                                <AvatarImage alt={participant.displayName} src={participant.mainPhotoUrl ?? undefined} />
+                                <AvatarFallback>{participant.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold">
+                                  {participant.displayName}{participant.age ? `, ${participant.age}` : ""}
+                                </p>
+                                {participant.role === "Organizer" && (
+                                  <p className="text-xs text-muted-foreground">Організатор</p>
+                                )}
+                              </div>
                             </Link>
                           </CardContent>
                         </Card>
@@ -583,7 +591,7 @@ function EventCardView({
           </div>
         )}
         <span className="absolute left-4 top-4 rounded-full bg-background/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm backdrop-blur">
-          {event.category.name}
+          {getLabel(EVENT_CATEGORY_OPTIONS, event.category.name) ?? event.category.name}
         </span>
       </div>
       <div className="space-y-4 p-5">
@@ -709,6 +717,7 @@ export default function EventsPage() {
     event.preventDefault()
     const nextFilters = {
       ...filters,
+      categoryId: filters.categoryId === "all" ? "" : filters.categoryId,
       from: dateRange?.from ? toLocalDayStart(dateRange.from) : "",
       to: dateRange?.to ? toLocalDayEnd(dateRange.to) : "",
     }
@@ -883,13 +892,24 @@ export default function EventsPage() {
           />
           <Select
             onValueChange={(value) => setFilters((current) => ({ ...current, categoryId: value ?? "" }))}
-            value={filters.categoryId || null}
+            value={filters.categoryId || "all"}
           >
             <SelectTrigger aria-label="Категорія" className="h-10 w-full rounded-xl border-border bg-background data-[size=default]:h-10">
-              <SelectValue placeholder="Усі категорії" />
+              <SelectValue placeholder="Усі категорії">
+                {(() => {
+                  if (!filters.categoryId || filters.categoryId === "all") return "Усі категорії"
+                  const selected = categories.find((c) => String(c.id) === filters.categoryId)
+                  return selected ? (getLabel(EVENT_CATEGORY_OPTIONS, selected.name) ?? selected.name) : null
+                })()}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {categories.map((category) => <SelectItem key={category.id} value={String(category.id)}>{category.name}</SelectItem>)}
+              <SelectItem value="all">Усі категорії</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={String(category.id)}>
+                  {getLabel(EVENT_CATEGORY_OPTIONS, category.name) ?? category.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <DateRangePicker

@@ -103,6 +103,19 @@ export const ZODIAC_OPTIONS: Record<string, string> = {
 };
 
 
+export const EVENT_CATEGORY_OPTIONS: Record<string, string> = {
+    BoardGames: "Настільні ігри",
+    Sports: "Спорт та активності",
+    Parties: "Вечірки та розваги",
+    Culture: "Культура та мистецтво",
+    Travel: "Подорожі та туризм",
+    CoffeeAndDrinks: "Кава та кав'ярні",
+    Education: "Освіта та лекції",
+    Networking: "Нетворкінг та бізнес",
+    Other: "Інше",
+}
+
+
 export function getLabel(map: Record<string, string>, value?: string | null): string | null {
     if (!value) return null;
     return map[value] ?? value;
