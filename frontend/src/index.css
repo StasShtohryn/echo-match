@@ -38,6 +38,7 @@
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap');
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/eb-garamond";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #FFF6EE;

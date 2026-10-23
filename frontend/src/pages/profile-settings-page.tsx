@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ArrowLeft, LocateFixed, Save } from "lucide-react"
+import { ArrowLeft, LocateFixed, MapPin, Save } from "lucide-react"
 import { useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,8 +16,16 @@ import {
 } from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { updateLocationFromDevice } from "@/lib/location"
+import { saveMyLocation, updateLocationFromDevice } from "@/lib/location"
 import { getLookups, getMyProfile, updateMyPreferences, updateMyVisibility, type Lookups, type MyProfile } from "@/services/auth-service"
+import { LocationPickerModal } from "@/components/location-picker-modal"
+
+
+
+type ProfileWithCoords = MyProfile & {
+  latitude?: number | null
+  longitude?: number | null
+}
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate()
@@ -30,6 +38,8 @@ export default function ProfileSettingsPage() {
   const [isPrivate, setIsPrivate] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+
+  const [isMapOpen, setIsMapOpen] = useState(false)
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false)
 
   useEffect(() => {
@@ -65,26 +75,47 @@ export default function ProfileSettingsPage() {
     }
   }
 
-  async function updateLocation() {
+  async function handleLocationSelected(lat: number, lng: number) {
     setIsUpdatingLocation(true)
     try {
-      await updateLocationFromDevice()
+      // Викликаємо саму збереження з location.ts — воно само перекладе координати в Назву міста через Nominatim!
+      await saveMyLocation(lat, lng)
       const nextProfile = await getMyProfile()
       setProfile(nextProfile)
-      toast.add({ type: "success", title: "Локацію оновлено" })
+      toast.add({ type: "success", title: "Локацію успішно оновлено" })
     } catch (error: unknown) {
       toast.add({
         type: "error",
-        title: "Не вдалося оновити локацію",
-        description: getApiErrorMessage(error, "Перевірте дозвіл браузера та спробуйте ще раз."),
+        title: "Помилка оновлення",
+        description: getApiErrorMessage(error, "Не вдалося зберегти вибрані координати."),
       })
     } finally {
       setIsUpdatingLocation(false)
     }
   }
 
+  // async function updateLocation() {
+  //   setIsUpdatingLocation(true)
+  //   try {
+  //     await updateLocationFromDevice()
+  //     const nextProfile = await getMyProfile()
+  //     setProfile(nextProfile)
+  //     toast.add({ type: "success", title: "Локацію оновлено" })
+  //   } catch (error: unknown) {
+  //     toast.add({
+  //       type: "error",
+  //       title: "Не вдалося оновити локацію",
+  //       description: getApiErrorMessage(error, "Перевірте дозвіл браузера та спробуйте ще раз."),
+  //     })
+  //   } finally {
+  //     setIsUpdatingLocation(false)
+  //   }
+  // }
+
   if (isLoading) return <div className="container mx-auto px-4 py-8">Завантаження налаштувань...</div>
   if (!profile || !lookups) return <div className="container mx-auto px-4 py-8">Налаштування недоступні.</div>
+
+
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-1 flex-col px-4 py-6 ">
@@ -200,7 +231,7 @@ export default function ProfileSettingsPage() {
               <CardTitle className="text-xl font-semibold font-sans">Локація</CardTitle>
             </CardHeader>
 
-            <CardContent>
+            {/* <CardContent>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">
@@ -233,6 +264,45 @@ export default function ProfileSettingsPage() {
               </div>
             </CardContent>
           </Card>
+          <Card> */}
+            {/* <CardHeader>
+              <CardTitle className="text-xl font-semibold font-sans">Локація</CardTitle>
+            </CardHeader> */}
+
+            <CardContent>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Поточне місто:{" "}
+                    <span className="font-medium text-foreground">
+                      {profile.city ?? "не визначено"}
+                    </span>
+                  </p>
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() => setIsMapOpen(true)}
+                  disabled={isUpdatingLocation}
+                >
+                  <MapPin className="size-4 mr-2" />
+                  Вказати на карті
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Модальне вікно з картами */}
+          {isMapOpen && (
+            <LocationPickerModal
+              initialLat={(profile as ProfileWithCoords)?.latitude ?? 50.4501}
+              initialLng={(profile as ProfileWithCoords)?.longitude ?? 30.5234}
+              onClose={() => setIsMapOpen(false)}
+              onSelectLocation={handleLocationSelected}
+            />
+          )}
+
+
         </main>
       </ScrollArea>
     </div>
