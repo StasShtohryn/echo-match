@@ -153,7 +153,7 @@ export default function HomePage() {
           />
         )}
       </main>
-      <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} compatibilityPercent={compatibilityScore} pets={currentCandidate?.profile.pets ?? null} orientation={currentCandidate?.profile.orientation ?? null} loveLanguage={currentCandidate?.profile.loveLanguage} communication={currentCandidate?.profile.communication} />
+      <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} compatibilityPercent={compatibilityScore} pets={currentCandidate?.profile.pets ?? null} orientation={currentCandidate?.profile.orientation ?? null} loveLanguage={currentCandidate?.profile.loveLanguage} communication={currentCandidate?.profile.communication} promptAnswer={currentCandidate?.profile.promptAnswers[1]} />
       {lastSwipe?.isMatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-sm space-y-4 rounded-2xl bg-background p-6 outline text-center shadow-xl">

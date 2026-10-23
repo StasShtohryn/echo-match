@@ -160,9 +160,9 @@ export function LoginForm({
               aria-label={showPassword ? "Приховати пароль" : "Показати пароль"}
             >
               {showPassword ? (
-                <EyeOff className="size-5" />
+                <EyeOff className="size-4" />
               ) : (
-                <Eye className="size-5" />
+                <Eye className="size-4" />
               )}
             </button>
           </div>

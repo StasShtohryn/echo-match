@@ -108,7 +108,7 @@ export default function ProfileSettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Кого показувати</CardTitle>
+              <CardTitle className="text-xl font-semibold font-sans">Кого показувати</CardTitle>
             </CardHeader>
 
             <CardContent>
@@ -180,7 +180,7 @@ export default function ProfileSettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Конфіденційність</CardTitle>
+              <CardTitle className="text-xl font-semibold font-sans">Конфіденційність</CardTitle>
             </CardHeader>
 
             <CardContent>
@@ -197,7 +197,7 @@ export default function ProfileSettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Локація</CardTitle>
+              <CardTitle className="text-xl font-semibold font-sans">Локація</CardTitle>
             </CardHeader>
 
             <CardContent>

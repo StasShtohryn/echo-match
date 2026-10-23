@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router"
+// import { useNavigate } from "react-router"
 import { getMyProfile, updateMyInterests, updateMyLanguages, updateMyProfile, updateMyPrompts } from "@/services/auth-service"
 import type { PromptAnswerInput, UpdateProfileRequest } from "@/services/auth-service"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -8,7 +8,7 @@ import OrientationStep from "./orientation-question"
 import GoalsStep from "./goal-question"
 import BioStep from "./bio-question"
 import OccupationStep from "./occupation-question"
-import SchoolStep from "./school-question"
+// import SchoolStep from "./school-question"
 import CompanyStep from "./company-question"
 import LifestyleStep, { type LifestyleValue } from "./lifestyle-question"
 import FamilyPlansStep from "./famili-plans-question"
@@ -21,7 +21,7 @@ import InterestsStep from "./interests-question"
 import PromptsStep from "./prompts-question"
 import LanguagesStep from "./languages-question"
 import { updateMyPreferences, type UpdatePreferencesRequest } from "@/services/auth-service"
-import FilterStep from "./filters-question"
+// import FilterStep from "./filters-question"
 import { QuizOnboardingDialog } from "@/components/quizz-question-window"
 
 const stepsConfig = [
@@ -33,10 +33,10 @@ const stepsConfig = [
         field: "lookingFor" as const,
         component: GoalsStep,
     },
-    {
-        field: "preferences" as const,
-        component: FilterStep
-    },
+    // {
+    //     field: "preferences" as const,
+    //     component: FilterStep
+    // },
     {
         field: "bio" as const,
         component: BioStep,
@@ -49,10 +49,10 @@ const stepsConfig = [
         field: "loveLanguage" as const,
         component: LoveLanguageStep
     },
-    {
-        field: "school" as const,
-        component: SchoolStep,
-    },
+    // {
+    //     field: "school" as const,
+    //     component: SchoolStep,
+    // },
     {
         field: "occupation" as const,
         component: OccupationStep,
@@ -186,9 +186,9 @@ export default function TestsPage() {
     })
 
     const getCurrentValue = () => {
-        if (currentStepConfig.field === "preferences") {
-            return preferences
-        }
+        // if (currentStepConfig.field === "preferences") {
+        //     return preferences
+        // }
         if (currentStepConfig.field === "languages") {
             return selectedLanguageIds
         }
@@ -208,10 +208,10 @@ export default function TestsPage() {
     }
 
     const handleStepChange = (val: any) => {
-        if (currentStepConfig.field === "preferences") {
-            setPreferences(val)
-        }
-        else if (currentStepConfig.field === "languages") {
+        // if (currentStepConfig.field === "preferences") {
+        //     setPreferences(val)
+        // }
+        if (currentStepConfig.field === "languages") {
             setSelectedLanguageIds(val)
         }
         else if (currentStepConfig.field === "prompts") {
@@ -244,8 +244,8 @@ export default function TestsPage() {
             }
             await updateMyProfile(payload)
 
-            // 2. Зберігаємо налаштування пошуку (preferences)
-            await updateMyPreferences(preferences)
+            // // 2. Зберігаємо налаштування пошуку (preferences)
+            // await updateMyPreferences(preferences)
 
             // 2. Якщо користувач обрав інтереси — надсилаємо окремий запит
             if (selectedInterestIds.length > 0) {
