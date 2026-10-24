@@ -16,7 +16,7 @@ interface Props {
   totalSteps: number
   value: PromptAnswerInput[] | null
   onChange: (val: PromptAnswerInput[]) => void
-  onSubmit: () => void
+  onNext: () => void
   onBack?: () => void
   isLoading?: boolean
 }
@@ -28,7 +28,7 @@ export default function PromptsStep({
   totalSteps,
   value,
   onChange,
-  onSubmit,
+  onNext,
   onBack,
   isLoading = false,
 }: Props) {
@@ -107,7 +107,7 @@ export default function PromptsStep({
       totalSteps={totalSteps}
       title="Розкажіть про себе через запитання"
       canContinue={true}
-      onNext={onSubmit}
+      onNext={onNext}
       onBack={onBack}
       isLoading={isLoading}
       nextButtonText={filledCount === 0 ? "Пропустити" : "Далі"}
