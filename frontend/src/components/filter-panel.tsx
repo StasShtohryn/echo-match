@@ -111,7 +111,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
 
   return (
     <div className="space-y-4">
-      <label htmlFor="lookingFor" className="block text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+      <label htmlFor="lookingFor" className="block text-[12px] font-bold tracking-wider text-muted-foreground uppercase">
         Вік
       </label>
       <div className=" flex justify-between items-center px-1">
@@ -149,7 +149,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
         className="w-full py-2"
       />
 
-      <label htmlFor="lookingFor" className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+      <label htmlFor="lookingFor" className="block text-[12px] font-bold tracking-wider text-muted-foreground uppercase">
         Кого шукаю
       </label>
 
@@ -169,7 +169,7 @@ export function FilterPanel({ isSaving = false, initialPreferences, onApply }: F
         </SelectContent>
       </Select>
 
-      <label htmlFor="maxDistance" className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+      <label htmlFor="maxDistance" className="block text-[12px] font-bold tracking-wider text-muted-foreground uppercase">
         Максимальна відстань, км
       </label>
 

@@ -22,7 +22,6 @@ import { jwtDecode } from "jwt-decode"
 import type { GoogleJwtPayload } from "@/types/auth.types"
 import { useEffect, useState } from "react"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { updateLocationAfterAuthentication } from "@/lib/location"
 import {
   createProfile as submitProfile,
   registerWithPassword,
@@ -314,7 +313,6 @@ export function SignupForm({
         picture: uploadedPhoto.url,
         provider: user.provider,
       })
-      updateLocationAfterAuthentication()
 
 
 

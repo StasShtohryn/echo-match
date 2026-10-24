@@ -16,7 +16,6 @@ import { hasValidSession, useAuthStore } from "@/store/useAuthStore"
 import type { GoogleJwtPayload } from "@/types/auth.types"
 import { useState } from "react"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { updateLocationAfterAuthentication } from "@/lib/location"
 import {
   getMyProfile,
   loginWithPassword,
@@ -70,7 +69,6 @@ export function LoginForm({
   async function navigateAfterAuthentication() {
     try {
       await getMyProfile()
-      updateLocationAfterAuthentication()
       navigate("/me")
     } catch (error: unknown) {
       const isMissingProfile =
