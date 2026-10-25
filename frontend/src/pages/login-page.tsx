@@ -3,9 +3,11 @@ import logo from "@/media/logo.svg"
 import animationVideo from "../media/animation.mp4";
 
 export default function LoginPage() {
+
+
   return (
     <div className="grid min-h-svh lg:grid-cols-3">
-      <div className="w-full h-full overflow-hidden flex items-center justify-center">
+      <div className="hidden lg:flex w-full h-full overflow-hidden items-center justify-center">
         <video
           src={animationVideo}
           autoPlay
@@ -32,7 +34,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="">
+      <div className="hidden lg:block overflow-hidden">
         <video
           src={animationVideo}
           autoPlay

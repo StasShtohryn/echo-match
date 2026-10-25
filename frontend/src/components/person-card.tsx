@@ -79,6 +79,13 @@ export default function PersonCard({
   const [isVisible, setIsVisible] = useState(true)
   const [isEnteringUndo, setIsEnteringUndo] = useState(false)
 
+  // Розраховуємо силу свайпу (від 0 до 1) відносно порогу SWIPE_THRESHOLD
+  const swipeProgress = Math.min(Math.abs(dragOffset) / SWIPE_THRESHOLD, 1)
+
+  // Визначаємо, яка саме кнопка має підсвічуватися
+  const isLiking = dragOffset > 10
+  const isDisliking = dragOffset < -10
+
   useEffect(() => {
     setIsProfileModalOpen(false)
     setLightboxIndex(null)
@@ -354,7 +361,7 @@ export default function PersonCard({
         </CardFooter>
       </Card >
 
-      <div className="flex flex-row gap-4 justify-center items-center" >
+      <div className="flex flex-col items-center gap-2">
         <Card className="flex flex-row items-center gap-4 py-2 px-2">
           <Button
             type="button"
@@ -368,16 +375,23 @@ export default function PersonCard({
           >
             <Undo2 />
           </Button>
-          <Button variant={"outline"} size={"icon-lg"} className="h-12 w-12 cursor-pointer" disabled={isSwiping || isUndoing || exitDirection !== null} onClick={() => triggerSwipe("Dislike")}>
+          <Button variant={"outline"} size={"icon-lg"} className={`h-12 w-12 cursor-pointer transition-all duration-150 ${isDisliking ? " scale-110 shadow-lg" : ""
+            }`}
+            disabled={isSwiping || isUndoing || exitDirection !== null} onClick={() => triggerSwipe("Dislike")}>
             <X />
           </Button>
           <Button variant={"outline"} size={"icon-lg"} className="h-11 w-11 cursor-pointer" disabled>
             <Star />
           </Button>
-          <Button size={"icon-lg"} className="h-12 w-12 cursor-pointer" disabled={isSwiping || isUndoing || exitDirection !== null} onClick={() => triggerSwipe("Like")}>
+          <Button size={"icon-lg"} className={`h-12 w-12 cursor-pointer transition-all duration-150 ${isLiking ? "border-primary bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/30" : ""
+            }`} disabled={isSwiping || isUndoing || exitDirection !== null} onClick={() => triggerSwipe("Like")}>
             <Heart />
           </Button>
         </Card>
+
+        <p className="text-[11px] font-semibold tracking-wider text-muted-foreground/70 uppercase mt-4">
+          Тягніть картку або тисніть <span className="text-[14px]"> &times; &#9829;</span>
+        </p>
       </div>
 
 

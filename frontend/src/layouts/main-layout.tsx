@@ -2,9 +2,11 @@ import { Outlet, useLocation } from "react-router";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
 import { trackAppVisitAndRemind } from "@/lib/location-reminder"
+import { useAuthStore } from "@/store/useAuthStore";
+import { SplashScreen } from "@/components/splash-screen";
 
 export default function MainLayout() {
   const { pathname } = useLocation();
@@ -19,6 +21,20 @@ export default function MainLayout() {
       navigate("/settings")
     })
   }, [navigate])
+  const { isInitializing, isLoading } = useAuthStore();
+  const [minSplashDone, setMinSplashDone] = useState(false);
+
+  // Показуємо сплеш, поки додаток ініціалізується або виконує логін
+  const showSplash = isInitializing || isLoading || !minSplashDone;
+
+  if (showSplash) {
+    return (
+      <SplashScreen
+        durationMs={2200}
+        onFinish={() => setMinSplashDone(true)}
+      />
+    );
+  }
 
   const isFixedLayout = isMessengerPage || isTestPage;
   return (

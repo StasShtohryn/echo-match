@@ -26,7 +26,7 @@ import { getMyProfile, type MyProfile } from "@/services/auth-service";
 import logo from "@/media/logo.svg"
 import logoDark from "@/media/logo_dark.svg"
 import { useEffect, useState } from "react";
-
+import { ThemeSubMenu } from "@/components/theme-menu";
 
 export default function Header() {
   const { user, logout } = useAuthStore();
@@ -49,6 +49,8 @@ export default function Header() {
 
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
+
+  const isTestPage = location.pathname.includes("/test") || location.pathname.includes("/onboarding");
 
   useEffect(() => {
     const updateDarkMode = () => {
@@ -118,40 +120,42 @@ export default function Header() {
         </div>
       </Link>
 
-      <nav className="flex justify-between gap-10 ">
-        <Link to="/">
-          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/")
-            ? "text-primary font-semibold"
-            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
-            }`}>
-            Свайпи
-          </Button>
-        </Link>
-        <Link to="/events">
-          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/events")
-            ? "text-primary font-semibold"
-            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
-            }`}>
-            Події
-          </Button>
-        </Link>
-        <Link to="/messenger">
-          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/messenger")
-            ? "text-primary font-semibold"
-            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
-            }`}>
-            Чати
-          </Button>
-        </Link>
-        <Link to="/me">
-          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/me")
-            ? "text-primary font-semibold"
-            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
-            }`}>
-            Профіль
-          </Button>
-        </Link>
-      </nav>
+      {!isTestPage && (
+        <nav className="flex justify-between gap-10 ">
+          <Link to="/">
+            <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/")
+              ? "text-primary font-semibold"
+              : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+              }`}>
+              Свайпи
+            </Button>
+          </Link>
+          <Link to="/events">
+            <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/events")
+              ? "text-primary font-semibold"
+              : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+              }`}>
+              Події
+            </Button>
+          </Link>
+          <Link to="/messenger">
+            <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/messenger")
+              ? "text-primary font-semibold"
+              : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+              }`}>
+              Чати
+            </Button>
+          </Link>
+          <Link to="/me">
+            <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/me")
+              ? "text-primary font-semibold"
+              : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+              }`}>
+              Профіль
+            </Button>
+          </Link>
+        </nav>
+      )}
 
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -197,7 +201,7 @@ export default function Header() {
                 Профіль
               </DropdownMenuItem>
             </Link>
-            <Link to="/me/edit">
+            <Link to="/settings">
               <DropdownMenuItem className="cursor-pointer">
                 <Settings />
                 Налаштування
@@ -205,66 +209,7 @@ export default function Header() {
             </Link>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              {theme === "dark" ? <Moon /> : theme === "system" ? <Monitor /> : <Sun />}
-              Тема
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Sun />
-                  Світла
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuRadioGroup
-                    value={accentColor}
-                    onValueChange={(value) => {
-                      if (value === "orange" || value === "rose") {
-                        setAccentColor(value);
-                        setTheme("light");
-                      }
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="orange">Orange</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="rose">Rose</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Moon />
-                  Темна
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuRadioGroup
-                    value={darkAccentColor}
-                    onValueChange={(value) => {
-                      if (value === "teal" || value === "violet") {
-                        setDarkAccentColor(value);
-                        setTheme("dark");
-                      }
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="teal">Teal</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="violet">Violet</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup
-                value={theme === "system" ? "system" : ""}
-                onValueChange={(value) => {
-                  if (value === "system") {
-                    setTheme(value);
-                  }
-                }}
-              >
-                <DropdownMenuRadioItem value="system">Системна</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+          <ThemeSubMenu />
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">
             <LogOutIcon />
