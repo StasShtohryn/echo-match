@@ -112,6 +112,23 @@ from the database and the model only phrases them, because a number a model
 invents is not reproducible, not comparable between pairs, and cannot be
 explained to the person it describes.
 
+Face Verification
+
+Again one interface between Application and an outside service.
+IFaceVerificationService creates a session, reads its result and compares two
+faces; RekognitionFaceVerificationService does it with the AWS SDK. The verdict
+— which scores are enough, what a failure means — stays in the handlers and
+FaceVerificationThresholds, so swapping the provider would not move a single
+rule. What the verdict means is in the Domain: Photo carries the mark, and
+UserProfile.IsFaceVerified derives the badge from the main photo.
+
+    Browser ──video──► AWS Rekognition (Amplify FaceLivenessDetector)
+    Handler ──► IFaceVerificationService ──► RekognitionFaceVerificationService ──► AWS SDK
+    (Application)       (Application)                 (Infrastructure)
+
+Aws:ServiceUrl points the client at a stub in checks, as Ai:BaseUrl does for
+the assistant.
+
 Principles
 
 Business logic never belongs inside Controllers.

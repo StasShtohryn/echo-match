@@ -277,7 +277,9 @@ namespace EchoMatch.Infrastructure.Repositories
                 p.Profile.DisplayName,
                 p.Profile.DateOfBirth,
                 p.Profile.Photos.Where(photo => photo.IsMain).Select(photo => photo.Url).FirstOrDefault(),
-                p.Profile.IsFaceVerified,
+                // UserProfile.IsFaceVerified у запиті не перекладається: його правило
+                // — перевірене головне фото — тут записано через стовпець
+                p.Profile.Photos.Where(photo => photo.IsMain).Select(photo => photo.FaceVerifiedAt != null).FirstOrDefault(),
                 p.CreatedAt,
                 p.Status);
 

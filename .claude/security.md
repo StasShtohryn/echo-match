@@ -77,6 +77,29 @@ Profile text and chat messages reach the model as data, never as instructions.
 The system prompt states this, so a bio reading "ignore your instructions" is
 somebody else's text rather than a command.
 
+Face Verification (AWS)
+
+Biometric data, so the rule is to keep none of it. The video streams from the
+browser to Amazon Rekognition and never passes through our server. Sessions are
+created with AuditImagesLimit 0 and no S3 output, so AWS keeps no frames either.
+The server receives one reference frame in the result, compares it with each
+unverified profile photo in the same request and drops it; the database stores
+only which photos passed and when.
+
+Two sets of credentials, scoped to what each side does:
+
+  server   IAM user with CreateFaceLivenessSession,
+           GetFaceLivenessSessionResults and CompareFaces. Aws:AccessKeyId and
+           Aws:SecretAccessKey live where Ai:ApiKey lives — user secrets,
+           environment variables — never in appsettings.json.
+  browser  Cognito Identity Pool guest role allowed only
+           rekognition:StartFaceLivenessSession. Anyone can obtain these
+           credentials, which is why they can do nothing else: a stream is
+           useless without a session the server created for a signed-in user.
+
+The reference frame for the comparison is taken from AWS by the server. Accepting
+it from the client would let anyone verify with any picture.
+
 XSS
 
 CSRF

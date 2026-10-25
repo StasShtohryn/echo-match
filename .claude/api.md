@@ -155,7 +155,8 @@ photo never occupies space in the cloud.
 
 The first photo uploaded becomes the main one automatically.
 
-201 Created with { id, url, isMain, order }.
+201 Created with { id, url, isMain, order, isFaceVerified }. A new photo is
+never face verified: nobody has compared it with a face yet.
 409 Conflict when the profile already holds nine photos.
 
 DELETE /api/profiles/me/photos/{photoId}
@@ -254,6 +255,8 @@ PublicProfileDto  visitor view, exposes Age instead of DateOfBirth and hides
                   and IsPrivate
 
 Both carry the collections: photos, interests, languages, promptAnswers.
+Each photo is { id, url, isMain, order, isFaceVerified }, and both shapes carry
+isFaceVerified for the profile badge (see Face Verification).
 Photos stays an empty array until upload exists, so the response shape is
 already final for the client.
 
@@ -802,6 +805,72 @@ a moment ago no longer receives the chat.
 Enums travel as strings here too (status "Approved", reaction "Heart").
 SignalR has its own JSON settings, so the converter is added to AddJsonProtocol
 as well as to the controllers.
+
+Face Verification
+
+A mark on each photo that says the person in it is the person holding the
+phone. Two checks, both by Amazon Rekognition: Face Liveness (a live person in
+front of the camera, not a photo or a screen) and CompareFaces (that person's
+face against each photo not verified yet).
+
+The mark belongs to the photo, not the profile, because what was checked is a
+picture. The profile badge isFaceVerified is derived, never stored: true when
+the current main photo is verified. Choosing an unverified photo as main turns
+the badge off, choosing a verified one turns it back on, and deleting photos
+needs no special handling. A new upload is unverified until the next check, so
+the client offers "check new photos" whenever photos[].isFaceVerified has a
+false.
+
+The video goes from the browser straight to AWS through the Amplify
+FaceLivenessDetector; the server never sees it. The browser signs its stream with
+guest credentials from a Cognito Identity Pool whose role may do exactly one
+thing, rekognition:StartFaceLivenessSession. The server holds its own keys.
+
+POST /api/profiles/me/face-verification/session
+
+{ sessionId, region } — region is where the session was created, and the
+detector must stream there. 409 without photos — liveness alone does not say
+the face is the one in the profile — and 409 when every photo is already
+verified. The session is bound to the profile, so nobody can complete it with
+someone else's id, and a new one replaces an unfinished one.
+
+POST /api/profiles/me/face-verification/complete
+
+Body: { sessionId } — and nothing else. The reference frame is taken from AWS by
+the server; a client that sent its own image could verify with any picture.
+
+{ status, livenessConfidence, isProfileVerified,
+  photos: [ { photoId, match, similarity } ] }
+
+status is about the live person:
+
+  Completed   a live person; every unverified photo was compared, see photos
+  NotLive     liveness below 80, or the session failed; photos is empty
+  Expired     the session was not completed in time (AWS gives about three
+              minutes); photos is empty
+
+match is about one photo:
+
+  Verified       similarity 90 or more; the photo is marked
+  FaceMismatch   a face, but not the one in front of the camera
+  NoFace         no face found on the photo; similarity is null
+
+photos lists only the photos compared this time, in their profile order;
+already verified ones are not compared again. isProfileVerified is the badge
+after the call. The photos are taken as they are at completion, not at start,
+so an upload or a deletion in between is respected.
+
+A failed check is an answer, not a request error, so it comes with 200 and the
+client offers another try. The thresholds live in FaceVerificationThresholds
+and are meant to be tuned on real attempts.
+
+The session is single-use: any final answer closes it, and repeating the call
+gives 404. A failed attempt or a mismatch never removes a mark earned earlier.
+
+400  no sessionId
+404  no profile, or a session that is not this profile's current one
+409  the check is still in progress (the session stays open)
+503  AWS failed or refused — FaceVerificationUnavailableException
 
 Development Endpoints
 

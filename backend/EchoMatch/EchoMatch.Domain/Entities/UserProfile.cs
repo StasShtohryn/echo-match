@@ -46,8 +46,11 @@ namespace EchoMatch.Domain.Entities
 
         // Стан
         public bool IsPrivate { get; set; }
-        public bool IsFaceVerified { get; set; }
         public DateTime? LastActiveAt { get; set; }
+
+        // Сесія перевірки обличчя, яку людина зараз проходить. Прив'язка до
+        // профілю не дає завершити чужу сесію, знаючи лише її id
+        public string? FaceLivenessSessionId { get; private set; }
 
         // Один опис готовності профілю: і для фільтра стрічки, і для підказки,
         // чого саме бракує. Порядок — від найпершого, що треба виправити.
@@ -58,6 +61,29 @@ namespace EchoMatch.Domain.Entities
             : ProfileReadiness.Ready;
 
         public bool IsDiscoverable => Readiness == ProfileReadiness.Ready;
+
+        // Значок профілю — це перевірене головне фото. Окремо не зберігається:
+        // нове головне фото чи видалення перевіреного одразу змінює і значок
+        public bool IsFaceVerified => Photos.Any(photo => photo.IsMain && photo.IsFaceVerified);
+
+
+        public void StartFaceVerification(string sessionId)
+        {
+            FaceLivenessSessionId = sessionId;
+        }
+
+        // Сесія одноразова: і успіх, і невдача її закривають. Фото, що не
+        // збіглися, лишаються як були — невдала спроба не знімає вже наявної
+        // позначки, це не нове свідчення проти неї
+        public void CompleteFaceVerification(IReadOnlyCollection<Guid> matchedPhotoIds, DateTime utcNow)
+        {
+            FaceLivenessSessionId = null;
+
+            foreach (var photo in Photos.Where(photo => matchedPhotoIds.Contains(photo.Id)))
+            {
+                photo.MarkFaceVerified(utcNow);
+            }
+        }
 
         // Зв'язки
         public ICollection<Photo> Photos { get; set; } = new List<Photo>();
