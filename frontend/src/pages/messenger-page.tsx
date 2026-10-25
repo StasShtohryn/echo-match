@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { Blobatar } from "@blobatar/react"
+import { useGaze } from "@blobatar/react/gaze"
+import { love } from "blobatar/expression"
+import "blobatar/motion.css"
+import "blobatar/gaze.css"
 import { createPortal } from "react-dom"
 import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/signalr"
 import { ArrowLeft, Bell, BellOff, CalendarDays, Camera, Check, CheckCheck, CircleX, Clock3, Eye, FileText, ImageIcon, LoaderCircle, MapPin, MessageCircle, Paperclip, Pin, PinOff, Send, Sparkles, Trash2, Users, X } from "lucide-react"
@@ -38,6 +43,7 @@ import {
   suggestMessages,
   setMessageReaction,
   type AiSuggestionKind,
+  type MessageTone,
   type ChatMessage,
   type ChatMessageEvent,
   type ChatReadEvent,
@@ -46,6 +52,13 @@ import {
   type AiSuggestions,
   type ReactionType,
 } from "@/services/message-service"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   getEvent,
   getEventMessages,
@@ -85,6 +98,13 @@ const REACTION_OPTIONS: { type: ReactionType; emoji: string; label: string }[] =
   { type: "Sad", emoji: "😢", label: "Грусть" },
   { type: "Like", emoji: "👍", label: "Нравится" },
   { type: "Fire", emoji: "🔥", label: "Огонь" },
+]
+
+const TONE_OPTIONS: { value: MessageTone; label: string }[] = [
+  { value: "Friendly", label: "Дружній" },
+  { value: "Playful", label: "Грайливий" },
+  { value: "Flirty", label: "Фліртуючий" },
+  { value: "Sincere", label: "Щирий" },
 ]
 
 function formatTime(value: string): string {
@@ -143,6 +163,7 @@ export default function MessengerPage() {
   const { matchId } = useParams()
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
+  const { ref: gazeRef, lookAt: gazeLookAt } = useGaze({ travel: 6, lookAt: "pointer" })
   const [matches, setMatches] = useState<Match[]>([])
   const [eventChats, setEventChats] = useState<EventChat[]>([])
   const [eventChatsError, setEventChatsError] = useState<string | null>(null)
@@ -180,12 +201,64 @@ export default function MessengerPage() {
   const [loadedMatchId, setLoadedMatchId] = useState<string | null>(null)
   const [partnerLastReadAt, setPartnerLastReadAt] = useState<string | null>(null)
   const [messageText, setMessageText] = useState("")
+  const [isAiSuggestionsOpen, setIsAiSuggestionsOpen] = useState(false)
+  const [selectedTone, setSelectedTone] = useState<MessageTone>("Friendly")
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
   const [aiSuggestionsContext, setAiSuggestionsContext] = useState<{
     matchId: string
     kind: AiSuggestionKind
   } | null>(null)
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false)
+  const bigBlobatarRef = useRef<HTMLDivElement>(null)
+  const suggestionsListRef = useRef<HTMLDivElement>(null)
+  const { ref: bigGazeRef, lookAt: bigGazeLookAt } = useGaze({ travel: 6, lookAt: "pointer" })
+  const isSuggestionsOpen = isAiSuggestionsOpen && loadedMatchId === matchId
+
+  useEffect(() => {
+    if (isSuggestionsOpen && bigBlobatarRef.current) {
+      gazeLookAt(bigBlobatarRef.current)
+      return () => {
+        gazeLookAt("pointer")
+      }
+    } else {
+      gazeLookAt("pointer")
+    }
+  }, [isSuggestionsOpen, gazeLookAt])
+
+  useEffect(() => {
+    if (!isSuggestionsOpen || aiSuggestions.length === 0) {
+      bigGazeLookAt("pointer")
+      return
+    }
+
+    function handlePointerMove(event: PointerEvent) {
+      const listEl = suggestionsListRef.current
+      if (!listEl) return
+
+      const rect = listEl.getBoundingClientRect()
+      const targetX = rect.left + Math.min(rect.width * 0.4, 160)
+      const minY = rect.top + 10
+      const maxY = rect.bottom - 10
+      const clampedY = minY <= maxY ? Math.max(minY, Math.min(maxY, event.clientY)) : rect.top + rect.height / 2
+
+      bigGazeLookAt({ x: targetX, y: clampedY })
+    }
+
+    if (suggestionsListRef.current) {
+      const rect = suggestionsListRef.current.getBoundingClientRect()
+      bigGazeLookAt({
+        x: rect.left + Math.min(rect.width * 0.4, 160),
+        y: rect.top + rect.height / 2,
+      })
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true })
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove)
+      bigGazeLookAt("pointer")
+    }
+  }, [isSuggestionsOpen, aiSuggestions.length, bigGazeLookAt])
+
   const [typingMatchId, setTypingMatchId] = useState<string | null>(null)
   const [isTypingVisible, setIsTypingVisible] = useState(false)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
@@ -208,7 +281,6 @@ export default function MessengerPage() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const typingExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastTypingSentAtRef = useRef(0)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   // Ref для автоматичного скролу вниз
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -238,7 +310,7 @@ export default function MessengerPage() {
     if (matchId && !isLoadingMessages) {
       // Невелика затримка через requestAnimationFrame гарантує, що DOM готовий до фокусу
       requestAnimationFrame(() => {
-        inputRef.current?.focus()
+        messageInputRef.current?.focus()
       })
     }
   }, [matchId, isLoadingMessages])
@@ -417,6 +489,9 @@ export default function MessengerPage() {
       setChatError(null)
       setIsLoadingMessages(true)
       setHasOlderMessages(false)
+      setIsAiSuggestionsOpen(false)
+      setAiSuggestions([])
+      setAiSuggestionsContext(null)
       try {
         const page = await getMessages(activeMatchId)
         if (cancelled) return
@@ -532,6 +607,7 @@ export default function MessengerPage() {
 
       const isMine = event.senderProfileId !== partnerProfileIdRef.current
       aiRequestVersionRef.current += 1
+      setIsAiSuggestionsOpen(false)
       setAiSuggestions([])
       setAiSuggestionsContext(null)
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
@@ -941,6 +1017,7 @@ export default function MessengerPage() {
         ? current
         : [...current, message].sort((left, right) => left.sequence - right.sequence))
       setMessageText("")
+      setIsAiSuggestionsOpen(false)
       setAiSuggestions([])
       setAiSuggestionsContext(null)
       aiRequestVersionRef.current += 1
@@ -955,7 +1032,7 @@ export default function MessengerPage() {
     } finally {
       setIsSending(false)
       requestAnimationFrame(() => {
-        inputRef.current?.focus()
+        messageInputRef.current?.focus()
       })
     }
   }
@@ -974,7 +1051,7 @@ export default function MessengerPage() {
     setIsGeneratingSuggestions(true)
     setChatError(null)
     try {
-      const result: AiSuggestions = await suggestMessages(requestedMatchId, kind)
+      const result: AiSuggestions = await suggestMessages(requestedMatchId, kind, selectedTone)
       if (
         selectedMatchIdRef.current !== requestedMatchId
         || aiRequestVersionRef.current !== requestVersion
@@ -996,8 +1073,14 @@ export default function MessengerPage() {
     }
   }
 
+  function handleToggleAiSuggestions() {
+    setIsAiSuggestionsOpen((current) => !current)
+    setChatError(null)
+  }
+
   function handleSelectSuggestion(suggestion: string) {
     setMessageText(suggestion)
+    setIsAiSuggestionsOpen(false)
     setAiSuggestions([])
     setAiSuggestionsContext(null)
     requestAnimationFrame(() => messageInputRef.current?.focus())
@@ -1664,13 +1747,12 @@ export default function MessengerPage() {
           </>
         ) : selectedMatch ? (
           <>
-            <Link to={`/profile/${selectedMatch.partner.profileId}`} className="hover:opacity-80">
+            <header className="flex shrink-0 items-center gap-3 border-b border-border/70 px-4 py-3 md:px-6">
+              <Button nativeButton={false} render={<Link to="/messenger" />} variant="ghost" size="icon" className="md:hidden" aria-label="До списку чатів">
+                <ArrowLeft />
+              </Button>
 
-              <header className="flex shrink-0 items-center gap-3 border-b border-border/70 px-4 py-3 md:px-6">
-                <Button nativeButton={false} render={<Link to="/messenger" />} variant="ghost" size="icon" className="md:hidden" aria-label="До списку чатів">
-                  <ArrowLeft />
-                </Button>
-
+              <Link to={`/profile/${selectedMatch.partner.profileId}`} className="flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80">
                 <Avatar className="size-10 rounded-xl">
                   <AvatarImage src={selectedMatch.partner.mainPhotoUrl ?? undefined} alt={selectedMatch.partner.displayName} />
                   <AvatarFallback className="rounded-xl">{initials(selectedMatch.partner.displayName)}</AvatarFallback>
@@ -1682,9 +1764,8 @@ export default function MessengerPage() {
                     {!user?.token || connectionStatus === "disconnected" ? "Немає live-підключення" : connectionStatus === "connected" ? "Підключено" : "Підключення..."}
                   </p>
                 </div>
-
-              </header>
-            </Link>
+              </Link>
+            </header>
 
             {chatError && <p role="alert" className="border-b border-destructive/20 bg-destructive/5 px-5 py-2 text-sm text-destructive">{chatError}</p>}
 
@@ -1812,36 +1893,104 @@ export default function MessengerPage() {
                   </Marker>
                 )}
               </div>
-              {aiSuggestionsContext?.matchId === matchId && aiSuggestions.length > 0 && loadedMatchId === matchId && (
-                <div className="mx-3 mb-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm md:mx-6">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium">
-                      {aiSuggestionsContext?.kind === "FirstMessage" ? "Варіанти для першого повідомлення" : "Варіанти відповіді"}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Закрити варіанти"
-                      onClick={() => {
-                        setAiSuggestions([])
-                        setAiSuggestionsContext(null)
-                      }}
-                    >
-                      <X />
-                    </Button>
+              {isSuggestionsOpen && (
+                <div className="mx-3 mb-3 flex items-stretch gap-3 md:mx-6">
+                  <div className="hidden w-20 shrink-0 items-end sm:flex">
+                    <div ref={bigBlobatarRef} className="size-20 rounded-full">
+                      <Blobatar
+                        ref={bigGazeRef}
+                        name="alain00"
+                        traits={{ shape: 0.825 }}
+                        background="circle"
+                        palette={{ bg: "#ffffff" }}
+                        hue={40}
+                        expression={love}
+                        animate="always"
+                        size={80}
+                        className="rounded-full bg-white shadow-sm"
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <button
-                        key={`${index}-${suggestion}`}
+                  <div className="min-w-0 flex-1 rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium">
+                        {visibleMessages.length === 0 ? "Варіанти першого повідомлення" : "Варіанти відповіді"}
+                      </p>
+                      <Button
                         type="button"
-                        className="rounded-xl border border-border/70 px-3 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() => handleSelectSuggestion(suggestion)}
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Закрити варіанти"
+                        onClick={() => {
+                          setIsAiSuggestionsOpen(false)
+                          setAiSuggestions([])
+                          setAiSuggestionsContext(null)
+                        }}
                       >
-                        {suggestion}
-                      </button>
-                    ))}
+                        <X />
+                      </Button>
+                    </div>
+
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <div className="w-40">
+                        <Select
+                          value={selectedTone}
+                          onValueChange={(value) => {
+                            if (value) setSelectedTone(value as MessageTone)
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-full rounded-xl border border-border bg-background text-xs">
+                            <SelectValue placeholder="Оберіть тон" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TONE_OPTIONS.map((tone) => (
+                              <SelectItem key={tone.value} value={tone.value}>
+                                {tone.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-xl"
+                        disabled={isGeneratingSuggestions || isSending}
+                        onClick={() => void handleGenerateSuggestions()}
+                      >
+                        {isGeneratingSuggestions ? (
+                          <>
+                            <LoaderCircle className="size-3.5 animate-spin" />
+                            Генерація...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="size-3.5" />
+                            {aiSuggestions.length > 0 ? "Перегенерувати" : "Згенерувати"}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {aiSuggestions.length > 0 ? (
+                      <div ref={suggestionsListRef} className="grid gap-2">
+                        {aiSuggestions.map((suggestion, index) => (
+                          <button
+                            key={`${index}-${suggestion}`}
+                            type="button"
+                            className="rounded-xl border border-border/70 px-3 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            onClick={() => handleSelectSuggestion(suggestion)}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    ) : !isGeneratingSuggestions ? (
+                      <p className="py-1 text-xs text-muted-foreground">
+                        Оберіть бажаний тон та натисніть «Згенерувати», щоб отримати персоналізовані варіанти.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               )}
@@ -1881,13 +2030,22 @@ export default function MessengerPage() {
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="h-10 w-10 shrink-0 border-border bg-card shadow-sm hover:bg-muted"
-                    aria-label={visibleMessages.length === 0 ? "Згенерувати варіанти першого повідомлення" : "Згенерувати варіанти відповіді"}
-                    title={visibleMessages.length === 0 ? "Згенерувати варіанти першого повідомлення" : "Згенерувати варіанти відповіді"}
-                    disabled={isGeneratingSuggestions || isSending}
-                    onClick={() => void handleGenerateSuggestions()}
+                    className={`h-10 w-10 shrink-0 border-border bg-card shadow-sm hover:bg-muted ${isAiSuggestionsOpen ? "ring-2 ring-primary" : ""}`}
+                    aria-label="ІІ-підказки"
+                    title="ІІ-підказки"
+                    disabled={isSending}
+                    onClick={handleToggleAiSuggestions}
                   >
-                    {isGeneratingSuggestions ? <LoaderCircle className="animate-spin" /> : <Sparkles />}
+                    <Blobatar
+                      ref={gazeRef}
+                      name="alain00"
+                      traits={{ shape: 0.825 }}
+                      background={false}
+                      hue={40}
+                      expression={love}
+                      animate="always"
+                      className="size-full p-0.5"
+                    />
                   </Button>
                 )}
 
