@@ -75,14 +75,66 @@ export default function PersonCard({
     return left.order - right.order
   })
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [entryOffsetY, setEntryOffsetY] = useState(-12)
+  const [isVisible, setIsVisible] = useState(true)
+  const [isEnteringUndo, setIsEnteringUndo] = useState(false)
+
+  // Розраховуємо силу свайпу (від 0 до 1) відносно порогу SWIPE_THRESHOLD
+  const swipeProgress = Math.min(Math.abs(dragOffset) / SWIPE_THRESHOLD, 1)
+
+  // Визначаємо, яка саме кнопка має підсвічуватися
+  const isLiking = dragOffset > 10
+  const isDisliking = dragOffset < -10
+
   useEffect(() => {
-    setDragOffset(0)
-    setExitDirection(null)
-    setLightboxIndex(null)
     setIsProfileModalOpen(false)
+    setLightboxIndex(null)
     dragStart.current = null
     isDragging.current = false
+
+    if (isUndoing) {
+      // Якщо це повернення (Undo): починаємо картку далеко зліва з поворотом
+      const flyDistance = window.innerWidth || 1000
+      setDragOffset(-flyDistance)
+      setExitDirection(null)
+      setEntryOffsetY(0)
+      setIsVisible(true)
+      setIsEnteringUndo(true)
+
+      // У наступному кадрі плавно повертаємо картку в центр (0px)
+      const timer = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setDragOffset(0)
+          setIsEnteringUndo(false)
+        })
+      })
+      return () => cancelAnimationFrame(timer)
+    } else {
+      // Миттєво скидаємо стан для нової картки
+      setIsVisible(false)
+      setDragOffset(0)
+      setExitDirection(null)
+      setLightboxIndex(null)
+      setIsProfileModalOpen(false)
+      dragStart.current = null
+      isDragging.current = false
+
+      // Спочатку ставимо -12px
+      setEntryOffsetY(-12)
+
+      // Через мікро-паузу робимо картку видимою вже в центрі й опускаємо зверху
+      const timer = setTimeout(() => {
+        setIsVisible(true)
+        requestAnimationFrame(() => {
+          setEntryOffsetY(0)
+        })
+      }, 50)
+
+      return () => clearTimeout(timer)
+    }
   }, [candidate.profile.id])
+
+
 
   useEffect(() => {
     if (!lightboxCarouselApi || lightboxIndex === null) return
@@ -105,7 +157,7 @@ export default function PersonCard({
       target &&
       (target.closest('[data-slot="carousel"]') || target.closest('[data-modal-trigger="true"]'))
     ) {
-      return // Ігноруємо свайпи при кліку на карусель чи ім'я
+      return
     }
 
     if (isSwiping || exitDirection) return
@@ -177,13 +229,31 @@ export default function PersonCard({
     ? profile.displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U"
 
+
+  function triggerSwipe(direction: SwipeDirection) {
+    if (isSwiping || exitDirection) return
+    const flyDistance = window.innerWidth || 1000
+    setExitDirection(direction)
+    setDragOffset(direction === "Like" ? flyDistance : -flyDistance)
+    onSwipe(direction)
+  }
+
   return (
     <div className="my-auto flex w-full max-w-110 shrink-0 flex-col gap-4 py-1 select-none">
       <Card
         className="relative flex flex-col touch-pan-y overflow-hidden pt-0 select-none"
         style={{
-          transform: `translateX(${dragOffset}px) rotate(${cardRotation}deg)`,
-          transition: dragStart.current === null ? "transform 220ms ease-out" : "none",
+          // Якщо картка вертається — піднімаємо її по z-index вище
+          zIndex: isEnteringUndo ? 40 : 10,
+          opacity: isVisible ? 1 : 0,
+          transform: `translate3d(${dragOffset}px, ${entryOffsetY}px, 0) rotate(${cardRotation}deg)`,
+          transition: !isVisible
+            ? "none"
+            : isDragging.current
+              ? "none"
+              : isEnteringUndo
+                ? "transform 3450ms cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 150ms ease-out" // Плавне залітання з легким пружиненням
+                : "transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 150ms ease-out",
           cursor: isSwiping ? "wait" : isDragging.current ? "grabbing" : "grab",
         }}
         onPointerDown={handlePointerDown}
@@ -291,7 +361,7 @@ export default function PersonCard({
         </CardFooter>
       </Card >
 
-      <div className="flex flex-row gap-4 justify-center items-center" >
+      <div className="flex flex-col items-center gap-2">
         <Card className="flex flex-row items-center gap-4 py-2 px-2">
           <Button
             type="button"
@@ -305,16 +375,23 @@ export default function PersonCard({
           >
             <Undo2 />
           </Button>
-          <Button variant={"outline"} size={"icon-lg"} className="h-12 w-12 cursor-pointer" disabled={isSwiping || isUndoing} onClick={() => onSwipe("Dislike")}>
+          <Button variant={"outline"} size={"icon-lg"} className={`h-12 w-12 cursor-pointer transition-all duration-150 ${isDisliking ? " scale-110 shadow-lg" : ""
+            }`}
+            disabled={isSwiping || isUndoing || exitDirection !== null} onClick={() => triggerSwipe("Dislike")}>
             <X />
           </Button>
           <Button variant={"outline"} size={"icon-lg"} className="h-11 w-11 cursor-pointer" disabled>
             <Star />
           </Button>
-          <Button size={"icon-lg"} className="h-12 w-12 cursor-pointer" disabled={isSwiping || isUndoing} onClick={() => onSwipe("Like")}>
+          <Button size={"icon-lg"} className={`h-12 w-12 cursor-pointer transition-all duration-150 ${isLiking ? "border-primary bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/30" : ""
+            }`} disabled={isSwiping || isUndoing || exitDirection !== null} onClick={() => triggerSwipe("Like")}>
             <Heart />
           </Button>
         </Card>
+
+        <p className="text-[11px] font-semibold tracking-wider text-muted-foreground/70 uppercase mt-4">
+          Тягніть картку або тисніть <span className="text-[14px]"> &times; &#9829;</span>
+        </p>
       </div>
 
 
