@@ -55,7 +55,13 @@ Discovery & Privacy
 
 Verification
 
-- [ ] Face Verification (AWS Rekognition) — deferred
+- [x] Face Verification (AWS Rekognition Face Liveness + CompareFaces against
+      every unverified photo; the mark lives on each photo, the profile badge
+      is the main photo's mark)
+- [ ] Tune the face verification thresholds (80 liveness, 90 similarity) on
+      real attempts
+- [ ] Age verification through Diia sharing — needs a registered business
+      (FOP) and a contract with Diia; awaiting their answer on cost and sandbox
 
 Social
 

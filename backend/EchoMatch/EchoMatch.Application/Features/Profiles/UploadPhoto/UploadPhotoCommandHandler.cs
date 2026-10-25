@@ -52,7 +52,7 @@ namespace EchoMatch.Application.Features.Profiles.UploadPhoto
 
             await _profileRepository.SaveChangesAsync(cancellationToken);
 
-            return new PhotoDto(photo.Id, photo.Url, photo.IsMain, photo.Order);
+            return new PhotoDto(photo.Id, photo.Url, photo.IsMain, photo.Order, photo.IsFaceVerified);
         }
     }
 }

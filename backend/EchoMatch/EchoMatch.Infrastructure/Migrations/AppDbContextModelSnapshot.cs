@@ -892,6 +892,9 @@ namespace EchoMatch.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("FaceVerifiedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -1275,6 +1278,10 @@ namespace EchoMatch.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("FaceLivenessSessionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("FamilyPlans")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1292,9 +1299,6 @@ namespace EchoMatch.Infrastructure.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsFaceVerified")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsPrivate")

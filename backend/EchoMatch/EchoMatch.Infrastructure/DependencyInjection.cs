@@ -1,6 +1,10 @@
+using Amazon;
+using Amazon.Rekognition;
+using Amazon.Runtime;
 using Anthropic;
 using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Infrastructure.Ai;
+using EchoMatch.Infrastructure.FaceVerification;
 using EchoMatch.Infrastructure.Persistence;
 using EchoMatch.Infrastructure.Repositories;
 using EchoMatch.Infrastructure.Security;
@@ -56,6 +60,29 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IAiAssistant, ClaudeAiAssistant>();
+
+        services.Configure<AwsSettings>(configuration.GetSection(AwsSettings.SectionName));
+
+        // Клієнт один на застосунок, як і клієнт AI. Без ключів він створюється
+        // анонімним, а сервіс сам скаже, що ключів бракує, на першому ж виклику
+        services.AddSingleton<IAmazonRekognition>(provider =>
+        {
+            var settings = provider.GetRequiredService<IOptions<AwsSettings>>().Value;
+
+            var config = string.IsNullOrWhiteSpace(settings.ServiceUrl)
+                ? new AmazonRekognitionConfig { RegionEndpoint = RegionEndpoint.GetBySystemName(settings.Region) }
+                : new AmazonRekognitionConfig { ServiceURL = settings.ServiceUrl, AuthenticationRegion = settings.Region };
+
+            AWSCredentials credentials =
+                string.IsNullOrWhiteSpace(settings.AccessKeyId) || string.IsNullOrWhiteSpace(settings.SecretAccessKey)
+                    ? new AnonymousAWSCredentials()
+                    : new BasicAWSCredentials(settings.AccessKeyId, settings.SecretAccessKey);
+
+            return new AmazonRekognitionClient(credentials, config);
+        });
+
+        // HttpClient — щоб завантажити фото профілю для порівняння
+        services.AddHttpClient<IFaceVerificationService, RekognitionFaceVerificationService>();
 
         return services;
     }

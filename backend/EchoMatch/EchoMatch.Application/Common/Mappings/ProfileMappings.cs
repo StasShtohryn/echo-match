@@ -44,7 +44,7 @@ namespace EchoMatch.Application.Common.Mappings
 
             Photos = profile.Photos
                 .OrderBy(photo => photo.Order)
-                .Select(photo => new PhotoDto(photo.Id, photo.Url, photo.IsMain, photo.Order))
+                .Select(photo => new PhotoDto(photo.Id, photo.Url, photo.IsMain, photo.Order, photo.IsFaceVerified))
                 .ToList(),
 
             Interests = profile.Interests
@@ -95,7 +95,7 @@ namespace EchoMatch.Application.Common.Mappings
 
             Photos = profile.Photos
                 .OrderBy(photo => photo.Order)
-                .Select(photo => new PhotoDto(photo.Id, photo.Url, photo.IsMain, photo.Order))
+                .Select(photo => new PhotoDto(photo.Id, photo.Url, photo.IsMain, photo.Order, photo.IsFaceVerified))
                 .ToList(),
 
             Interests = profile.Interests

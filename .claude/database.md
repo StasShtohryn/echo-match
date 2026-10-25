@@ -164,13 +164,24 @@ UserProfile
   FamilyPlans, Communication, LoveLanguage, Pets, Drinking, Smoking, Workout
   InstagramHandle, SpotifyHandle
   Location (owned value object: Latitude, Longitude), LastLocationUpdatedAt
-  IsPrivate, IsFaceVerified, LastActiveAt
+  IsPrivate, FaceLivenessSessionId, LastActiveAt
+
+  FaceLivenessSessionId is the liveness session the person is going through
+  right now (max 100), null otherwise; it ties a session to its profile and
+  closes on the first final answer. It changes only through
+  StartFaceVerification and CompleteFaceVerification.
 
 Photo
-  UserProfileId, Url, PublicId, IsMain, Order
+  UserProfileId, Url, PublicId, IsMain, Order, FaceVerifiedAt
   Max 9 per profile. Exactly one IsMain.
   Deleting the main photo promotes the next one by Order.
   Order is renumbered on delete so new uploads never collide.
+
+  FaceVerifiedAt is set when the face on the photo matched a live person, and
+  only through UserProfile.CompleteFaceVerification. Null for a new photo. No
+  video, frame or score is stored — only that a photo passed and when.
+  (Migration FaceVerification moved the flag here from UserProfiles.IsFaceVerified,
+  which nothing had set yet.)
 
 Computed on UserProfile, ignored by EF
 
@@ -180,6 +191,10 @@ IsDiscoverable not private, holds at least one photo, preferences set
 Readiness      which of those three is missing, or Ready. IsDiscoverable is
                defined as Readiness == Ready, so the rule exists in one place
                and the feed filter cannot drift from the onboarding prompt
+IsFaceVerified the main photo is face verified (Photo.IsFaceVerified, which is
+               FaceVerifiedAt is not null). Needs Photos loaded; a query that
+               cannot load them, such as the event member projection, writes
+               the same rule against the column
 
 ProfilePrompt (lookup)
   Code, Question, IsActive

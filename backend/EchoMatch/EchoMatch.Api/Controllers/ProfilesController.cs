@@ -1,4 +1,6 @@
 ﻿using EchoMatch.Application.Common.Dtos;
+using EchoMatch.Application.Features.FaceVerification.CompleteFaceVerification;
+using EchoMatch.Application.Features.FaceVerification.StartFaceVerification;
 using EchoMatch.Application.Features.Profiles.CreateProfile;
 using EchoMatch.Application.Features.Profiles.DeletePhoto;
 using EchoMatch.Application.Features.Profiles.GetMyProfile;
@@ -166,6 +168,33 @@ namespace EchoMatch.Api.Controllers
             await _sender.Send(command, cancellationToken);
             return NoContent();
         }
+
+        [HttpPost("me/face-verification/session")]
+        [ProducesResponseType(typeof(FaceVerificationSessionDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+        public async Task<ActionResult<FaceVerificationSessionDto>> StartFaceVerification(
+    CancellationToken cancellationToken)
+        {
+            var result = await _sender.Send(new StartFaceVerificationCommand(), cancellationToken);
+            return Ok(result);
+        }
+
+        [HttpPost("me/face-verification/complete")]
+        [ProducesResponseType(typeof(FaceVerificationResultDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+        public async Task<ActionResult<FaceVerificationResultDto>> CompleteFaceVerification(
+            CompleteFaceVerificationCommand command,
+            CancellationToken cancellationToken)
+        {
+            var result = await _sender.Send(command, cancellationToken);
+            return Ok(result);
+        }
+
 
         [HttpPatch("me/visibility")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
