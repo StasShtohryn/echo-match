@@ -16,16 +16,22 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(256);
 
+        // Унікальність — серед невидалених, як пари у свайпах і метчах: пошта
+        // видаленого акаунта звільняється для нової реєстрації
         builder.HasIndex(u => u.Email)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
         builder.Property(u => u.PasswordHash);
 
         builder.Property(u => u.GoogleId)
             .HasMaxLength(64);
 
+        // Власний фільтр замінює той, що EF ставить для nullable-стовпця сам,
+        // тож умову IS NOT NULL треба повторити
         builder.HasIndex(u => u.GoogleId)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("[GoogleId] IS NOT NULL AND [IsDeleted] = 0");
 
         builder.Property(u => u.Role)
             .HasConversion<string>()

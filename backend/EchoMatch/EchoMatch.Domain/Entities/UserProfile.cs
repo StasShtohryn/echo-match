@@ -31,7 +31,7 @@ namespace EchoMatch.Domain.Entities
         public FamilyPlan? FamilyPlans { get; set; }
         public CommunicationStyle? Communication { get; set; }
         public LoveStyle? LoveLanguage { get; set; }
-        public PetPreference? Pets { get; set; }
+        public List<PetPreference> Pets { get; set; } = new();
         public DrinkingHabit? Drinking { get; set; }
         public SmokingHabit? Smoking { get; set; }
         public WorkoutHabit? Workout { get; set; }

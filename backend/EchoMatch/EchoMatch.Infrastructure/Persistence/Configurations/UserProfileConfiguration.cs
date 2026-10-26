@@ -20,6 +20,10 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(p => p.UserId).IsUnique();
 
+            // Профіль зникає і разом зі своїм акаунтом: видалений користувач не
+            // має лишатися в стрічці, метчах і подіях
+            builder.HasQueryFilter(p => !p.IsDeleted && !p.User.IsDeleted);
+
             builder.Property(p => p.DisplayName).IsRequired().HasMaxLength(50);
 
             builder.Property(p => p.City).HasMaxLength(100);
@@ -30,6 +34,11 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
             builder.Property(p => p.InstagramHandle).HasMaxLength(30);
             builder.Property(p => p.SpotifyHandle).HasMaxLength(50);
             builder.Property(p => p.FaceLivenessSessionId).HasMaxLength(100);
+
+            // Кілька значень з фіксованого переліку — JSON-масив в одному
+            // стовпці; окрема таблиця нічого б тут не дала
+            builder.PrimitiveCollection(p => p.Pets)
+                .ElementType(element => element.HasConversion<string>());
 
             builder.OwnsOne(p => p.Location, location =>
             {
