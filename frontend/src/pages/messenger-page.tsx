@@ -291,6 +291,7 @@ export default function MessengerPage() {
   const eventTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastEventTypingSentAtRef = useRef(0)
   const eventMessagesScrollToBottomRef = useRef(false)
+  const selectedToneOption = TONE_OPTIONS.find((t) => t.value === selectedTone)
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     // Даємо браузеру завершити рендер списку повідомлень у DOM
@@ -1794,6 +1795,7 @@ export default function MessengerPage() {
                   const partnerReaction = normalizeReaction(message.partnerReaction) ?? null
                   const reactions = [myReaction, partnerReaction].filter((value): value is ReactionType => value !== null)
 
+
                   return (
                     <div
                       key={message.id}
@@ -1940,7 +1942,9 @@ export default function MessengerPage() {
                           }}
                         >
                           <SelectTrigger className="h-8 w-full rounded-xl border border-border bg-background text-xs">
-                            <SelectValue placeholder="Оберіть тон" />
+                            <SelectValue placeholder="Оберіть тон">
+                              {selectedToneOption ? selectedToneOption.label : "Оберіть тон"}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {TONE_OPTIONS.map((tone) => (

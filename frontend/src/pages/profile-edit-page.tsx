@@ -42,6 +42,33 @@ import {
   type UpdateProfileRequest,
 } from "@/services/auth-service"
 
+// 🌟 1. Імпортуємо словники та getLabel з вашого some-lookups.ts
+import {
+  getLabel,
+  ORIENTATION_OPTIONS,
+  COMMUNICATION_OPTIONS,
+  DRINKING_OPTIONS,
+  FAMILY_PLAN_OPTIONS,
+  GOAL_OPTIONS,
+  WORKOUT_OPTIONS,
+  LOVE_STYLE_OPTIONS,
+  PET_OPTIONS,
+  SMOKING_OPTIONS,
+} from "@/lib/some-lookups"
+
+// 🌟 2. Мапа для швидкого доступу до локалізованих назв за optionKey
+const LOOKUP_MAPS: Record<string, Record<string, string>> = {
+  orientation: ORIENTATION_OPTIONS,
+  communication: COMMUNICATION_OPTIONS,
+  drinking: DRINKING_OPTIONS,
+  familyPlans: FAMILY_PLAN_OPTIONS,
+  lookingFor: GOAL_OPTIONS,
+  workout: WORKOUT_OPTIONS,
+  loveLanguage: LOVE_STYLE_OPTIONS,
+  pets: PET_OPTIONS,
+  smoking: SMOKING_OPTIONS,
+}
+
 const profileFields: Array<{ key: keyof UpdateProfileRequest; label: string; type?: "textarea" }> = [
   { key: "displayName", label: "Ім'я" },
   { key: "bio", label: "Про себе", type: "textarea" },
@@ -243,13 +270,105 @@ export default function ProfileEditPage() {
             <Field><FieldLabel htmlFor="heightCm">Зріст, см</FieldLabel><Input id="heightCm" type="number" min={120} max={250} value={form.heightCm ?? ""} onChange={(event) => setForm((current) => ({ ...current, heightCm: event.target.value ? Number(event.target.value) : null }))} /></Field>
           </FieldGroup></CardContent></Card>
 
-          <Card><CardHeader><CardTitle className="text-xl font-semibold font-sans">Вподобання анкети</CardTitle></CardHeader><CardContent><FieldGroup className="grid gap-4 md:grid-cols-2">
-            {enumFields.map(({ key, label, optionKey }) => <Field key={key}><FieldLabel htmlFor={key}>{label}</FieldLabel><Select value={form[key] ?? ""} onValueChange={(value) => updateField(key, value === noSelectionValue ? "" : value ?? "")}><SelectTrigger id={key} className="w-full"><SelectValue placeholder="Не вказано" /></SelectTrigger><SelectContent><SelectItem value={noSelectionValue}>Не вказано</SelectItem>{(lookups.options[optionKey] ?? []).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></Field>)}
-          </FieldGroup></CardContent></Card>
+          {/* 🌟 3. Локалізований блок вибору вподобань */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold font-sans">Вподобання анкети</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FieldGroup className="grid gap-4 md:grid-cols-2">
+                {enumFields.map(({ key, label, optionKey }) => {
+                  const rawValue = form[key] ?? ""
+                  const optionMap = LOOKUP_MAPS[optionKey]
+
+                  return (
+                    <Field key={key}>
+                      <FieldLabel htmlFor={key}>{label}</FieldLabel>
+                      <Select
+                        value={rawValue || noSelectionValue}
+                        onValueChange={(value) => updateField(key, value === noSelectionValue ? "" : value ?? "")}
+                      >
+                        <SelectTrigger id={key} className="w-full">
+                          <SelectValue placeholder="Не вказано">
+                            {optionMap ? getLabel(optionMap, rawValue) ?? "Не вказано" : rawValue || "Не вказано"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={noSelectionValue}>Не вказано</SelectItem>
+                          {(lookups.options[optionKey] ?? []).map((value) => (
+                            <SelectItem key={value} value={value}>
+                              {optionMap ? getLabel(optionMap, value) ?? value : value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )
+                })}
+              </FieldGroup>
+            </CardContent>
+          </Card>
 
           <Card><CardHeader><CardTitle className="text-xl font-semibold font-sans">Інтереси та мови</CardTitle></CardHeader><CardContent className="grid gap-6 md:grid-cols-2"><ChoiceList title="Інтереси, до 5" items={lookups.interests} selected={interestIds} onToggle={(id) => toggleId(interestIds, id, 5, setInterestIds)} /><ChoiceList title="Мови, до 10" items={lookups.languages} selected={languageIds} onToggle={(id) => toggleId(languageIds, id, 10, setLanguageIds)} /></CardContent></Card>
 
-          <Card><CardHeader><CardTitle className="text-xl font-semibold font-sans">Запитання</CardTitle></CardHeader><CardContent className="space-y-4">{[0, 1, 2].map((index) => { const answer = promptAnswers[index] ?? { promptId: 0, answer: "" }; return <div className="grid gap-2 md:grid-cols-2" key={index}><Select value={answer.promptId ? String(answer.promptId) : "0"} onValueChange={(value) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, promptId: Number(value ?? 0) }; return next })}><SelectTrigger className="w-full"><SelectValue placeholder="Оберіть запитання" /></SelectTrigger><SelectContent><SelectItem value="0">Оберіть запитання</SelectItem>{lookups.prompts.map((prompt) => <SelectItem key={prompt.id} value={String(prompt.id)}>{prompt.name}</SelectItem>)}</SelectContent></Select><Textarea placeholder="Ваша відповідь" maxLength={124} value={answer.answer} onChange={(event) => setPromptAnswers((current) => { const next = [...current]; next[index] = { ...answer, answer: event.target.value }; return next })} /></div> })}</CardContent></Card>
+          {/* 🌟 4. Оновлений блок Запитань із показом тексту промптів */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold font-sans">Запитання</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[0, 1, 2].map((index) => {
+                const answer = promptAnswers[index] ?? { promptId: 0, answer: "" }
+                const selectedPrompt = lookups.prompts.find((p) => p.id === answer.promptId)
+                const selectedPromptText = selectedPrompt
+                  ? ((selectedPrompt as any).question ?? (selectedPrompt as any).text ?? selectedPrompt.name)
+                  : null
+
+                return (
+                  <div className="grid gap-2 md:grid-cols-2" key={index}>
+                    <Select
+                      value={answer.promptId ? String(answer.promptId) : "0"}
+                      onValueChange={(value) =>
+                        setPromptAnswers((current) => {
+                          const next = [...current]
+                          next[index] = { ...answer, promptId: Number(value ?? 0) }
+                          return next
+                        })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Оберіть запитання">
+                          {answer.promptId && answer.promptId !== 0
+                            ? selectedPromptText ?? answer.promptId
+                            : "Оберіть запитання"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Оберіть запитання</SelectItem>
+                        {lookups.prompts.map((prompt) => (
+                          <SelectItem key={prompt.id} value={String(prompt.id)}>
+                            {(prompt as any).question ?? (prompt as any).text ?? prompt.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Textarea
+                      placeholder="Ваша відповідь"
+                      maxLength={124}
+                      value={answer.answer}
+                      onChange={(event) =>
+                        setPromptAnswers((current) => {
+                          const next = [...current]
+                          next[index] = { ...answer, answer: event.target.value }
+                          return next
+                        })
+                      }
+                    />
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
 
           <Card><CardHeader><CardTitle className="text-xl font-semibold font-sans">Фотографії</CardTitle></CardHeader><CardContent className="space-y-4"><label className="inline-flex cursor-pointer items-center rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground"><ImagePlus className="mr-2 size-4" />Додати фото<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={!!uploadingPhoto} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void handlePhoto(file) }} /></label>{uploadingPhoto && <Attachment state="uploading" className="w-full max-w-md"><AttachmentMedia><LoaderCircle className="animate-spin" /></AttachmentMedia><AttachmentContent><AttachmentTitle>{uploadingPhoto.fileName}</AttachmentTitle><AttachmentDescription>Завантаження · {uploadingPhoto.progress}%</AttachmentDescription></AttachmentContent><AttachmentActions><AttachmentAction type="button" aria-label="Скасувати завантаження" onClick={cancelPhotoUpload}><X /></AttachmentAction></AttachmentActions></Attachment>}<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{profile.photos.map((photo) => <div className="space-y-2" key={photo.id}><img src={photo.url} alt="Фото профілю" className="aspect-square w-full rounded-2xl object-cover" /> <div className="flex gap-1"><Button size="sm" variant={photo.isMain ? "secondary" : "outline"} disabled={photo.isMain} onClick={() => void makeMain(photo.id)}>{photo.isMain ? "Головне" : "Зробити головним"}</Button><Button size="icon" variant="ghost" aria-label="Видалити фото" onClick={() => void removePhoto(photo.id)}><Trash2 className="size-4" /></Button></div></div>)}</div></CardContent></Card>
           <div className="flex justify-end"><Link to="/settings"><Button variant="outline">Перейти до налаштувань</Button></Link></div>
