@@ -130,7 +130,7 @@ export default function SettingsStep({
       totalSteps={totalSteps}
       title="Параметри пошуку та локація"
       canContinue={true}
-      onNext={onSubmit} // 🌟 Останній крок викликає onSubmit (завершення анкети)
+      onNext={onSubmit}
       onBack={onBack}
       isLoading={isLoading}
       nextButtonText="Завершити"

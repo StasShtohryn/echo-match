@@ -211,7 +211,7 @@ export default function ProfilePage() {
   const mainPhoto = profile?.photos.find((photo) => photo.isMain) ?? profile?.photos[0]
   const profilePicture = mainPhoto?.url ?? user.picture
 
-  console.log(profile?.createdAt);
+  // console.log(profile?.createdAt);
 
   const photos = profile?.photos ? [...profile.photos].sort((a, b) => {
     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
