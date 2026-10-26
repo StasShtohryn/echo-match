@@ -218,6 +218,8 @@ export default function ProfilePage() {
     return a.order - b.order;
   }) : [];
   const count = photos.length;
+  const verifiedPhotosCount = photos.filter((photo) => photo.isFaceVerified).length;
+  const hasUnverifiedPhotos = verifiedPhotosCount < count;
 
 
   return (
@@ -282,22 +284,32 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-muted-foreground font-medium">Верифікація</span>
                       {profile?.isFaceVerified ? (
-                        <div className="flex items-center gap-1.5">
+                        hasUnverifiedPhotos ? (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge
+                                variant="secondary"
+                                className="cursor-pointer gap-1 text-xs text-primary transition-colors hover:bg-primary/15"
+                                onClick={() => navigate("/verification")}
+                              >
+                                <BadgeCheck className="size-3.5" />
+                                <span>
+                                  Верифіковано ({verifiedPhotosCount}/{count})
+                                </span>
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-64">
+                              <p>
+                                Головне фото підтверджено. Натисніть, щоб верифікувати решту фото ({verifiedPhotosCount}/{count}).
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
                           <Badge variant="secondary" className="gap-1 text-xs text-primary">
                             <BadgeCheck className="size-3.5" />
-                            Верифіковано
+                            <span>Верифіковано</span>
                           </Badge>
-                          {profile.photos.some((photo) => !photo.isFaceVerified) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-                              onClick={() => navigate("/verification")}
-                            >
-                              + Нові фото
-                            </Button>
-                          )}
-                        </div>
+                        )
                       ) : (
                         <Button
                           variant="outline"

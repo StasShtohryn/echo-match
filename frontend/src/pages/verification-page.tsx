@@ -8,12 +8,16 @@ import {
   AlertTriangle,
   ScanFace,
   ShieldCheck,
+  ShieldAlert,
   RotateCcw,
   Sparkles,
   Loader2,
   LockKeyhole,
   Check,
   X,
+  Info,
+  Sun,
+  Move,
 } from "lucide-react";
 import { FaceLivenessDetector } from "@aws-amplify/ui-react-liveness";
 import "@aws-amplify/ui-react-liveness/styles.css";
@@ -38,6 +42,7 @@ import {
   type FaceVerificationResult,
 } from "@/services/auth-service";
 import { configureAmplify, hasCognitoConfigured } from "@/lib/aws";
+import { ukrainianLivenessDisplayText } from "@/lib/liveness-text";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 const verificationSteps = [
@@ -212,20 +217,18 @@ export default function VerificationPage() {
   return (
     <div className="mx-auto flex h-full min-h-0 w-full flex-1 flex-col">
       <ScrollArea className="h-full min-h-0 flex-1">
-        <main className="relative isolate overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
-          <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top_right,oklch(0.88_0.12_48/.8),transparent_60%),radial-gradient(circle_at_top_left,oklch(0.9_0.06_165/.55),transparent_55%)]" />
-
+        <main className={`relative isolate px-4 sm:px-6 lg:px-8 ${mode === "detecting" ? "pt-2 sm:pt-4 pb-12" : "py-8"}`}>
           <div className="mx-auto max-w-5xl">
-            {/* Навігація назад */}
-            <Link
-              to="/me"
-              className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <ArrowLeft className="size-4" />
-              Назад до профілю
-            </Link>
+            {mode === "intro" && (
+              <Link
+                to="/me"
+                className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="size-4" />
+                Назад до профілю
+              </Link>
+            )}
 
-            {/* СТАН 1: Створення сесії (лоадер) */}
             {mode === "starting" && (
               <Card className="mx-auto my-12 max-w-lg border-primary/20 bg-card/90 p-8 text-center shadow-xl backdrop-blur-sm">
                 <CardContent className="flex flex-col items-center gap-4 pt-6">
@@ -240,19 +243,18 @@ export default function VerificationPage() {
               </Card>
             )}
 
-            {/* СТАН 2: Активна камера та сканування (FaceLivenessDetector) */}
             {mode === "detecting" && session && (
-              <div className="mx-auto my-6 max-w-2xl">
-                <Card className="overflow-hidden border-primary/20 bg-card shadow-2xl">
-                  <CardHeader className="border-b bg-muted/40 pb-4">
+              <div className="mx-auto my-0 max-w-xl pb-6">
+                <Card className="overflow-hidden border-border/70 bg-card shadow-xs pt-0 gap-0">
+                  <CardHeader className="border-b bg-muted/40 p-4 sm:px-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <ScanFace className="size-5" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">Перевірка обличчя</CardTitle>
-                          <CardDescription>Amazon Rekognition Face Liveness</CardDescription>
+                          <CardTitle className="text-lg">Підтвердження особи</CardTitle>
+                          <CardDescription>Швидка відеоперевірка обличчя</CardDescription>
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" onClick={handleUserCancel}>
@@ -261,13 +263,17 @@ export default function VerificationPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-4 sm:p-6">
-                    <div className="relative mx-auto flex min-h-[460px] w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-background">
+                    <div className="echomatch-liveness mx-auto flex w-full max-w-[480px] flex-col items-stretch justify-center">
                       <FaceLivenessDetector
                         sessionId={session.sessionId}
                         region={session.region}
                         onAnalysisComplete={handleAnalysisComplete}
                         onError={handleLivenessError}
                         onUserCancel={handleUserCancel}
+                        displayText={ukrainianLivenessDisplayText}
+                        components={{
+                          PhotosensitiveWarning: () => null,
+                        }}
                       />
                     </div>
                     <p className="mt-4 text-center text-xs text-muted-foreground">
@@ -278,7 +284,6 @@ export default function VerificationPage() {
               </div>
             )}
 
-            {/* СТАН 3: Обробка та порівняння з фото на бэкенді */}
             {mode === "verifying" && (
               <Card className="mx-auto my-12 max-w-lg border-primary/20 bg-card/90 p-8 text-center shadow-xl backdrop-blur-sm">
                 <CardContent className="flex flex-col items-center gap-4 pt-6">
@@ -296,123 +301,225 @@ export default function VerificationPage() {
             {/* СТАН 4: Результат перевірки */}
             {mode === "result" && (
               <div className="mx-auto my-8 max-w-2xl">
-                {result && result.status === "Completed" ? (
-                  <Card className="border-primary/30 bg-card/95 shadow-xl">
-                    <CardHeader className="text-center">
-                      <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                        <ShieldCheck className="size-9" />
-                      </div>
-                      <CardTitle className="text-2xl sm:text-3xl">
-                        {result.isProfileVerified ? "Профіль успішно верифіковано!" : "Перевірку обличчя завершено"}
-                      </CardTitle>
-                      <CardDescription className="mx-auto max-w-md text-base">
-                        {result.isProfileVerified
-                          ? "Головне фото вашого профілю підтверджено. Тепер у вашій анкеті з'явилася синя позначка верифікації!"
-                          : "Обличчя перед камерою успішно перевірено, але воно не збіглося з головною фотографією вашого профілю."}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6 pt-2">
-                      <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                        <Sparkles className="size-4" />
-                        <span>Впевненість живої людини (Liveness): {Math.round(result.livenessConfidence)}%</span>
-                      </div>
+                {result && result.status === "Completed" ? (() => {
+                  const verifiedCount = result.photos.filter((p) => p.match === "Verified").length;
+                  const totalChecked = result.photos.length;
+                  const allCheckedVerified = totalChecked > 0 && verifiedCount === totalChecked;
+                  const noneCheckedVerified = totalChecked > 0 && verifiedCount === 0;
 
-                      {/* Список перевірених фотографій */}
-                      {result.photos.length > 0 && (
-                        <div>
-                          <h4 className="mb-3 text-sm font-semibold text-muted-foreground">Результати по фотографіях:</h4>
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                            {result.photos.map((photoCheck) => {
-                              const photoObj = profile?.photos.find((p) => p.id === photoCheck.photoId);
-                              const isVerified = photoCheck.match === "Verified";
-                              const isMismatch = photoCheck.match === "FaceMismatch";
+                  return (
+                    <Card className={`bg-card/95 shadow-xl ${noneCheckedVerified ? "border-amber-500/30" : "border-primary/30"}`}>
+                      <CardHeader className="text-center">
+                        <div
+                          className={`mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl ${
+                            noneCheckedVerified
+                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                              : "bg-primary/15 text-primary"
+                          }`}
+                        >
+                          {noneCheckedVerified ? <AlertTriangle className="size-9" /> : <ShieldCheck className="size-9" />}
+                        </div>
+                        <CardTitle className="text-2xl sm:text-3xl">
+                          {noneCheckedVerified
+                            ? "Нове фото не підтверджено"
+                            : allCheckedVerified
+                              ? result.isProfileVerified
+                                ? "Профіль успішно верифіковано!"
+                                : "Фото успішно підтверджено!"
+                              : "Часткове підтвердження фото"}
+                        </CardTitle>
+                        <CardDescription className="mx-auto max-w-lg text-base">
+                          {noneCheckedVerified ? (
+                            result.isProfileVerified
+                              ? "Обличчя на перевіреному фото не збіглося з вашим обличчям на камері. Проте ваш профіль залишається верифікованим за раніше підтвердженим головним фото."
+                              : "Обличчя перед камерою підтверджено як живе, але воно не збіглося з жодною перевіреною фотографією."
+                          ) : allCheckedVerified ? (
+                            result.isProfileVerified
+                              ? "Головне фото вашого профілю підтверджено. Тепер у вашій анкеті з'явилася синя позначка верифікації!"
+                              : "Всі перевірені фотографії успішно збіглися з вашим обличчям."
+                          ) : (
+                            `Успішно підтверджено ${verifiedCount} з ${totalChecked} перевірених фотографій.`
+                          )}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6 pt-2">
+                        <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+                          <Sparkles className="size-4" />
+                          <span>Впевненість живої людини (Liveness): {Math.round(result.livenessConfidence)}%</span>
+                        </div>
 
-                              return (
-                                <div
-                                  key={photoCheck.photoId}
-                                  className="relative overflow-hidden rounded-xl border bg-muted/30 p-2 text-center"
-                                >
-                                  {photoObj?.url ? (
-                                    <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted">
-                                      <img
-                                        src={photoObj.url}
-                                        alt="Фото профілю"
-                                        className="h-full w-full object-cover"
-                                      />
-                                      {photoObj.isMain && (
-                                        <Badge className="absolute top-1.5 left-1.5 text-[10px] font-medium" variant="default">
-                                          Головне
+                        {/* Список перевірених фотографій */}
+                        {result.photos.length > 0 && (
+                          <div>
+                            <h4 className="mb-3 text-sm font-semibold text-muted-foreground">Результати по фотографіях:</h4>
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                              {result.photos.map((photoCheck) => {
+                                const photoObj = profile?.photos.find((p) => p.id === photoCheck.photoId);
+                                const isVerified = photoCheck.match === "Verified";
+                                const isMismatch = photoCheck.match === "FaceMismatch";
+
+                                return (
+                                  <div
+                                    key={photoCheck.photoId}
+                                    className="relative overflow-hidden rounded-xl border bg-muted/30 p-2 text-center"
+                                  >
+                                    {photoObj?.url ? (
+                                      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted">
+                                        <img
+                                          src={photoObj.url}
+                                          alt="Фото профілю"
+                                          className="h-full w-full object-cover"
+                                        />
+                                        {photoObj.isMain && (
+                                          <Badge className="absolute top-1.5 left-1.5 text-[10px] font-medium" variant="default">
+                                            Головне
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="aspect-square w-full rounded-lg bg-muted" />
+                                    )}
+
+                                    <div className="mt-2 space-y-1">
+                                      {isVerified && (
+                                        <Badge variant="secondary" className="gap-1 border-primary/30 text-[11px] text-primary">
+                                          <Check className="size-3" />
+                                          <span>
+                                            Підтверджено ({photoCheck.similarity ? Math.min(99.9, photoCheck.similarity).toFixed(1) : "0"}%)
+                                          </span>
+                                        </Badge>
+                                      )}
+                                      {isMismatch && (
+                                        <Badge variant="destructive" className="gap-1 text-[11px]">
+                                          <X className="size-3" />
+                                          <span>
+                                            Не збігається {photoCheck.similarity ? `(${photoCheck.similarity.toFixed(1)}%)` : ""}
+                                          </span>
+                                        </Badge>
+                                      )}
+                                      {photoCheck.match === "NoFace" && (
+                                        <Badge variant="outline" className="text-[11px] text-muted-foreground">
+                                          Обличчя не видно
                                         </Badge>
                                       )}
                                     </div>
-                                  ) : (
-                                    <div className="aspect-square w-full rounded-lg bg-muted" />
-                                  )}
-
-                                  <div className="mt-2 space-y-1">
-                                    {isVerified && (
-                                      <Badge variant="secondary" className="gap-1 border-primary/30 text-[11px] text-primary">
-                                        <Check className="size-3" />
-                                        <span>Підтверджено ({Math.round(photoCheck.similarity ?? 0)}%)</span>
-                                      </Badge>
-                                    )}
-                                    {isMismatch && (
-                                      <Badge variant="destructive" className="gap-1 text-[11px]">
-                                        <X className="size-3" />
-                                        <span>Не збігається</span>
-                                      </Badge>
-                                    )}
-                                    {photoCheck.match === "NoFace" && (
-                                      <Badge variant="outline" className="text-[11px] text-muted-foreground">
-                                        Обличчя не видно
-                                      </Badge>
-                                    )}
                                   </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end">
-                        <Button variant="outline" onClick={() => setMode("intro")}>
-                          До інструкцій
-                        </Button>
-                        <Button onClick={() => navigate("/me")}>
-                          Повернутися до профілю
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
+                        <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end">
+                          <Button variant="outline" onClick={() => setMode("intro")}>
+                            До інструкцій
+                          </Button>
+                          <Button onClick={() => navigate("/me")}>
+                            Повернутися до профілю
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })() : (
                   <Card className="border-destructive/30 bg-card shadow-xl">
-                    <CardHeader className="text-center">
+                    <CardHeader className="text-center pb-2">
                       <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-destructive/15 text-destructive">
                         <AlertCircle className="size-9" />
                       </div>
-                      <CardTitle className="text-2xl">Верифікацію не пройдено</CardTitle>
-                      <CardDescription className="mx-auto max-w-md text-base">
+                      <CardTitle className="text-2xl sm:text-3xl">Верифікацію не пройдено</CardTitle>
+                      <CardDescription className="mx-auto max-w-lg text-base">
                         {result?.status === "NotLive"
-                          ? "Система не змогла підтвердити, що перед камерою знаходиться жива людина."
+                          ? "Алгоритм захисту AWS Rekognition не зміг підтвердити присутність живої людини перед камерою."
                           : result?.status === "Expired"
-                            ? "Час сесії перевірки вичерпано. Будь ласка, почніть нову спробу."
+                            ? "Час сесії перевірки вичерпано. З міркувань безпеки сесія активна обмежений час."
                             : errorMessage || "Сталася непередбачена помилка під час аналізу."}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-2">
-                      <div className="rounded-xl border bg-muted/40 p-4 text-left text-sm text-muted-foreground">
-                        <p className="font-medium text-foreground">Поради для успішної перевірки:</p>
-                        <ul className="mt-2 list-inside list-disc space-y-1">
-                          <li>Переконайтеся, що світло падає прямо на обличчя, а не світить ззаду.</li>
-                          <li>Зніміть сонцезахисні окуляри або капелюх.</li>
-                          <li>Дивіться безпосередньо у камеру та слідуйте підказкам.</li>
-                        </ul>
+                    <CardContent className="space-y-6 pt-2">
+                      {result && typeof result.livenessConfidence === "number" && (
+                        <div className="rounded-xl border border-border/80 bg-muted/30 p-4">
+                          <div className="flex items-center justify-between text-sm font-medium">
+                            <span className="flex items-center gap-2 text-foreground">
+                              <ShieldAlert className="size-4 text-destructive" />
+                              Оцінка присутності живої людини:
+                            </span>
+                            <span className="font-semibold text-destructive">
+                              {Math.round(result.livenessConfidence)}%{" "}
+                              <span className="font-normal text-muted-foreground">(потрібно ≥ 80%)</span>
+                            </span>
+                          </div>
+                          <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-destructive transition-all duration-500"
+                              style={{ width: `${Math.min(100, Math.max(4, Math.round(result.livenessConfidence)))}%` }}
+                            />
+                          </div>
+                          <p className="mt-2.5 text-xs text-muted-foreground">
+                            {result.livenessConfidence < 30
+                              ? "Низький показник свідчить про те, що перед камерою не було зафіксовано живого 3D-руху (наприклад, фото з іншого екрана, роздруківка, іграшка чи нелюдський об'єкт)."
+                              : "Показник недостатній для підтвердження. Необхідно тримати обличчя в овалі та слідувати підказкам сервісу."}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="rounded-xl border border-border/80 bg-card p-4 text-left">
+                        <h4 className="mb-3 text-sm font-semibold text-foreground">
+                          Чому система відхилила перевірку:
+                        </h4>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="flex gap-3 rounded-lg border bg-muted/20 p-3">
+                            <ScanFace className="size-5 shrink-0 text-primary mt-0.5" />
+                            <div className="text-xs">
+                              <p className="font-semibold text-foreground">Справжнє обличчя</p>
+                              <p className="mt-0.5 text-muted-foreground">
+                                Алгоритм розпізнає та блокує зображення на екранах, паперові фото, маски та сторонні предмети.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 rounded-lg border bg-muted/20 p-3">
+                            <Move className="size-5 shrink-0 text-primary mt-0.5" />
+                            <div className="text-xs">
+                              <p className="font-semibold text-foreground">Рух та дистанція</p>
+                              <p className="mt-0.5 text-muted-foreground">
+                                Плавно наближайте обличчя до овалу під час кольорового спалаху та замріть на 1-2 секунди.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 rounded-lg border bg-muted/20 p-3">
+                            <Sun className="size-5 shrink-0 text-primary mt-0.5" />
+                            <div className="text-xs">
+                              <p className="font-semibold text-foreground">Освітлення</p>
+                              <p className="mt-0.5 text-muted-foreground">
+                                Світло має падати рівномірно на обличчя. Уникайте темряви або яскравих ламп/вікон за спиною.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 rounded-lg border bg-muted/20 p-3">
+                            <CheckCircle2 className="size-5 shrink-0 text-primary mt-0.5" />
+                            <div className="text-xs">
+                              <p className="font-semibold text-foreground">Відкрите обличчя</p>
+                              <p className="mt-0.5 text-muted-foreground">
+                                Зніміть сонцезахисні окуляри, головний убір або маску та приберіть волосся з очей і чола.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                        <Info className="size-4 shrink-0 text-primary mt-0.5" />
+                        <span>
+                          <strong>Зверніть увагу:</strong> порівняння з фотографіями вашого профілю навіть не запускалося, оскільки перевірка присутності живої людини є обов'язковим першим бар'єром безпеки.
+                        </span>
                       </div>
 
                       <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
                         <Button variant="outline" onClick={() => setMode("intro")}>
-                          Назад
+                          До інструкцій
                         </Button>
                         <Button onClick={handleStartVerification} className="gap-2">
                           <RotateCcw className="size-4" />
@@ -425,7 +532,6 @@ export default function VerificationPage() {
               </div>
             )}
 
-            {/* СТАН 0: Початковий екран (Інтро / Лендинг) */}
             {mode === "intro" && (
               <>
                 <section className="grid gap-8 lg:grid-cols-[1.05fr_.95fr] lg:items-end">
@@ -512,7 +618,6 @@ export default function VerificationPage() {
                   </div>
                 </section>
 
-                {/* Блок з кнопкою старту */}
                 <div className="mt-12 flex flex-col items-start justify-between gap-4 rounded-2xl bg-primary/10 p-5 sm:flex-row sm:items-center sm:px-6">
                   <div>
                     <p className="font-semibold text-base">

@@ -1,0 +1,67 @@
+import type { LivenessDisplayText } from "@aws-amplify/ui-react-liveness";
+
+export const ukrainianLivenessDisplayText: LivenessDisplayText = {
+  // Стартовий екран та інструкції
+  startScreenBeginCheckText: "Розпочати перевірку відео",
+  hintCenterFaceText: "Розташуйте обличчя в овалі",
+  hintCenterFaceInstructionText: "Перед початком переконайтеся, що камера розташована прямо перед вами. Тримайте обличчя в овальній рамці.",
+  hintFaceOffCenterText: "Обличчя не в овалі, вирівняйте камеру",
+  hintMoveFaceFrontOfCameraText: "Подивіться прямо в камеру",
+  hintTooManyFacesText: "Перед камерою має бути лише одна людина",
+  hintFaceDetectedText: "Обличчя виявлено",
+  hintCanNotIdentifyText: "Розташуйте обличчя перед камерою",
+  hintTooCloseText: "Відсуньтеся трохи назад",
+  hintTooFarText: "Наблизьтеся трохи до камери",
+  hintConnectingText: "Підключення до сервісу...",
+  hintVerifyingText: "Перевірка...",
+  hintCheckCompleteText: "Перевірку завершено",
+  hintIlluminationTooBrightText: "Занадто яскраве світло, перейдіть у менш освітлене місце",
+  hintIlluminationTooDarkText: "Занадто темно, увімкніть світло",
+  hintIlluminationNormalText: "Освітлення в нормі",
+  hintHoldFaceForFreshnessText: "Замріть і дивіться в камеру",
+  hintMatchIndicatorText: "Наближайтеся повільно...",
+
+  // Попередження про світлочутливість
+  photosensitivityWarningHeadingText: "Попередження про світлочутливість",
+  photosensitivityWarningBodyText: "Під час перевірки екран блиматиме різними кольорами. Будьте обережні, якщо у вас світлочутливість.",
+  photosensitivityWarningInfoText: "Деякі люди можуть відчувати дискомфорт або напад при впливі мерехтливого світла. Будьте обережні, якщо у вас або у ваших родичів є епілептичні стани.",
+  photosensitivityWarningLabelText: "Докладніше про світлочутливість",
+  photosensitivyWarningHeadingText: "Попередження про світлочутливість",
+  photosensitivyWarningBodyText: "Під час перевірки екран блиматиме різними кольорами. Будьте обережні, якщо у вас світлочутливість.",
+  photosensitivyWarningInfoText: "Деякі люди можуть відчувати дискомфорт або напад при впливі мерехтливого світла.",
+  photosensitivyWarningLabelText: "Докладніше про світлочутливість",
+
+  // Камера та дозволи
+  cameraMinSpecificationsHeadingText: "Камера не відповідає вимогам",
+  cameraMinSpecificationsMessageText: "Камера має підтримувати роздільну здатність від 320x240 та 15 кадрів/сек.",
+  cameraNotFoundHeadingText: "Камера недоступна",
+  cameraNotFoundMessageText: "Переконайтеся, що камеру підключено і вона не зайнята іншою програмою. Перевірте дозволи в налаштуваннях браузера.",
+  waitingCameraPermissionText: "Очікуємо доступу до камери...",
+  retryCameraPermissionsText: "Спробувати знову",
+  recordingIndicatorText: "Запис",
+  cancelLivenessCheckText: "Скасувати",
+  goodFitCaptionText: "Правильно",
+  goodFitAltText: "Ілюстрація обличчя людини, яке розташоване точно всередині овалу.",
+  tooFarCaptionText: "Занадто далеко",
+  tooFarAltText: "Ілюстрація обличчя людини, розташованого занадто далеко від овалу.",
+  a11yVideoLabelText: "Камера для перевірки присутності живої людини",
+
+  // Помилки та повтор
+  tryAgainText: "Спробувати знову",
+  timeoutHeaderText: "Час вийшов",
+  timeoutMessageText: "Не вдалося розташувати обличчя в овалі за відведений час. Спробуйте ще раз.",
+  connectionTimeoutHeaderText: "Час очікування вичерпано",
+  connectionTimeoutMessageText: "З'єднання з сервером перервано. Перевірте інтернет та спробуйте ще раз.",
+  multipleFacesHeaderText: "Виявлено кілька облич",
+  multipleFacesMessageText: "Перед камерою повинна бути лише одна людина. Спробуйте знову.",
+  faceDistanceHeaderText: "Рух не зафіксовано",
+  faceDistanceMessageText: "Повільно наближайте обличчя до овалу. Спробуйте ще раз.",
+  clientHeaderText: "Помилка браузера",
+  clientMessageText: "Перевірте камеру та з'єднання, потім спробуйте ще раз.",
+  serverHeaderText: "Помилка зв'язку з AWS",
+  serverMessageText: "Сервіс тимчасово недоступний. Спробуйте пізніше.",
+  landscapeHeaderText: "Поверніть пристрій",
+  landscapeMessageText: "Будь ласка, тримайте пристрій у вертикальному положенні.",
+  portraitMessageText: "Будь ласка, тримайте пристрій вертикально.",
+};
+
