@@ -1199,11 +1199,12 @@ namespace EchoMatch.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("GoogleId")
                         .IsUnique()
-                        .HasFilter("[GoogleId] IS NOT NULL");
+                        .HasFilter("[GoogleId] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.ToTable("Users", (string)null);
                 });
@@ -1327,8 +1328,8 @@ namespace EchoMatch.Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Pets")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("School")
                         .HasMaxLength(100)

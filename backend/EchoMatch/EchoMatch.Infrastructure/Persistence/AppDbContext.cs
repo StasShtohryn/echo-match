@@ -37,7 +37,9 @@ public class AppDbContext : DbContext
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            // Сутність із власним фільтром (як профіль) уже врахувала IsDeleted
+            // сама; загальний фільтр її б перезаписав
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && entityType.GetQueryFilter() is null)
             {
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(BuildSoftDeleteFilter(entityType.ClrType));
             }

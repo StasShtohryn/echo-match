@@ -22,6 +22,8 @@ Basics
 - [x] Sexual Orientation
 - [x] Bio
 - [x] Occupation / Company / School
+- [ ] School picked from the ЄДЕБО registry (higher and professional pre-higher
+      education), stored as a reference, free text kept for schools abroad
 - [x] Height
 - [x] City (free text shown on the profile)
 
@@ -31,7 +33,7 @@ Lifestyle
 - [x] Family Plans
 - [x] Communication Style
 - [x] Love Style
-- [x] Pets
+- [x] Pets (several at once, up to 5, without contradictions)
 - [x] Drinking
 - [x] Smoking
 - [x] Workout

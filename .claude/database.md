@@ -150,8 +150,18 @@ User
   PasswordHash is null for accounts created through Google.
   GoogleId is null for accounts created with a password.
   Both may be set once an account is linked.
-  GoogleId has a unique index. On SQL Server EF adds a filtered index
-  (WHERE GoogleId IS NOT NULL) so that many rows may keep it null.
+  Email and GoogleId are unique among accounts that are not deleted: the
+  indexes are filtered to IsDeleted = 0 (GoogleId also to IS NOT NULL, so that
+  many rows may keep it null). A deleted account frees its email for a new
+  registration. Without the filter the soft delete filter hid the old row from
+  the "email taken" check while the index still saw it, and the insert failed
+  as a 500.
+
+  A unique violation on save becomes ConflictException in UserRepository, so a
+  race between two registrations answers 409.
+
+  The SQL Server session must run with QUOTED_IDENTIFIER ON to write to a table
+  with a filtered index. EF and SSMS do so; sqlcmd needs -I.
 
 Profile
 
@@ -165,6 +175,16 @@ UserProfile
   InstagramHandle, SpotifyHandle
   Location (owned value object: Latitude, Longitude), LastLocationUpdatedAt
   IsPrivate, FaceLivenessSessionId, LastActiveAt
+
+  Pets is a list of PetPreference stored as a JSON array of names in one
+  nvarchar(max) column, '[]' when empty (EF primitive collection). A separate
+  table would add nothing for a handful of values from a fixed enum, and
+  nothing filters by pets. Migration MultiplePetsAndDeletedUsers turned the old
+  single value 'Dog' into '["Dog"]'.
+
+  The query filter is the profile's own: !IsDeleted && !User.IsDeleted, so a
+  deleted account takes its profile out of the feed, matches and events. The
+  global soft delete filter in AppDbContext skips entities that set their own.
 
   FaceLivenessSessionId is the liveness session the person is going through
   right now (max 100), null otherwise; it ties a session to its profile and

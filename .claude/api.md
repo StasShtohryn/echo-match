@@ -21,6 +21,12 @@ POST /api/auth/login
 Both accept { email, password } and return { userId, email, accessToken }.
 Anonymous.
 
+Register answers 409 when an active account holds the email. A deleted account
+(IsDeleted) does not hold it: the same address registers again as a new
+account, and the old one with its profile stays hidden. Two registrations racing
+for one email also end in 409 for the loser, not 500 — the unique index catches
+what the check before it could not.
+
 POST /api/auth/google
 
 Body: { idToken } — the Google ID token obtained by the client.
@@ -94,6 +100,13 @@ PUT /api/profiles/me
 
 Full replacement of profile content. The client loads the profile first and
 sends every field back. A field omitted from the body is stored as null.
+
+pets is an array, up to 5 values, no duplicates: [ "Dog", "Cat" ]. Pets the
+person has (Dog, Cat, Reptile, Amphibian, Bird, Fish) combine freely; NoPets and
+DontHaveButLove contradict them and answer 400; Allergic, WantAPet and Other
+combine with anything. Omitted means [], as with every field here. Both profile
+shapes return it as an array, [] when nothing is chosen. The rule lives in
+PetPreferenceRules (Domain).
 
 city is free text the user writes about where they live, shown on both profile
 shapes. It is display text only: the feed filters by the coordinates from

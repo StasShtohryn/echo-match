@@ -194,7 +194,7 @@ namespace EchoMatch.Infrastructure.Persistence
                     FamilyPlans = Maybe<FamilyPlan>(),
                     Communication = Maybe<CommunicationStyle>(),
                     LoveLanguage = Maybe<LoveStyle>(),
-                    Pets = Maybe<PetPreference>(),
+                    Pets = RandomPets(),
                     Drinking = Maybe<DrinkingHabit>(),
                     Smoking = Maybe<SmokingHabit>(),
                     Workout = Maybe<WorkoutHabit>(),
@@ -334,6 +334,32 @@ namespace EchoMatch.Infrastructure.Persistence
             var values = Enum.GetValues<T>();
             return values[_random.Next(values.Length)];
         }
+
+        // Як у живих анкетах: хтось не вказує нічого, хтось має одну-дві тварини,
+        // хтось лише ставлення до них
+        private List<PetPreference> RandomPets()
+        {
+            var roll = _random.Next(10);
+
+            if (roll < 3)
+            {
+                return new List<PetPreference>();
+            }
+
+            if (roll < 8)
+            {
+                return PetPreferenceRules.Owned
+                    .OrderBy(_ => _random.Next())
+                    .Take(roll < 6 ? 1 : 2)
+                    .ToList();
+            }
+
+            return new List<PetPreference>
+            {
+                Pick([PetPreference.NoPets, PetPreference.DontHaveButLove, PetPreference.Allergic, PetPreference.WantAPet])
+            };
+        }
+
 
         private (string Name, GeoLocation Location) PickCity()
         {

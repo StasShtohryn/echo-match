@@ -1,5 +1,6 @@
 ﻿
 
+using EchoMatch.Domain.Enums;
 using FluentValidation;
 
 namespace EchoMatch.Application.Features.Profiles.UpdateProfile
@@ -26,7 +27,15 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
             RuleFor(x => x.FamilyPlans).IsInEnum();
             RuleFor(x => x.Communication).IsInEnum();
             RuleFor(x => x.LoveLanguage).IsInEnum();
-            RuleFor(x => x.Pets).IsInEnum();
+            RuleForEach(x => x.Pets).IsInEnum();
+            RuleFor(x => x.Pets!)
+                .Must(pets => pets.Count <= PetPreferenceRules.MaxSelected)
+                .WithMessage($"Не більше {PetPreferenceRules.MaxSelected} варіантів.")
+                .Must(pets => pets.Distinct().Count() == pets.Count)
+                .WithMessage("Варіанти не мають повторюватися.")
+                .Must(PetPreferenceRules.AreConsistent)
+                .WithMessage("«Немає тварин» не поєднується з тваринами, які є.")
+                .When(x => x.Pets is not null);
             RuleFor(x => x.Drinking).IsInEnum();
             RuleFor(x => x.Smoking).IsInEnum();
             RuleFor(x => x.Workout).IsInEnum();
