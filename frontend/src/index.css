@@ -192,3 +192,145 @@
     overflow-y: scroll;
   }
 }
+
+/* AWS Amplify Face Liveness Detector EchoMatch Theme Overrides */
+.echomatch-liveness {
+  --amplify-colors-brand-primary-80: var(--primary);
+  --amplify-colors-brand-primary-90: var(--primary);
+  --amplify-colors-brand-primary-100: var(--primary);
+  /* Concrete colors for HTML5 canvas 2D context compatibility */
+  --amplify-colors-background-primary: #ffffff;
+  --amplify-colors-background-secondary: #f8fafc;
+  --amplify-colors-border-secondary: #cbd5e1;
+  --amplify-colors-font-primary: var(--foreground);
+  --amplify-colors-font-secondary: var(--muted-foreground);
+  --amplify-radii-medium: var(--radius);
+  --amplify-radii-large: calc(var(--radius) * 1.5);
+  font-family: inherit;
+  width: 100%;
+}
+
+.dark .echomatch-liveness {
+  --amplify-colors-background-primary: #18181b;
+  --amplify-colors-background-secondary: #27272a;
+  --amplify-colors-border-secondary: #3f3f46;
+}
+
+/* Ensure detector check stretches properly and does not collapse */
+.echomatch-liveness .liveness-detector-check {
+  width: 100% !important;
+  max-width: 480px !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 1.25rem !important;
+}
+
+/* Camera module full-width responsive frame */
+.echomatch-liveness .amplify-liveness-camera-module {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 480px !important;
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  position: relative !important;
+}
+
+.echomatch-liveness .amplify-liveness-video-anchor {
+  width: 100% !important;
+  min-width: 100% !important;
+  background: transparent !important;
+}
+
+/* Position hint cleanly at the top of the camera frame */
+.echomatch-liveness .amplify-liveness-instruction-overlay {
+  padding-top: 0.75rem !important;
+}
+
+/* Initial heading above oval on start screen: clean transparent single-line text */
+.echomatch-liveness .amplify-liveness-toast--large {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0.25rem 0.5rem !important;
+  width: 100% !important;
+}
+
+.echomatch-liveness .amplify-liveness-toast--large .amplify-liveness-toast__message {
+  color: var(--foreground) !important;
+  font-size: clamp(1.05rem, 3.2vw, 1.25rem) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+/* Floating instruction toasts during detection: styled badge */
+.echomatch-liveness .amplify-liveness-toast:not(.amplify-liveness-toast--large) {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 25%, transparent) !important;
+}
+
+.echomatch-liveness .amplify-liveness-toast:not(.amplify-liveness-toast--large) .amplify-liveness-toast__message {
+  color: var(--primary-foreground) !important;
+  font-weight: 500 !important;
+}
+
+/* Primary Action Button (Start video check) */
+.echomatch-liveness .amplify-button--primary {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-radius: var(--radius) !important;
+  border: none !important;
+  font-family: inherit !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  padding: 0.75rem 2rem !important;
+  min-height: 2.75rem !important;
+  box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--primary) 30%, transparent) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+}
+
+.echomatch-liveness .amplify-button--primary:hover {
+  opacity: 0.92 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px 0 color-mix(in srgb, var(--primary) 40%, transparent) !important;
+}
+
+.echomatch-liveness .amplify-button--primary:active {
+  transform: translateY(0) !important;
+}
+
+/* Photosensitivity Warning Card - hidden for clean UI */
+.echomatch-liveness .amplify-liveness-start-screen-warning {
+  display: none !important;
+}
+
+.echomatch-liveness .amplify-liveness-start-screen-instructions__heading,
+.echomatch-liveness .amplify-liveness-start-screen-header__heading {
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  font-size: 1.25rem !important;
+  color: var(--foreground) !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.echomatch-liveness .amplify-liveness-start-screen-header__body {
+  font-family: inherit !important;
+  color: var(--muted-foreground) !important;
+  font-size: 0.9rem !important;
+}
+
+.echomatch-liveness .amplify-liveness-recording-icon {
+  background-color: var(--destructive) !important;
+}
+
+.echomatch-liveness .amplify-liveness-match-indicator__bar {
+  background-color: var(--primary) !important;
+}
