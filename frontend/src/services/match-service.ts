@@ -15,3 +15,7 @@ export async function getMatchCounts(): Promise<MatchCounts> {
   const response = await api.get<MatchCounts>("/matches/count")
   return response.data
 }
+
+export async function markMatchAsRead(matchId: string): Promise<void> {
+  await api.post(`/matches/${matchId}/seen`);
+}

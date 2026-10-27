@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router";
 import { formatDistanceStrict } from "date-fns"
 import { uk } from "date-fns/locale"
-import { CalendarDays, Clock3, MapPin, Plus, Search, Users, X } from "lucide-react"
+import { CalendarDays, Clock3, ImagePlus, MapPin, Plus, Search, Trash2, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -44,6 +44,9 @@ import type {
 } from "@/types/event.types"
 import type { DateRange } from "react-day-picker"
 import { EVENT_CATEGORY_OPTIONS, getLabel } from "@/lib/some-lookups";
+import { uploadEventCover } from "@/services/event-service"
+import { EVENT_CATEGORY_STYLES } from "@/lib/events-category-icons";
+
 
 const emptyFilters: EventFilters = { search: "", city: "", categoryId: "", from: "", to: "" }
 const fieldClass =
@@ -91,6 +94,46 @@ function toLocalDayEnd(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999).toISOString()
 }
 
+function EventCategoryCover({ category }: { category?: { code?: string; name?: string } }) {
+  const code = category?.code?.trim() || ""
+  console.log(code)
+  const name = category?.name?.trim() || ""
+  console.log(name)
+
+  // 1. Прямий пошук за кодом (наприклад, "BoardGames")
+  let style = EVENT_CATEGORY_STYLES[code]
+
+
+  // 2. Пошук без урахування регістру
+  if (!style) {
+    const matchedKey = Object.keys(EVENT_CATEGORY_STYLES).find(
+      (key) => key.toLowerCase() === code.toLowerCase() || key.toLowerCase() === name.toLowerCase()
+    )
+    if (matchedKey) style = EVENT_CATEGORY_STYLES[matchedKey]
+  }
+  console.log(style)
+  // 3. Пошук за кириличною назвою з EVENT_CATEGORY_OPTIONS (наприклад, "Настільні ігри")
+  if (!style) {
+    const entry = Object.entries(EVENT_CATEGORY_OPTIONS).find(
+      ([key, val]) => val.toLowerCase() === name.toLowerCase() || key.toLowerCase() === name.toLowerCase()
+    )
+    if (entry) {
+      style = EVENT_CATEGORY_STYLES[entry[0]]
+    }
+  }
+  console.log(style)
+  // Fallback до заглушки "Other"
+  const finalStyle = style || EVENT_CATEGORY_STYLES.Other
+  const IconComponent = finalStyle.icon
+
+  return (
+    <div className={`flex size-full items-center justify-center bg-gradient-to-br ${finalStyle.gradient}`}>
+      <IconComponent className={`size-16 transition-transform duration-500 group-hover:scale-110 ${finalStyle.textColor}`} />
+    </div>
+  )
+}
+
+
 function EventForm({
   categories,
   onClose,
@@ -107,6 +150,30 @@ function EventForm({
   const [startsAtTime, setStartsAtTime] = useState("")
   const [endsAtDate, setEndsAtDate] = useState<Date>()
   const [endsAtTime, setEndsAtTime] = useState("")
+
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      toast.add({ type: "error", title: "Будь ласка, оберіть зображення" })
+      return
+    }
+
+    setCoverFile(file)
+    setCoverPreview(URL.createObjectURL(file))
+  }
+
+  function handleRemoveCover() {
+    setCoverFile(null)
+    if (coverPreview) {
+      URL.revokeObjectURL(coverPreview)
+      setCoverPreview(null)
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -150,7 +217,22 @@ function EventForm({
 
     setIsSaving(true)
     try {
-      const created = await createEvent(request)
+      let created = await createEvent(request)
+
+      if (coverFile) {
+        try {
+          const coverUrl = await uploadEventCover(created.id, coverFile)
+          created = { ...created, coverUrl } // Присвоюємо завантажений URL обкладинки
+        } catch (uploadErr) {
+          console.error("Не вдалося завантажити фото події:", uploadErr)
+          toast.add({
+            type: "warning",
+            title: "Подію створено",
+            description: "Проте не вдалося завантажити обкладинку.",
+          })
+        }
+      }
+
       toast.add({ type: "success", title: "Подію створено" })
       onCreated(created)
     } catch (error) {
@@ -173,7 +255,7 @@ function EventForm({
         role="dialog"
       >
         <div className="mb-6 flex items-start justify-between">
-          <h2 className="font-heading text-3xl" id="create-event-title">Створи подію</h2>
+          <h2 className="font-sans text-3xl" id="create-event-title">Створи подію</h2>
           <Button aria-label="Закрити" onClick={onClose} size="icon" variant="ghost">
             <X />
           </Button>
@@ -181,6 +263,39 @@ function EventForm({
 
         <form className="min-w-0 space-y-4" onSubmit={(event) => void handleSubmit(event)}>
           <label className="block space-y-1.5 text-sm font-medium">
+            <div className="space-y-1.5 text-sm font-medium">
+              <span className="block">Обкладинка події (опціонально)</span>
+              {coverPreview ? (
+                <div className="relative h-44 w-full overflow-hidden rounded-2xl border border-border">
+                  <img src={coverPreview} alt="Прев'ю обкладинки" className="size-full object-cover" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute right-3 top-3 size-8 rounded-full shadow-md"
+                    onClick={handleRemoveCover}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="flex h-36 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted/30 p-4 transition hover:bg-muted/60">
+                  <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <ImagePlus className="size-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-foreground">Завантажити фотографію</p>
+                    <p className="text-[11px] text-muted-foreground">PNG, JPG, WEBP do 5MB</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </label>
+              )}
+            </div>
             <span className="block">Назва події</span>
             <Input
               autoFocus
@@ -366,8 +481,8 @@ function EventDetailsDialog({
             {event.coverUrl ? (
               <img alt="" className="h-56 w-full object-cover" src={event.coverUrl} />
             ) : (
-              <div className="flex h-40 items-center justify-center bg-gradient-to-br from-primary/20 via-primary/10 to-muted">
-                <CalendarDays aria-hidden="true" className="size-14 text-primary/70" />
+              <div className="h-48 w-full">
+                <EventCategoryCover category={event.category} />
               </div>
             )}
             <div className="space-y-5 p-6 sm:p-8">
@@ -582,13 +697,15 @@ function EventCardView({
       role="button"
       tabIndex={0}
     >
-      <div className="relative block h-52 w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-muted text-left">
+      <div className="relative block h-52 w-full overflow-hidden text-left">
         {event.coverUrl ? (
-          <img alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" src={event.coverUrl} />
+          <img
+            alt={event.title}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            src={event.coverUrl}
+          />
         ) : (
-          <div className="flex h-full items-center justify-center">
-            <CalendarDays aria-hidden="true" className="size-16 text-primary/50" />
-          </div>
+          <EventCategoryCover category={event.category} />
         )}
         <span className="absolute left-4 top-4 rounded-full bg-background/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm backdrop-blur">
           {getLabel(EVENT_CATEGORY_OPTIONS, event.category.name) ?? event.category.name}
