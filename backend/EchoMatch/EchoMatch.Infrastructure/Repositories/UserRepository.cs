@@ -1,6 +1,8 @@
+using EchoMatch.Application.Common.Exceptions;
 using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Domain.Entities;
 using EchoMatch.Infrastructure.Persistence;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace EchoMatch.Infrastructure.Repositories;
@@ -34,8 +36,17 @@ public class UserRepository : IUserRepository
         await _context.Users.AddAsync(user, cancellationToken);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
-        return _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        // ƒв≥ реЇстрац≥њ з одн≥Їю поштою водночас: обидв≥ пройшли перев≥рку, а
+        // ≥ндекс пропустив лише першу. ƒруга Ч конфл≥кт, а не зб≥й сервера
+        catch (DbUpdateException exception) when (exception.InnerException is SqlException { Number: 2601 or 2627 })
+        {
+            throw new ConflictException("A user with this email already exists.");
+        }
     }
 }

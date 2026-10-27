@@ -28,7 +28,7 @@ namespace EchoMatch.Application.Common.Dtos
         public FamilyPlan? FamilyPlans { get; init; }
         public CommunicationStyle? Communication { get; init; }
         public LoveStyle? LoveLanguage { get; init; }
-        public PetPreference? Pets { get; init; }
+        public required IReadOnlyList<PetPreference> Pets { get; init; }
         public DrinkingHabit? Drinking { get; init; }
         public SmokingHabit? Smoking { get; init; }
         public WorkoutHabit? Workout { get; init; }

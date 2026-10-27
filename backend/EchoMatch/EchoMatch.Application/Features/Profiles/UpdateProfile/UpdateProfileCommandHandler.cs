@@ -41,7 +41,7 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
             profile.FamilyPlans = request.FamilyPlans;
             profile.Communication = request.Communication;
             profile.LoveLanguage = request.LoveLanguage;
-            profile.Pets = request.Pets;
+            profile.Pets = request.Pets?.ToList() ?? [];
             profile.Drinking = request.Drinking;
             profile.Smoking = request.Smoking;
             profile.Workout = request.Workout;

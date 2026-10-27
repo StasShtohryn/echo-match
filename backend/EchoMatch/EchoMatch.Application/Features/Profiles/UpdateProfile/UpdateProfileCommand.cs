@@ -23,7 +23,8 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
         public FamilyPlan? FamilyPlans { get; init; }
         public CommunicationStyle? Communication { get; init; }
         public LoveStyle? LoveLanguage { get; init; }
-        public PetPreference? Pets { get; init; }
+        // Повна заміна, як і решта полів: пропущене поле очищує список
+        public IReadOnlyList<PetPreference>? Pets { get; init; }
         public DrinkingHabit? Drinking { get; init; }
         public SmokingHabit? Smoking { get; init; }
         public WorkoutHabit? Workout { get; init; }

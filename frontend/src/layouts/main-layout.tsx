@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import BottomNav from "@/components/bottom-nav";
 
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
@@ -16,7 +17,6 @@ export default function MainLayout() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Відстежуємо візит при монтуванні додатка
     trackAppVisitAndRemind(() => {
       navigate("/settings")
     })
@@ -24,7 +24,6 @@ export default function MainLayout() {
   const { isInitializing, isLoading } = useAuthStore();
   const [minSplashDone, setMinSplashDone] = useState(false);
 
-  // Показуємо сплеш, поки додаток ініціалізується або виконує логін
   const showSplash = isInitializing || isLoading || !minSplashDone;
 
   if (showSplash) {
@@ -46,6 +45,7 @@ export default function MainLayout() {
       {!isFixedLayout && (
         <Footer />
       )}
+      <BottomNav />
     </div>
   );
 }

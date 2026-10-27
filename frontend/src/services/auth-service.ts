@@ -17,6 +17,7 @@ export interface ProfilePhoto {
   url: string
   isMain: boolean
   order: number
+  isFaceVerified: boolean
 }
 
 export interface LookupItem {
@@ -65,12 +66,24 @@ export interface DiscoveryPreferences {
 
 export interface FaceVerificationSession {
   sessionId: string
+  region: string
+}
+
+export type FaceVerificationStatus = "Completed" | "NotLive" | "Expired"
+
+export type PhotoFaceMatch = "Verified" | "FaceMismatch" | "NoFace"
+
+export interface PhotoFaceCheck {
+  photoId: string
+  match: PhotoFaceMatch
+  similarity: number | null
 }
 
 export interface FaceVerificationResult {
-  status: "verified"
+  status: FaceVerificationStatus
   livenessConfidence: number
-  faceSimilarity: number
+  isProfileVerified: boolean
+  photos: PhotoFaceCheck[]
 }
 
 export interface MyProfile {
@@ -389,16 +402,10 @@ export async function createFaceVerificationSession(): Promise<FaceVerificationS
 
 export async function completeFaceVerification(
   sessionId: string,
-  referenceImage: File,
 ): Promise<FaceVerificationResult> {
-  const formData = new FormData()
-  formData.append("sessionId", sessionId)
-  formData.append("referenceImage", referenceImage)
-
   const response = await api.post<FaceVerificationResult>(
     "/profiles/me/face-verification/complete",
-    formData,
-    { headers: { "Content-Type": "multipart/form-data" } },
+    { sessionId },
   )
   return response.data
 }
