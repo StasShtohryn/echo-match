@@ -7,7 +7,7 @@ import "blobatar/gaze.css"
 import { createPortal } from "react-dom"
 import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/signalr"
 import { ArrowLeft, Bell, BellOff, CalendarDays, Camera, Check, CheckCheck, CircleX, Clock3, Eye, FileText, ImageIcon, LoaderCircle, MapPin, MessageCircle, Paperclip, Pin, PinOff, Send, Sparkles, Trash2, Users, X } from "lucide-react"
-import { Link, useNavigate, useParams } from "react-router"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
@@ -161,7 +161,9 @@ function normalizeReaction(reaction: ReactionType | number | null): ReactionType
 
 export default function MessengerPage() {
   const { matchId } = useParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const eventIdParam = searchParams.get("eventId") || searchParams.get("event")
   const user = useAuthStore((state) => state.user)
   const { ref: gazeRef, lookAt: gazeLookAt } = useGaze({ travel: 6, lookAt: "pointer" })
   const [matches, setMatches] = useState<Match[]>([])
@@ -374,6 +376,16 @@ export default function MessengerPage() {
   useEffect(() => {
     if (matchId && activeTab === "account") setEventConversationId(null)
   }, [activeTab, matchId])
+
+  useEffect(() => {
+    if (eventIdParam) {
+      selectedEventIdRef.current = eventIdParam
+      setEventConversationId(eventIdParam)
+      setActiveTab("password")
+      setEventTypingName(null)
+      setEventChatError(null)
+    }
+  }, [eventIdParam])
 
 
   useEffect(() => {
@@ -1003,6 +1015,9 @@ export default function MessengerPage() {
     setEventConversationId(null)
     setActiveTab("password")
     setEventMessages([])
+    if (searchParams.get("eventId") || searchParams.get("event")) {
+      navigate("/messenger", { replace: true })
+    }
   }
 
   async function handleSendMessage(event: React.FormEvent<HTMLFormElement>) {

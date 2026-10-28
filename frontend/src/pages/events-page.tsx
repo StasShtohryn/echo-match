@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router";
 import { formatDistanceStrict } from "date-fns"
 import { uk } from "date-fns/locale"
-import { CalendarCheck, CalendarDays, Clock3, Compass, ImagePlus, MapPin, Plus, Search, Trash2, Users, X } from "lucide-react"
+import { CalendarCheck, CalendarDays, Clock3, Compass, ImagePlus, MapPin, MessageCircle, Plus, Search, Trash2, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -656,6 +656,18 @@ function EventDetailsDialog({
               )}
               <div className="flex flex-wrap justify-end gap-3">
                 <Button onClick={onClose} variant="outline">Закрити</Button>
+                {(event.isOrganizer || event.myStatus === "Approved") && (
+                  <Button
+                    className="gap-2"
+                    onClick={() => {
+                      onClose()
+                      navigate(`/messenger?eventId=${event.id}`)
+                    }}
+                  >
+                    <MessageCircle className="size-4" />
+                    Чат події
+                  </Button>
+                )}
                 {!event.isOrganizer && event.myStatus === null && (
                   <Button disabled={busy} onClick={() => onJoin(event)}>{busy ? "Зачекайте…" : "Долучитися"}</Button>
                 )}
@@ -683,7 +695,9 @@ function EventCardView({
   onOpen: (id: string) => void
   now: Date
 }) {
+  const navigate = useNavigate()
   const isFull = event.capacity !== null && event.participantsCount >= event.capacity
+  const canAccessChat = event.isOrganizer || event.myStatus === "Approved"
 
   return (
     <article
@@ -732,7 +746,7 @@ function EventCardView({
           <p className="flex items-center gap-2"><Users className="size-4 shrink-0 text-primary" />{event.participantsCount}{event.capacity ? ` з ${event.capacity}` : ""} учасників</p>
         </div>
         <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
-          <span className="text-xs text-muted-foreground">
+          <span className="truncate text-xs text-muted-foreground">
             {event.isOrganizer ? "Ваша подія" :
               event.myStatus === "Pending" ? "Очікує підтвердження" :
                 event.myStatus === "Approved" ? "Ви долучилися" :
@@ -740,10 +754,38 @@ function EventCardView({
                     isFull && event.joinPolicy === "Open" ? "Місць немає" :
                       event.joinPolicy === "Open" ? "Вільний запис" : "За підтвердженням"}
           </span>
-          <Button onClick={(clickEvent) => {
-            clickEvent.stopPropagation()
-            onOpen(event.id)
-          }} size="sm" variant="outline">Деталі</Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              aria-label="Перейти в чат події"
+              className={cn(
+                "size-8 rounded-xl transition-colors",
+                canAccessChat
+                  ? "text-primary hover:bg-primary/15 hover:text-primary"
+                  : "text-muted-foreground/50 hover:text-foreground"
+              )}
+              onClick={(clickEvent) => {
+                clickEvent.stopPropagation()
+                if (canAccessChat) {
+                  navigate(`/messenger?eventId=${event.id}`)
+                } else {
+                  toast.add({
+                    type: "info",
+                    title: "Чат події",
+                    description: "Чат доступний тільки для підтверджених учасників та організатора.",
+                  })
+                }
+              }}
+              size="icon"
+              title={canAccessChat ? "Перейти в чат події" : "Чат доступний для учасників"}
+              variant="outline"
+            >
+              <MessageCircle className="size-4" />
+            </Button>
+            <Button onClick={(clickEvent) => {
+              clickEvent.stopPropagation()
+              onOpen(event.id)
+            }} size="sm" variant="outline">Деталі</Button>
+          </div>
         </div>
       </div>
     </article>
