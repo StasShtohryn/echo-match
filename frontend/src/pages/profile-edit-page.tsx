@@ -281,7 +281,6 @@ export default function ProfileEditPage() {
       .finally(() => setIsLoading(false))
   }, [])
 
-  // Перевірка наявності незбережених змін
   const isDirty = useMemo(() => {
     if (!initialState) return false
     const formKeys = Object.keys(form) as Array<keyof UpdateProfileRequest>
@@ -309,7 +308,6 @@ export default function ProfileEditPage() {
     return false
   }, [form, interestIds, languageIds, promptAnswers, initialState])
 
-  // Захист від випадкового закриття вкладки
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
@@ -321,7 +319,6 @@ export default function ProfileEditPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [isDirty])
 
-  // Сповіщаємо глобальний стан про наявність незбережених змін (для перемикання острівців на мобілці)
   const setHasUnsavedChanges = useUIStore((s) => s.setHasUnsavedChanges)
   useEffect(() => {
     setHasUnsavedChanges(isDirty)
@@ -560,7 +557,7 @@ export default function ProfileEditPage() {
             </p>
           </div>
 
-          {/* 1. ФОТОГРАФІЇ (ТОП-ПРІОРИТЕТ) */}
+          {/* 1. ФОТОГРАФІЇ */}
           <Card className="rounded-3xl border-border/80 shadow-xs">
             <CardHeader className="pb-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -600,7 +597,6 @@ export default function ProfileEditPage() {
                 </Attachment>
               )}
 
-              {/* Сітка слотів 6 фото */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
                 {Array.from({ length: MAX_PHOTOS }).map((_, index) => {
                   const photo = sortedPhotos[index]
@@ -623,7 +619,6 @@ export default function ProfileEditPage() {
                           className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
 
-                        {/* Головне фото бейдж */}
                         {photo.isMain && (
                           <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground shadow-sm">
                             <Star className="size-3 fill-current" />
@@ -631,7 +626,6 @@ export default function ProfileEditPage() {
                           </span>
                         )}
 
-                        {/* Верифіковано бейдж */}
                         {photo.isFaceVerified && (
                           <span
                             className="absolute top-2 right-2 rounded-full bg-background/85 p-1 text-primary shadow-xs backdrop-blur-xs"
@@ -641,7 +635,6 @@ export default function ProfileEditPage() {
                           </span>
                         )}
 
-                        {/* Нижня панель дій */}
                         <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2 text-white">
                           {!photo.isMain ? (
                             <Button
@@ -755,7 +748,6 @@ export default function ProfileEditPage() {
                   />
                 </Field>
 
-                {/* Біографія на всю ширину з лічильником символів */}
                 <Field className="md:col-span-2">
                   <div className="flex items-center justify-between">
                     <FieldLabel htmlFor="bio">Про себе</FieldLabel>
@@ -839,7 +831,6 @@ export default function ProfileEditPage() {
                   />
                 </Field>
 
-                {/* Соцмережі */}
                 <Field>
                   <FieldLabel htmlFor="instagramHandle" className="flex items-center gap-1.5">
                     <InstagramIcon className="size-3.5 text-pink-500" />
@@ -878,7 +869,6 @@ export default function ProfileEditPage() {
 
           {/* 3. АНКЕТА: СТОСУНКИ ТА СПОСІБ ЖИТТЯ */}
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Блок стосунків */}
             <Card className="rounded-3xl border-border/80 shadow-xs">
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -934,7 +924,6 @@ export default function ProfileEditPage() {
               </CardContent>
             </Card>
 
-            {/* Блок стилю життя */}
             <Card className="rounded-3xl border-border/80 shadow-xs">
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -1037,6 +1026,10 @@ export default function ProfileEditPage() {
               {[0, 1, 2].map((index) => {
                 const answer = promptAnswers[index] ?? { promptId: 0, answer: "" }
                 const isConfigured = answer.promptId > 0
+                const selectedPrompt = lookups.prompts.find((p) => p.id === answer.promptId)
+                const selectedPromptText = selectedPrompt
+                  ? ((selectedPrompt as any).question ?? (selectedPrompt as any).text ?? selectedPrompt.name)
+                  : null
 
                 return (
                   <div
@@ -1071,22 +1064,26 @@ export default function ProfileEditPage() {
 
                     <Select
                       value={answer.promptId ? String(answer.promptId) : "0"}
-                      onValueChange={(val) => {
+                      onValueChange={(value) =>
                         setPromptAnswers((current) => {
                           const next = [...current]
-                          next[index] = { ...answer, promptId: Number(val ?? 0) }
+                          next[index] = { ...answer, promptId: Number(value ?? 0) }
                           return next
                         })
-                      }}
+                      }
                     >
-                      <SelectTrigger className="w-full rounded-xl bg-muted/20 font-medium">
-                        <SelectValue placeholder="Оберіть запитання зі списку" />
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Оберіть запитання">
+                          {answer.promptId && answer.promptId !== 0
+                            ? selectedPromptText ?? answer.promptId
+                            : "Оберіть запитання"}
+                        </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="max-h-64 rounded-xl">
+                      <SelectContent>
                         <SelectItem value="0">Оберіть запитання</SelectItem>
                         {lookups.prompts.map((prompt) => (
                           <SelectItem key={prompt.id} value={String(prompt.id)}>
-                            {prompt.name}
+                            {(prompt as any).question ?? (prompt as any).text ?? prompt.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1140,7 +1137,7 @@ export default function ProfileEditPage() {
         </main>
       </ScrollArea>
 
-      {/* ПЛАВАЮЧИЙ ОСТРІВЕЦЬ ЗБЕРЕЖЕННЯ (FLOATING PILL) */}
+      {/* ПЛАВАЮЧИЙ ОСТРІВЕЦЬ ЗБЕРЕЖЕННЯ */}
       <div
         className={cn(
           "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transition-all duration-300 ease-out",
@@ -1248,9 +1245,6 @@ export default function ProfileEditPage() {
   )
 }
 
-/**
- * Компонент вибору тегів (інтереси або мови) з пошуком та підсвічуванням
- */
 function TagPickerCard({
   title,
   description,
@@ -1301,7 +1295,6 @@ function TagPickerCard({
 
       <p className="text-xs text-muted-foreground">{description}</p>
 
-      {/* Поле швидкого пошуку */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -1321,7 +1314,6 @@ function TagPickerCard({
         )}
       </div>
 
-      {/* Швидкий рядок вже обраних (якщо є) */}
       {selectedItems.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-1">
           {selectedItems.map((item) => (
@@ -1338,7 +1330,6 @@ function TagPickerCard({
         </div>
       )}
 
-      {/* Список доступних тегів */}
       <div className="flex max-h-56 flex-wrap gap-1.5 overflow-y-auto rounded-2xl border border-border/60 bg-muted/10 p-2.5">
         {filteredItems.length === 0 ? (
           <div className="py-4 text-center text-xs text-muted-foreground w-full">

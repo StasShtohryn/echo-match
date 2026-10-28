@@ -43,12 +43,6 @@ export const InfoPanel: FC<ProfileDetailsProps> = ({
   const communicationLabel = getLabel(COMMUNICATION_OPTIONS, communication);
   const petsLabel = getLabel(PET_OPTIONS, pets);
 
-  console.log(displayName)
-  console.log(orientation)
-  console.log(loveLanguage)
-  console.log(communication)
-  console.log(pets)
-
   return (
     <ScrollArea className="flex h-full w-80 shrink-0 flex-col justify-between border-l border-border/80 bg-card/55 p-6 font-sans select-none">
       <div className="space-y-4">

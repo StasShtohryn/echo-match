@@ -102,3 +102,14 @@ export async function approveEventJoinRequest(eventId: string, profileId: string
 export async function rejectEventJoinRequest(eventId: string, profileId: string): Promise<void> {
   await api.post(`/events/${eventId}/requests/${profileId}/reject`)
 }
+
+export async function uploadEventCover(eventId: string, file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const response = await api.put<{ coverUrl: string }>(`/events/${eventId}/cover`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  })
+  return response.data.coverUrl
+}

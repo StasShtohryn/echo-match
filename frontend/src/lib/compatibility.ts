@@ -381,7 +381,7 @@ export function calculateTotalScore(
     myProfile: PublicProfile,
     candidateProfile: PublicProfile
 ): number {
-    console.log("ПОЧАТОК ОБРАХУВАННЯ")
+    // console.log("ПОЧАТОК ОБРАХУВАННЯ")
 
     // 1. Отримуємо коефіцієнти (s_i від 0.0 до 1.0)
     const sGender = calculateGenderScore(myProfile, candidateProfile)
@@ -424,18 +424,18 @@ export function calculateTotalScore(
 
     // 3. Розрахунок К
     const total_weight = WEIGHT_WORKOUT + WEIGHT_SMOKING + WEIGHT_PETS + WEIGHT_ORIENTATION + WEIGHT_LOVE_LANGUAGE + WEIGHT_LOOKING_FOR + WEIGHT_LANGUAGES + WEIGHT_INTERESTS + WEIGHT_GENDER + WEIGHT_FAMILY_PLANS + WEIGHT_DRINKING + WEIGHT_COMMUNICATION
-    console.log(total_weight)
+    // console.log(total_weight)
 
     const K1 = total_weight * 0.2
     const K2 = total_weight * 0.25
 
     const K = (K1 + K2) / 2
-    console.log(K)
+    // console.log(K)
 
-    console.log(earnedScore)
+    // console.log(earnedScore)
 
     const result = ((earnedScore + K * 0.5) / (activeWeight + K)) * 100
-    console.log(result)
+    // console.log(result)
 
     return result
 }

@@ -115,7 +115,10 @@ export function SettingsSections({
             <CardContent>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Геолокація є обовʼязковою умовою для пошуку пар. Без хоча б однієї локаційної точки стрічка анкет буде порожньою. Без локації ми не зможемо розрахувати відстань та запропонувати вам найвлучніші метчі.
+                  </p>
+                  <p className="text-sm font-semibold text-muted-foreground">
                     Поточне місто:{" "}
                     <span className="font-medium text-foreground">
                       {profile.city ?? "не визначено"}

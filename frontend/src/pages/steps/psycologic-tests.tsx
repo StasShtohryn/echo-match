@@ -25,7 +25,7 @@ export default function PsychologicalQuizPage() {
   }
 
   function handleSubmit() {
-    console.log("Результати відповідей користувача:", answers)
+    // console.log("Результати відповідей користувача:", answers)
     toast.add({
       type: "success",
       title: "Відповіді зафіксовано!",

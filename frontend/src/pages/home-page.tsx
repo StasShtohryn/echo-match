@@ -11,6 +11,8 @@ import { useDiscoveryFeed } from "@/hooks/use-discovery-feed"
 import { useMatches } from "@/hooks/use-matches"
 import { Heart, Undo2 } from "lucide-react"
 import { calculateTotalScore } from "@/lib/compatibility"
+import { type Match } from "@/types/match.types"
+import { markMatchAsRead } from "@/services/match-service"
 
 const statusContent: Record<DiscoveryStatus, { title: string; description: string; action?: string }> = {
   Ready: { title: "Шукаємо пару", description: "Завантажуємо анкети для вас." },
@@ -27,6 +29,8 @@ export default function HomePage() {
   const [preferences, setPreferences] = useState<DiscoveryPreferences | null>(null)
   const [myProfile, setMyProfile] = useState<PublicProfile | null>(null)
 
+  const [matches, setMatches] = useState<Match[]>();
+
   const {
     currentCandidate,
     status,
@@ -41,8 +45,42 @@ export default function HomePage() {
     refresh,
     dismissSwipeResult,
   } = useDiscoveryFeed()
-  const { matches, isLoading: isMatchesLoading, refresh: refreshMatches } = useMatches()
 
+  const { matches: fetchedMatches, isLoading: isMatchesLoading, refresh: refreshMatches } = useMatches()
+  const [localMatches, setLocalMatches] = useState<Match[]>([])
+
+  useEffect(() => {
+    if (fetchedMatches) {
+      setLocalMatches((prevLocal) => {
+        // Мапимо нові дані з сервера, але зберігаємо local isNew, якщо його вже прочитали
+        return fetchedMatches.map((fetched) => {
+          const existing = prevLocal.find((m) => m.id === fetched.id);
+          if (existing && !existing.isNew) {
+            return { ...fetched, isNew: false, unreadCount: existing.unreadCount };
+          }
+          return fetched;
+        });
+      });
+    }
+  }, [fetchedMatches]);
+
+  const handleMatchClick = async (matchId: string) => {
+    // 1. Миттєво оновлюємо локальний стан у UI
+    setLocalMatches((prevMatches) =>
+      prevMatches.map((match) =>
+        match.id === matchId
+          ? { ...match, isNew: false, unreadCount: 0 }
+          : match
+      )
+    );
+
+    // 2. Відправляємо запит на сервер для збереження в БД
+    try {
+      await markMatchAsRead(matchId); // викликаємо сервіс
+    } catch (error) {
+      console.error("Не вдалося відмітити метч як прочитаний:", error);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true
@@ -128,11 +166,9 @@ export default function HomePage() {
 
 
 
-
-
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
-      <FilterMatchPanel matches={matches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
+      <FilterMatchPanel matches={localMatches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onMatchClick={handleMatchClick} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
       <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-muted/20 px-2 py-4">
         {showStatus ? (
           <div className="flex max-w-sm flex-1 flex-col justify-center items-center gap-4 text-center">
@@ -169,3 +205,4 @@ export default function HomePage() {
     </div>
   )
 }
+
