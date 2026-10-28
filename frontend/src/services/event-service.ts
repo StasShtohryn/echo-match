@@ -1,6 +1,7 @@
 import { api } from "@/services/api"
 import type {
   CreateEventRequest,
+  EventCard,
   EventDetails,
   EventFilters,
   EventChat,
@@ -33,6 +34,11 @@ export async function getEvents(filters: EventFilters, page = 1, limit = 12): Pr
       limit,
     },
   })
+  return response.data
+}
+
+export async function getMyEvents(): Promise<EventCard[]> {
+  const response = await api.get<EventCard[]>("/events/mine")
   return response.data
 }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router";
 import { formatDistanceStrict } from "date-fns"
 import { uk } from "date-fns/locale"
+import { CalendarCheck, CalendarDays, Clock3, Compass, MapPin, Plus, Search, Users, X } from "lucide-react"
 import { CalendarDays, Clock3, ImagePlus, MapPin, Plus, Search, Trash2, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -11,6 +12,8 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Input } from "@/components/ui/input"
 import { TimePicker } from "@/components/ui/time-picker"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "cn"
 import {
   Select,
   SelectContent,
@@ -28,6 +31,7 @@ import {
   getEventJoinRequests,
   getEventParticipants,
   getEvents,
+  getMyEvents,
   joinEvent,
   leaveEvent,
   rejectEventJoinRequest,
@@ -769,6 +773,26 @@ export default function EventsPage() {
   const [busyRequestProfileId, setBusyRequestProfileId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [now, setNow] = useState(() => new Date())
+  const [activeTab, setActiveTab] = useState<"all" | "my">("all")
+  const [myEvents, setMyEvents] = useState<EventCard[]>([])
+  const [isLoadingMyEvents, setIsLoadingMyEvents] = useState(false)
+  const [myFilter, setMyFilter] = useState<"all" | "organizer" | "member">("all")
+
+  const loadMyEvents = useCallback(async () => {
+    setIsLoadingMyEvents(true)
+    try {
+      const items = await getMyEvents()
+      setMyEvents(items)
+    } catch (error) {
+      toast.add({
+        type: "error",
+        title: "Не вдалося завантажити ваші події",
+        description: getApiErrorMessage(error, "Спробуйте оновити сторінку."),
+      })
+    } finally {
+      setIsLoadingMyEvents(false)
+    }
+  }, [])
 
   const loadEvents = useCallback(async (nextFilters: EventFilters, nextPage: number, append = false) => {
     if (append) setIsLoadingMore(true)
@@ -822,6 +846,11 @@ export default function EventsPage() {
           })
         }
       })
+    getMyEvents()
+      .then((items) => {
+        if (isMounted) setMyEvents(items)
+      })
+      .catch(() => {})
     return () => { isMounted = false }
   }, [])
 
@@ -919,7 +948,7 @@ export default function EventsPage() {
         type: "success",
         title: action === "approve" ? "Учасника прийнято" : "Заявку відхилено",
       })
-      await loadEvents(filters, page)
+      await Promise.all([loadEvents(filters, page), loadMyEvents()])
 
       try {
         setSelectedEvent(await getEvent(eventId))
@@ -950,7 +979,7 @@ export default function EventsPage() {
       if (action === "join") await joinEvent(event.id)
       else await leaveEvent(event.id)
       toast.add({ type: "success", title: action === "join" ? "Заявку надіслано" : "Участь скасовано" })
-      await loadEvents(filters, page)
+      await Promise.all([loadEvents(filters, page), loadMyEvents()])
       if (selectedEvent?.id === event.id) setSelectedEvent(await getEvent(event.id))
     } catch (error) {
       toast.add({
@@ -966,30 +995,81 @@ export default function EventsPage() {
 
   async function handleCreated(event: EventDetails) {
     setIsCreating(false)
-    await loadEvents(filters, 1)
+    await Promise.all([loadEvents(filters, 1), loadMyEvents()])
     setSelectedEvent(event)
   }
+
+  const filteredMyEvents = myEvents.filter((event) => {
+    if (myFilter === "organizer") return event.isOrganizer
+    if (myFilter === "member") return !event.isOrganizer
+    return true
+  })
 
   return (
     <div className="min-h-full flex-1 bg-gradient-to-b from-primary/[0.045] via-background to-background">
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-12">
-        <section className="relative mb-9 overflow-hidden rounded-[2rem] border border-primary/10 bg-card px-6 py-8 shadow-sm sm:px-10 sm:py-10">
-          <div className="pointer-events-none absolute -right-12 -top-24 size-72 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-            <div className="max-w-2xl">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold tracking-wide text-primary"><CalendarDays className="size-4" />ЗУСТРІЧАЙТЕСЯ НАЖИВО</p>
-              <h1 className="font-heading text-4xl leading-tight sm:text-5xl">Події, що зближують</h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-                Знайди компанію для нових вражень або створи власну зустріч.
-              </p>
-            </div>
-            <Button className="h-11 rounded-full px-5" onClick={() => setIsCreating(true)}>
-              <Plus /> Створити подію
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => {
+            const nextTab = val as "all" | "my"
+            setActiveTab(nextTab)
+            if (nextTab === "my") {
+              void loadMyEvents()
+            }
+          }}
+          className="space-y-8"
+        >
+          {/* Top Navigation & Action Bar */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <TabsList className="inline-flex h-12 sm:h-[52px] items-center gap-2 rounded-2xl sm:rounded-full border border-border/80 bg-card/80 p-1.5 shadow-xs backdrop-blur-md">
+              <TabsTrigger
+                value="all"
+                className="h-full flex items-center gap-2.5 rounded-xl sm:rounded-full px-6 py-2.5 text-sm sm:text-base font-semibold transition-all data-active:bg-primary! data-active:text-primary-foreground! dark:data-active:bg-primary! dark:data-active:text-primary-foreground! data-active:shadow-md"
+              >
+                <Compass className="size-5" />
+                <span>Усі події</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="my"
+                className="h-full flex items-center gap-2.5 rounded-xl sm:rounded-full px-6 py-2.5 text-sm sm:text-base font-semibold transition-all data-active:bg-primary! data-active:text-primary-foreground! dark:data-active:bg-primary! dark:data-active:text-primary-foreground! data-active:shadow-md"
+              >
+                <CalendarCheck className="size-5" />
+                <span>Мої події</span>
+                {myEvents.length > 0 && (
+                  <span
+                    className={cn(
+                      "ml-2 flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-bold transition-colors",
+                      activeTab === "my"
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-primary/20 text-primary"
+                    )}
+                  >
+                    {myEvents.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <Button className="h-12 sm:h-[52px] rounded-full px-6 text-sm sm:text-base font-semibold shadow-sm" onClick={() => setIsCreating(true)}>
+              <Plus className="size-5" /> Створити подію
             </Button>
           </div>
-        </section>
 
-        <form className="mb-8 grid gap-3 rounded-3xl border border-border/80 bg-card p-4 shadow-sm sm:grid-cols-[1.3fr_0.8fr_1.2fr_1.5fr_auto]" onSubmit={(event) => void handleFilterSubmit(event)}>
+          <TabsContent value="all" className="space-y-8 outline-none">
+            <section className="relative overflow-hidden rounded-[2rem] border border-primary/10 bg-card px-6 py-8 shadow-sm sm:px-10 sm:py-9">
+              <div className="pointer-events-none absolute -right-12 -top-24 size-72 rounded-full bg-primary/10 blur-3xl" />
+              <div className="relative max-w-2xl">
+                <p className="mb-2 flex items-center gap-2 text-sm font-semibold tracking-wide text-primary">
+                  <CalendarDays className="size-4" />
+                  ЗУСТРІЧАЙТЕСЯ НАЖИВО
+                </p>
+                <h1 className="font-heading text-4xl leading-tight sm:text-5xl">Події, що зближують</h1>
+                <p className="mt-2.5 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+                  Знайди компанію для нових вражень або створи власну зустріч.
+                </p>
+              </div>
+            </section>
+            <form className="grid gap-3 rounded-3xl border border-border/80 bg-card p-4 shadow-sm sm:grid-cols-[1.3fr_0.8fr_1.2fr_1.5fr_auto]" onSubmit={(event) => void handleFilterSubmit(event)}>
           <label className="relative">
             <Search aria-hidden="true" className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -1067,6 +1147,84 @@ export default function EventsPage() {
             )}
           </>
         )}
+          </TabsContent>
+
+          <TabsContent value="my" className="space-y-8 outline-none">
+            {isLoadingMyEvents ? (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }, (_, index) => (
+                  <div className="h-[25rem] animate-pulse rounded-3xl border border-border bg-card/70" key={index} />
+                ))}
+              </div>
+            ) : myEvents.length === 0 ? (
+              <section className="rounded-3xl border border-dashed border-border bg-card/60 px-6 py-16 text-center">
+                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <CalendarDays />
+                </div>
+                <h2 className="font-heading text-2xl">У вас поки немає подій</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                  Ви ще не створили жодної події та не приєдналися до інших зустрічей.
+                </p>
+                <div className="mt-5 flex justify-center gap-3">
+                  <Button variant="outline" className="rounded-full" onClick={() => setActiveTab("all")}>
+                    Знайти подію
+                  </Button>
+                  <Button className="rounded-full" onClick={() => setIsCreating(true)}>
+                    <Plus /> Створити подію
+                  </Button>
+                </div>
+              </section>
+            ) : (
+              <>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant={myFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => setMyFilter("all")}
+                    >
+                      Усі ({myEvents.length})
+                    </Button>
+                    <Button
+                      variant={myFilter === "organizer" ? "default" : "outline"}
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => setMyFilter("organizer")}
+                    >
+                      Організовані мною ({myEvents.filter((e) => e.isOrganizer).length})
+                    </Button>
+                    <Button
+                      variant={myFilter === "member" ? "default" : "outline"}
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => setMyFilter("member")}
+                    >
+                      Я беру участь ({myEvents.filter((e) => !e.isOrganizer).length})
+                    </Button>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{filteredMyEvents.length} подій</span>
+                </div>
+
+                {filteredMyEvents.length === 0 ? (
+                  <section className="rounded-3xl border border-dashed border-border bg-card/60 px-6 py-12 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {myFilter === "organizer"
+                        ? "Ви ще не створили жодної події."
+                        : "Ви ще не приєдналися до жодної події як учасник."}
+                    </p>
+                  </section>
+                ) : (
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredMyEvents.map((event) => (
+                      <EventCardView event={event} key={event.id} now={now} onOpen={(id) => void handleOpenEvent(id)} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {isCreating && <EventForm categories={categories} onClose={() => setIsCreating(false)} onCreated={(event) => void handleCreated(event)} />}
