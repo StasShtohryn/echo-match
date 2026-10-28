@@ -28,8 +28,20 @@ function SessionMonitor() {
   const hasSession = hasValidSession(user, isAuthenticated)
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      if (user?.token) {
+        if (expiresAt === null || expiresAt <= Date.now()) {
+          logout()
+          return
+        }
+        const timeout = window.setTimeout(logout, expiresAt - Date.now())
+        return () => window.clearTimeout(timeout)
+      }
+      return
+    }
+
     if (!hasSession || expiresAt === null) {
-      if (isAuthenticated || user) logout()
+      logout()
       return
     }
 
