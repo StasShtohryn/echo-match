@@ -45,7 +45,8 @@ namespace EchoMatch.Application.Features.Profiles.CreateProfile
             await _profileRepository.AddAsync(profile, cancellationToken);
             await _profileRepository.SaveChangesAsync(cancellationToken);
 
-            return profile.ToMyProfileDto();
+            // Новий профіль ще нічого не встиг
+            return profile.ToMyProfileDto(ProfileStatsDto.Empty);
         }
 
         

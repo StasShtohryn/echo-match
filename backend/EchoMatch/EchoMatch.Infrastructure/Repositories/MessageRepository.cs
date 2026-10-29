@@ -16,6 +16,18 @@ namespace EchoMatch.Infrastructure.Repositories
             _context = context;
         }
 
+        public Task<int> CountSentAsync(Guid profileId, CancellationToken cancellationToken)
+        {
+            // Та сама умова, що й у списку метчів: метч не розірвано й
+            // співрозмовник ще існує
+            return _context.Messages.CountAsync(
+                m => m.SenderProfileId == profileId
+                     && !m.Match.IsDeleted
+                     && (m.Match.ProfileOneId == profileId ? !m.Match.ProfileTwo.IsDeleted : !m.Match.ProfileOne.IsDeleted),
+                cancellationToken);
+        }
+
+
         public async Task AddAsync(Message message, CancellationToken cancellationToken)
         {
             await _context.Messages.AddAsync(message, cancellationToken);
