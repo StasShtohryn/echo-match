@@ -3,13 +3,14 @@ import { useNavigate } from "react-router"
 import PersonCard from "@/components/person-card"
 import { FilterMatchPanel } from "@/components/filter-match-panel"
 import { InfoPanel } from "@/components/info-panel"
+import { MatchModal } from "@/components/match-modal"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { getMyProfile, updateMyPreferences, type DiscoveryPreferences, type DiscoveryStatus, type PublicProfile, type UpdatePreferencesRequest } from "@/services/auth-service"
 import { useDiscoveryFeed } from "@/hooks/use-discovery-feed"
 import { useMatches } from "@/hooks/use-matches"
-import { Heart, Undo2 } from "lucide-react"
+import { Undo2 } from "lucide-react"
 import { calculateTotalScore } from "@/lib/compatibility"
 import { type Match } from "@/types/match.types"
 import { markMatchAsRead } from "@/services/match-service"
@@ -29,8 +30,6 @@ export default function HomePage() {
   const [preferences, setPreferences] = useState<DiscoveryPreferences | null>(null)
   const [myProfile, setMyProfile] = useState<PublicProfile | null>(null)
 
-  const [matches, setMatches] = useState<Match[]>();
-
   const {
     currentCandidate,
     status,
@@ -38,8 +37,8 @@ export default function HomePage() {
     isSwiping,
     isUndoing,
     canUndo,
-    error,
     lastSwipe,
+    matchedCandidate,
     swipe,
     undoLastSwipe,
     refresh,
@@ -164,8 +163,6 @@ export default function HomePage() {
   const currentStatus = statusContent[status]
   const showStatus = isLoading || !currentCandidate || status !== "Ready"
 
-
-
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
       <FilterMatchPanel matches={localMatches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onMatchClick={handleMatchClick} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
@@ -176,7 +173,6 @@ export default function HomePage() {
             {!isLoading && <p className="text-sm text-muted-foreground">{currentStatus.description}</p>}
             {!isLoading && currentStatus.action && <Button onClick={() => navigate(status === "PhotoRequired" ? "/me" : "/settings")}>{currentStatus.action}</Button>}
             {canUndo && <Button variant="outline" disabled={isUndoing || isSwiping} onClick={() => void handleUndoSwipe()}><Undo2 /> Повернути попередню анкету</Button>}
-            {/* {error && <p className="text-sm text-destructive">{getApiErrorMessage(error, "Не вдалося завантажити анкети.")}</p>} */}
           </div>
         ) : (
           <PersonCard
@@ -190,19 +186,18 @@ export default function HomePage() {
         )}
       </main>
       <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} compatibilityPercent={compatibilityScore} pets={currentCandidate?.profile.pets ?? null} orientation={currentCandidate?.profile.orientation ?? null} loveLanguage={currentCandidate?.profile.loveLanguage} communication={currentCandidate?.profile.communication} promptAnswer={currentCandidate?.profile.promptAnswers[1]} />
-      {lastSwipe?.isMatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-sm space-y-4 rounded-2xl bg-background p-6 outline text-center shadow-xl">
-            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-              <Heart className="size-8" fill="red" color="pink" />
-            </div>
-            <h2 className="font-heading text-2xl font-bold">У вас метч!</h2>
-            <p className="text-xs text-muted-foreground">Ви сподобалися одне одному.</p>
-            <Button onClick={dismissSwipeResult}>Продовжити</Button>
-          </div>
-        </div>
-      )}
+      
+      <MatchModal
+        isOpen={Boolean(lastSwipe?.isMatch)}
+        matchId={lastSwipe?.matchId ?? null}
+        partner={matchedCandidate?.profile ?? null}
+        myProfile={myProfile}
+        onClose={dismissSwipeResult}
+        onOpenChat={(id) => {
+          dismissSwipeResult()
+          navigate(`/messenger/${id}`)
+        }}
+      />
     </div>
   )
 }
-
