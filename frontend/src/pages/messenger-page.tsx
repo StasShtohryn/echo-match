@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from "react"
 import { Blobatar } from "@blobatar/react"
 import { useGaze } from "@blobatar/react/gaze"
 import { love } from "blobatar/expression"
@@ -6,7 +6,7 @@ import "blobatar/motion.css"
 import "blobatar/gaze.css"
 import { createPortal } from "react-dom"
 import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/signalr"
-import { ArrowLeft, Bell, BellOff, CalendarDays, Camera, Check, CheckCheck, CircleX, Clock3, Eye, FileText, ImageIcon, LoaderCircle, MapPin, MessageCircle, Paperclip, Pin, PinOff, Send, Sparkles, Trash2, Users, X } from "lucide-react"
+import { ArrowLeft, Bell, BellOff, CalendarDays, Camera, Check, CheckCheck, CircleX, Clock3, Eye, FileText, Heart, ImageIcon, LoaderCircle, MapPin, MessageCircle, Paperclip, Pin, PinOff, Send, Sparkles, Trash2, UserPlus, Users, X } from "lucide-react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble"
@@ -160,6 +160,80 @@ function normalizeReaction(reaction: ReactionType | number | null): ReactionType
   return REACTION_OPTIONS[reaction]?.type
 }
 
+function isSameDay(dateStr1: string, dateStr2: string): boolean {
+  const d1 = new Date(dateStr1)
+  const d2 = new Date(dateStr2)
+  return d1.getFullYear() === d2.getFullYear()
+    && d1.getMonth() === d2.getMonth()
+    && d1.getDate() === d2.getDate()
+}
+
+function formatTelegramDate(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value
+  if (isNaN(date.getTime())) return ""
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+  const diffDays = Math.round((today - targetDay) / (24 * 60 * 60 * 1000))
+
+  if (diffDays === 0) return "Сьогодні"
+  if (diffDays === 1) return "Вчора"
+
+  const isCurrentYear = date.getFullYear() === now.getFullYear()
+  return new Intl.DateTimeFormat("uk-UA", {
+    day: "numeric",
+    month: "long",
+    ...(isCurrentYear ? {} : { year: "numeric" }),
+  }).format(date)
+}
+
+function formatParticipantAction(
+  displayName: string,
+  role: "Organizer" | "Member",
+  gender?: string | null,
+): string {
+  const isFemale = gender?.toLowerCase() === "female"
+  const isMale = gender?.toLowerCase() === "male"
+
+  if (role === "Organizer") {
+    if (isFemale) return `${displayName} створила подію`
+    if (isMale) return `${displayName} створив подію`
+    return `${displayName} створив(-ла) подію`
+  }
+
+  if (isFemale) return `${displayName} приєдналася до події`
+  if (isMale) return `${displayName} приєднався до події`
+  return `${displayName} приєднався(-лася) до події`
+}
+
+function ChatDateBadge({ label }: { label: string }) {
+  return (
+    <div className="sticky top-2 z-20 my-3 flex justify-center px-3 select-none pointer-events-none">
+      <span className="pointer-events-auto inline-flex max-w-full min-w-0 items-center justify-center rounded-full bg-card/90 dark:bg-card/75 px-4 sm:px-6 py-1.5 text-[12px] font-semibold tracking-tight text-foreground/85 shadow-xs backdrop-blur-md border border-border/40 transition-colors whitespace-nowrap truncate">
+        {label}
+      </span>
+    </div>
+  )
+}
+
+function ChatSystemBadge({
+  children,
+  icon,
+}: {
+  children: React.ReactNode
+  icon?: React.ReactNode
+}) {
+  return (
+    <div className="my-2 flex w-full justify-center px-3 select-none">
+      <span className="inline-flex max-w-full min-w-0 items-center justify-center gap-2 rounded-full bg-card/85 dark:bg-card/65 px-3.5 sm:px-6 py-1.5 text-[12px] font-medium text-muted-foreground shadow-xs backdrop-blur-md border border-border/30 text-center leading-snug">
+        {icon && <span className="shrink-0">{icon}</span>}
+        <span className="min-w-0 truncate whitespace-nowrap">{children}</span>
+      </span>
+    </div>
+  )
+}
+
 export default function MessengerPage() {
   const { matchId } = useParams()
   const [searchParams] = useSearchParams()
@@ -190,6 +264,7 @@ export default function MessengerPage() {
   const [isEventDetailsLoading, setIsEventDetailsLoading] = useState(false)
   const [eventDetailsError, setEventDetailsError] = useState<string | null>(null)
   const [eventMessages, setEventMessages] = useState<EventChatMessage[]>([])
+  const [liveJoinEvents, setLiveJoinEvents] = useState<Array<{ id: string; eventId: string; profileId: string; displayName: string; sentAt: string }>>([])
   const [eventReadMarks, setEventReadMarks] = useState<EventChatReadMark[]>([])
   const [eventParticipants, setEventParticipants] = useState<EventParticipant[]>([])
   const [isEventMessagesLoading, setIsEventMessagesLoading] = useState(false)
@@ -555,6 +630,7 @@ export default function MessengerPage() {
     let cancelled = false
 
     async function loadEventConversation() {
+      setLiveJoinEvents([])
       setEventMessages([])
       setEventParticipants([])
       setEventChatError(null)
@@ -568,6 +644,7 @@ export default function MessengerPage() {
         const participants = await getEventParticipants(activeEventId)
         if (cancelled) return
         setEventParticipants(participants)
+        participants.forEach((p) => void loadPartnerProfile(p.profileId))
         setHasOlderEventMessages(page.items.length === PAGE_SIZE)
         eventMessagesScrollToBottomRef.current = true
         await markEventRead(activeEventId)
@@ -720,8 +797,22 @@ export default function MessengerPage() {
       )))
     })
 
-    connection.on("EventParticipantJoined", (event: { eventId: string; profileId: string }) => {
-      if (event.profileId === myProfileIdRef.current) void refreshEventChats()
+    connection.on("EventParticipantJoined", (event: { eventId: string; profileId: string; displayName?: string }) => {
+      if (event.profileId === myProfileIdRef.current) {
+        void refreshEventChats()
+      } else if (event.displayName) {
+        void loadPartnerProfile(event.profileId)
+        setLiveJoinEvents((prev) => [
+          ...prev,
+          {
+            id: `join-${event.profileId}-${Date.now()}`,
+            eventId: event.eventId,
+            profileId: event.profileId,
+            displayName: event.displayName!,
+            sentAt: new Date().toISOString(),
+          },
+        ])
+      }
     })
 
     connection.on("EventRequestDecided", (event: { eventId: string; status: string }) => {
@@ -1489,22 +1580,61 @@ export default function MessengerPage() {
                     <LoaderCircle className="size-4 animate-spin" /> Завантаження повідомлень...
                   </div>
                 ) : eventMessages.length === 0 ? (
-                  <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
-                    Це початок чату події. Напишіть перше повідомлення учасникам!
+                  <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
+                    <ChatSystemBadge icon={<Users className="size-3.5 text-primary" />}>
+                      {selectedEventChat?.title ? `Подія «${selectedEventChat.title}»` : "Чат події"}
+                    </ChatSystemBadge>
+                    {eventParticipants.length > 0 && (
+                      <div className="my-1 flex flex-col gap-1.5">
+                        {eventParticipants.map((p) => (
+                          <ChatSystemBadge key={`empty-join-${p.profileId}`} icon={<UserPlus className="size-3 text-muted-foreground" />}>
+                            {formatParticipantAction(p.displayName, p.role, partnerProfiles[p.profileId]?.gender)}
+                          </ChatSystemBadge>
+                        ))}
+                      </div>
+                    )}
+                    <p className="mt-2 text-xs">Це початок чату події. Напишіть перше повідомлення учасникам!</p>
                   </div>
-                ) : eventMessages.map((message) => {
-                  const readCount = eventParticipants.filter((participant) => (
-                    participant.profileId !== myProfileId
-                    && eventReadMarks.some((mark) => (
-                      mark.profileId === participant.profileId
-                      && mark.lastReadAt !== null
-                      && new Date(mark.lastReadAt).getTime() >= new Date(message.sentAt).getTime()
-                    ))
-                  )).length
-                  const otherParticipantsCount = Math.max((selectedEventChat?.participantsCount ?? 1) - 1, 0)
+                ) : (
+                  <>
+                    {!hasOlderEventMessages && (
+                      <>
+                        <ChatSystemBadge icon={<Users className="size-3.5 text-primary" />}>
+                          {selectedEventChat?.title ? `Подія «${selectedEventChat.title}»` : "Чат події"}
+                        </ChatSystemBadge>
+                        {eventParticipants.map((p) => (
+                          <ChatSystemBadge key={`init-join-${p.profileId}`} icon={<UserPlus className="size-3 text-muted-foreground" />}>
+                            {formatParticipantAction(p.displayName, p.role, partnerProfiles[p.profileId]?.gender)}
+                          </ChatSystemBadge>
+                        ))}
+                      </>
+                    )}
+                    {liveJoinEvents
+                      .filter((e) => e.eventId === eventConversationId)
+                      .map((e) => (
+                        <ChatSystemBadge key={e.id} icon={<UserPlus className="size-3 text-primary" />}>
+                          {formatParticipantAction(e.displayName, "Member", partnerProfiles[e.profileId]?.gender)}
+                        </ChatSystemBadge>
+                      ))}
+                    {eventMessages.map((message, index) => {
+                      const showDateBadge =
+                        index === 0 || !isSameDay(message.sentAt, eventMessages[index - 1].sentAt)
+                      const readCount = eventParticipants.filter((participant) => (
+                        participant.profileId !== myProfileId
+                        && eventReadMarks.some((mark) => (
+                          mark.profileId === participant.profileId
+                          && mark.lastReadAt !== null
+                          && new Date(mark.lastReadAt).getTime() >= new Date(message.sentAt).getTime()
+                        ))
+                      )).length
+                      const otherParticipantsCount = Math.max((selectedEventChat?.participantsCount ?? 1) - 1, 0)
 
-                  return (
-                    <div className={`flex items-end gap-2 ${message.isMine ? "justify-end" : "justify-start"}`} key={message.id}>
+                      return (
+                        <Fragment key={message.id}>
+                          {showDateBadge && (
+                            <ChatDateBadge label={formatTelegramDate(message.sentAt)} />
+                          )}
+                          <div className={`flex items-end gap-2 ${message.isMine ? "justify-end" : "justify-start"}`}>
                       {!message.isMine && (
                         <Link
                           aria-label={`Відкрити профіль ${message.sender.displayName}`}
@@ -1552,9 +1682,12 @@ export default function MessengerPage() {
                           </div>
                         </div>
                       )}
-                    </div>
-                  )
-                })}
+                          </div>
+                        </Fragment>
+                      )
+                    })}
+                  </>
+                )}
                 <div ref={eventMessagesEndRef} className="h-px w-full" />
               </div>
             </ScrollArea>
@@ -1810,22 +1943,36 @@ export default function MessengerPage() {
                     <LoaderCircle className="size-4 animate-spin" /> Завантаження повідомлень...
                   </div>
                 ) : visibleMessages.length === 0 ? (
-                  <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
-                    Це початок вашої розмови. Напишіть перше повідомлення!
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">
+                    <ChatSystemBadge icon={<Heart className="size-3.5 fill-rose-500 text-rose-500" />}>
+                      Ви утворили пару{selectedMatch?.createdAt ? ` • ${formatTelegramDate(selectedMatch.createdAt)}` : ""}
+                    </ChatSystemBadge>
+                    <p className="text-xs">Це початок вашої розмови. Напишіть перше повідомлення!</p>
                   </div>
-                ) : visibleMessages.map((message) => {
-                  const read = message.isMine && partnerLastReadAt !== null
-                    && new Date(message.sentAt).getTime() <= new Date(partnerLastReadAt).getTime()
-                  const myReaction = normalizeReaction(message.myReaction) ?? null
-                  const partnerReaction = normalizeReaction(message.partnerReaction) ?? null
-                  const reactions = [myReaction, partnerReaction].filter((value): value is ReactionType => value !== null)
+                ) : (
+                  <>
+                    {!hasOlderMessages && selectedMatch?.createdAt && (
+                      <ChatSystemBadge icon={<Heart className="size-3.5 fill-rose-500 text-rose-500" />}>
+                        Ви утворили пару • {formatTelegramDate(selectedMatch.createdAt)}
+                      </ChatSystemBadge>
+                    )}
+                    {visibleMessages.map((message, index) => {
+                      const showDateBadge =
+                        index === 0 || !isSameDay(message.sentAt, visibleMessages[index - 1].sentAt)
+                      const read = message.isMine && partnerLastReadAt !== null
+                        && new Date(message.sentAt).getTime() <= new Date(partnerLastReadAt).getTime()
+                      const myReaction = normalizeReaction(message.myReaction) ?? null
+                      const partnerReaction = normalizeReaction(message.partnerReaction) ?? null
+                      const reactions = [myReaction, partnerReaction].filter((value): value is ReactionType => value !== null)
 
-
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.isMine ? "justify-end" : "justify-start"} ${activeReactionMessageId === message.id ? "relative z-[45]" : ""}`}
-                    >
+                      return (
+                        <Fragment key={message.id}>
+                          {showDateBadge && (
+                            <ChatDateBadge label={formatTelegramDate(message.sentAt)} />
+                          )}
+                          <div
+                            className={`flex ${message.isMine ? "justify-end" : "justify-start"} ${activeReactionMessageId === message.id ? "relative z-[45]" : ""}`}
+                          >
                       <div className={`relative max-w-[min(78%,34rem)] ${reactions.length > 0 ? "mb-3" : ""}`}>
                         <ContextMenu
                           onOpenChange={(open) => {
@@ -1888,10 +2035,13 @@ export default function MessengerPage() {
                             )}
                           </BubbleReactions>
                         )}
-                      </div>
-                    </div>
-                  )
-                })}
+                          </div>
+                        </div>
+                      </Fragment>
+                    )
+                  })}
+                </>
+              )}
                 <div ref={messagesEndRef} className="h-px w-full" />
               </div>
             </ScrollArea>
