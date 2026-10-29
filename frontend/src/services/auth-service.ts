@@ -4,6 +4,7 @@ export interface AuthResponse {
   userId: string
   email: string
   accessToken: string
+  isEmailConfirmed: boolean
 }
 
 export interface CreateProfileRequest {
@@ -246,6 +247,15 @@ export async function registerWithPassword(
     password,
   })
   return response.data
+}
+
+export async function confirmEmail(code: string): Promise<AuthResponse> {
+  const response = await api.post<AuthResponse>("/auth/confirm-email", { code })
+  return response.data
+}
+
+export async function resendEmailCode(): Promise<void> {
+  await api.post("/auth/resend-code")
 }
 
 export async function signInWithGoogle(idToken: string): Promise<AuthResponse> {
