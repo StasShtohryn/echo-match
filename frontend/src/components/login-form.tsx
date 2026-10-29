@@ -98,6 +98,11 @@ export function LoginForm({
         provider: "local",
       })
 
+      if (!response.isEmailConfirmed) {
+        navigate("/confirm-email")
+        return
+      }
+
       await navigateAfterAuthentication()
     } catch (error: unknown) {
       const errorMessage =

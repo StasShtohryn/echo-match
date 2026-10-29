@@ -299,6 +299,11 @@ export function SignupForm({
         provider: "local",
       }, false)
 
+      if (!response.isEmailConfirmed) {
+        navigate("/confirm-email")
+        return true
+      }
+
       toast.add({
         type: "success",
         title: "Акаунт створено",
