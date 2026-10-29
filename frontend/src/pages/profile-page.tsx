@@ -211,13 +211,15 @@ export default function ProfilePage() {
   const mainPhoto = profile?.photos.find((photo) => photo.isMain) ?? profile?.photos[0]
   const profilePicture = mainPhoto?.url ?? user.picture
 
-  console.log(profile?.createdAt);
+  // console.log(profile?.createdAt);
 
   const photos = profile?.photos ? [...profile.photos].sort((a, b) => {
     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
     return a.order - b.order;
   }) : [];
   const count = photos.length;
+  const verifiedPhotosCount = photos.filter((photo) => photo.isFaceVerified).length;
+  const hasUnverifiedPhotos = verifiedPhotosCount < count;
 
 
   return (
@@ -227,11 +229,11 @@ export default function ProfilePage() {
           <div className="mb-6 flex flex-col items-start justify-between gap-2 sm:flex-row">
             <h1 className="text-2xl font-semibold">Особистий Кабінет</h1>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/me/edit")}>
+              <Button variant="default" size="sm" onClick={() => navigate("/me/edit")}>
                 <Edit className="mr-2 size-4" />
                 Редагувати
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
+              <Button variant="default" size="sm" onClick={() => navigate("/settings")}>
                 <Settings className="mr-2 size-4" />
                 Налаштування
               </Button>
@@ -282,9 +284,32 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-muted-foreground font-medium">Верифікація</span>
                       {profile?.isFaceVerified ? (
-                        <Badge variant="secondary" className="text-xs">
-                          Верифіковано
-                        </Badge>
+                        hasUnverifiedPhotos ? (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge
+                                variant="secondary"
+                                className="cursor-pointer gap-1 text-xs text-primary transition-colors hover:bg-primary/15"
+                                onClick={() => navigate("/verification")}
+                              >
+                                <BadgeCheck className="size-3.5" />
+                                <span>
+                                  Верифіковано ({verifiedPhotosCount}/{count})
+                                </span>
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-64">
+                              <p>
+                                Головне фото підтверджено. Натисніть, щоб верифікувати решту фото ({verifiedPhotosCount}/{count}).
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Badge variant="secondary" className="gap-1 text-xs text-primary">
+                            <BadgeCheck className="size-3.5" />
+                            <span>Верифіковано</span>
+                          </Badge>
+                        )
                       ) : (
                         <Button
                           variant="outline"
@@ -337,6 +362,11 @@ export default function ProfilePage() {
                           setLightboxIndex(0);
                         }} className="aspect-[4/5] relative overflow-hidden rounded-2xl">
                         <img src={photos[0].url} alt="Main photo" className="size-full object-cover" />
+                        {photos[0].isFaceVerified && (
+                          <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                            <BadgeCheck className="size-4" />
+                          </span>
+                        )}
                       </button>
                     </div>
                   )}
@@ -353,6 +383,11 @@ export default function ProfilePage() {
                             setLightboxIndex(index);
                           }} className="aspect-square relative overflow-hidden rounded-2xl">
                           <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                          {photo.isFaceVerified && (
+                            <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                              <BadgeCheck className="size-4" />
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -370,6 +405,11 @@ export default function ProfilePage() {
                             setLightboxIndex(index);
                           }} className="aspect-square relative overflow-hidden rounded-2xl">
                           <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                          {photo.isFaceVerified && (
+                            <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                              <BadgeCheck className="size-4" />
+                            </span>
+                          )}
                         </button>
                       ))}
                       {uploadingPhoto && (
@@ -412,6 +452,11 @@ export default function ProfilePage() {
                         className="aspect-square relative overflow-hidden rounded-2xl"
                       >
                         <img src={photos[0].url} alt="Photo 1" className="size-full object-cover" />
+                        {photos[0].isFaceVerified && (
+                          <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                            <BadgeCheck className="size-4" />
+                          </span>
+                        )}
                       </button>
                       <button
                         type="button"
@@ -422,6 +467,11 @@ export default function ProfilePage() {
                         className="aspect-square relative overflow-hidden rounded-2xl"
                       >
                         <img src={photos[1].url} alt="Photo 2" className="size-full object-cover" />
+                        {photos[1].isFaceVerified && (
+                          <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                            <BadgeCheck className="size-4" />
+                          </span>
+                        )}
                       </button>
                       <button
                         type="button"
@@ -432,6 +482,11 @@ export default function ProfilePage() {
                         className="aspect-square relative overflow-hidden rounded-2xl"
                       >
                         <img src={photos[2].url} alt="Photo 3" className="size-full object-cover" />
+                        {photos[2].isFaceVerified && (
+                          <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                            <BadgeCheck className="size-4" />
+                          </span>
+                        )}
                       </button>
 
                       {/* Блок 2х2 для решти фото */}
@@ -449,6 +504,11 @@ export default function ProfilePage() {
                               className="aspect-square relative overflow-hidden rounded-xl"
                             >
                               <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                              {photo.isFaceVerified && (
+                                <span className="absolute top-1.5 right-1.5 rounded-full bg-background/80 p-0.5 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                                  <BadgeCheck className="size-3.5" />
+                                </span>
+                              )}
                             </button>
                           );
                         })}

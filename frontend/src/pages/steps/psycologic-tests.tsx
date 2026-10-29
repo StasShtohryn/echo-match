@@ -25,14 +25,14 @@ export default function PsychologicalQuizPage() {
   }
 
   function handleSubmit() {
-    console.log("Результати відповідей користувача:", answers)
+    // console.log("Результати відповідей користувача:", answers)
     toast.add({
       type: "success",
       title: "Відповіді зафіксовано!",
       description: "Ваші відповіді допоможуть нам покращити підбір кандидатів для Вас!",
     })
 
-    navigate('/')
+    navigate('/me')
   }
 
 
@@ -47,10 +47,10 @@ export default function PsychologicalQuizPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/me")}
               className="text-muted-foreground hover:text-foreground"
             >
-              Назад
+              Перейти до профілю
             </Button>
             <h1 className="text-xl font-bold tracking-tight">Психологічний тест особистості</h1>
           </div>

@@ -23,6 +23,7 @@ export interface AiSuggestions {
 }
 
 export type AiSuggestionKind = "FirstMessage" | "Reply"
+export type MessageTone = "Friendly" | "Playful" | "Flirty" | "Sincere"
 
 export interface ChatMessageEvent {
   matchId: string
@@ -70,9 +71,11 @@ export async function sendMessage(matchId: string, text: string): Promise<ChatMe
 export async function suggestMessages(
   matchId: string,
   kind: AiSuggestionKind,
+  tone?: MessageTone,
 ): Promise<AiSuggestions> {
   const response = await api.post<AiSuggestions>(`/matches/${matchId}/ai/suggestions`, {
     kind,
+    tone: tone || undefined,
   })
   return response.data
 }

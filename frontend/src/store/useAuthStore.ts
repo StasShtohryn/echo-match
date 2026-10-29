@@ -24,6 +24,8 @@ export function hasValidSession(user: AuthUser | null, isAuthenticated: boolean)
 interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isInitializing: boolean;
+  isLoading: boolean;
   profiles: Record<string, Pick<AuthUser, "name" | "picture">>;
 
   login: (userData: {
@@ -38,16 +40,22 @@ interface AuthState {
   }, authenticate?: boolean) => void;
 
   logout: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
+
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      isInitializing: true,
+      isLoading: false,
       profiles: {},
 
       login: (userData, authenticate = true) => {
+        set({ isLoading: true });
+
         const id = userData.userId ?? userData.id ?? "";
         const savedProfile = id ? get().profiles[id] : undefined;
         const user: AuthUser = {
@@ -62,14 +70,15 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({
           user,
           isAuthenticated: authenticate,
+          isLoading: false,
           profiles: user.name || user.picture
             ? {
-                ...state.profiles,
-                [id]: {
-                  name: user.name,
-                  picture: user.picture,
-                },
-              }
+              ...state.profiles,
+              [id]: {
+                name: user.name,
+                picture: user.picture,
+              },
+            }
             : state.profiles,
         }));
       },
@@ -78,10 +87,19 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: null,
           isAuthenticated: false,
+          isLoading: false,
+        }),
+      setHasHydrated: (state: boolean) =>
+        set({
+          isInitializing: !state,
         }),
     }),
     {
       name: "auth-storage",
+      onRehydrateStorage: () => (state) => {
+        // Після того як Zustand підтягне дані з LocalStorage, вимикаємо isInitializing
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

@@ -48,6 +48,72 @@ export interface EventJoinRequest {
   requestedAt: string
 }
 
+export interface EventParticipant {
+  profileId: string
+  displayName: string
+  age: number
+  mainPhotoUrl: string | null
+  isFaceVerified: boolean
+  role: "Organizer" | "Member"
+}
+
+export interface EventChat {
+  id: string
+  title: string
+  startsAt: string
+  city: string
+  coverUrl: string | null
+  participantsCount: number
+  isOrganizer: boolean
+  myStatus: EventParticipantStatus | null
+  cancelledAt: string | null
+  lastMessage: {
+    text: string
+    sentAt: string
+    senderDisplayName: string
+    isMine: boolean
+  } | null
+  unreadCount: number
+}
+
+export interface EventChatMessage {
+  id: string
+  sequence: number
+  sender: {
+    profileId: string
+    displayName: string
+    mainPhotoUrl: string | null
+  }
+  isMine: boolean
+  text: string
+  sentAt: string
+}
+
+export interface EventChatMessagePage {
+  items: EventChatMessage[]
+  readMarks: EventChatReadMark[]
+}
+
+export interface EventChatReadMark {
+  profileId: string
+  lastReadAt: string | null
+}
+
+export interface EventChatMessageReceived {
+  eventId: string
+  id: string
+  sequence: number
+  sender: EventChatMessage["sender"]
+  text: string
+  sentAt: string
+}
+
+export interface EventChatMessagesRead {
+  eventId: string
+  readerProfileId: string
+  readAt: string
+}
+
 export interface LookupItem {
   id: number
   code: string

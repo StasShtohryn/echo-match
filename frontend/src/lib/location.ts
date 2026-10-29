@@ -41,7 +41,7 @@ async function getCity(latitude: number, longitude: number): Promise<string> {
   })
 
   if (!response.ok) {
-    throw new Error(`OpenStreetMap returned HTTP ${response.status}.`)
+    throw new Error(`OpenStreetMap повернув помилку HTTP ${response.status}.`)
   }
 
   const result: ReverseGeocodeResponse = await response.json()
@@ -54,7 +54,7 @@ async function getCity(latitude: number, longitude: number): Promise<string> {
   ].find((value) => value?.trim())
 
   if (!city) {
-    throw new Error("No settlement was found for these coordinates.")
+    throw new Error("Не знайдено населеного пункту за цими координатами.")
   }
 
   return city.trim().slice(0, 100)
@@ -62,7 +62,7 @@ async function getCity(latitude: number, longitude: number): Promise<string> {
 
 export async function saveMyLocation(latitude: number, longitude: number): Promise<void> {
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
-      !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
     throw new Error("Вкажіть коректні координати.")
   }
 
@@ -78,35 +78,32 @@ export async function saveMyLocation(latitude: number, longitude: number): Promi
   await updateMyLocation(latitude, longitude, city)
 }
 
-export function updateLocationAfterAuthentication() {
+
+
+export async function updateLocationFromDevice(): Promise<void> {
   if (!navigator.geolocation) {
-    showLocationError("Браузер не підтримує визначення місцезнаходження.")
-    return
+    throw new Error("Браузер не підтримує визначення місцезнаходження.")
   }
 
-  navigator.geolocation.getCurrentPosition(
-    ({ coords }) => {
-      void saveMyLocation(coords.latitude, coords.longitude).catch((error: unknown) => {
-        toast.add({
-          type: "error",
-          title: "Не вдалося зберегти геолокацію",
-          description: getApiErrorMessage(error, "Спробуйте ще раз."),
-        })
-      })
-    },
-    (error) => {
-      const description = error.code === error.PERMISSION_DENIED
-        ? "Дозвольте доступ до геолокації в налаштуваннях браузера та спробуйте знову."
-        : error.code === error.POSITION_UNAVAILABLE
-          ? "Браузер не зміг визначити ваше місцезнаходження."
-          : "Час очікування геолокації минув. Спробуйте ще раз."
+  const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (error) => {
+        const description = error.code === error.PERMISSION_DENIED
+          ? "Дозвольте доступ до геолокації в налаштуваннях браузера та спробуйте знову."
+          : error.code === error.POSITION_UNAVAILABLE
+            ? "Браузер не зміг визначити ваше місцезнаходження."
+            : "Час очікування геолокації минув. Спробуйте ще раз."
 
-      showLocationError(description)
-    },
-    {
-      enableHighAccuracy: false,
-      maximumAge: 0,
-      timeout: 10000,
-    },
-  )
+        reject(new Error(description))
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000,
+      },
+    )
+  })
+
+  await saveMyLocation(position.coords.latitude, position.coords.longitude)
 }

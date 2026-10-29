@@ -1,9 +1,14 @@
 import { api } from "@/services/api"
 import type {
   CreateEventRequest,
+  EventCard,
   EventDetails,
   EventFilters,
+  EventChat,
+  EventChatMessage,
+  EventChatMessagePage,
   EventJoinRequest,
+  EventParticipant,
   EventCategory,
   EventsPage,
 } from "@/types/event.types"
@@ -32,6 +37,36 @@ export async function getEvents(filters: EventFilters, page = 1, limit = 12): Pr
   return response.data
 }
 
+export async function getMyEvents(): Promise<EventCard[]> {
+  const response = await api.get<EventCard[]>("/events/mine")
+  return response.data
+}
+
+export async function getMyEventChats(): Promise<EventChat[]> {
+  const response = await api.get<EventChat[]>("/events/mine")
+  return response.data.filter((event) => event.myStatus === "Approved")
+}
+
+export async function getEventMessages(
+  eventId: string,
+  before?: number,
+  limit = 30,
+): Promise<EventChatMessagePage> {
+  const response = await api.get<EventChatMessagePage>(`/events/${eventId}/messages`, {
+    params: { before, limit },
+  })
+  return response.data
+}
+
+export async function sendEventMessage(eventId: string, text: string): Promise<EventChatMessage> {
+  const response = await api.post<EventChatMessage>(`/events/${eventId}/messages`, { text })
+  return response.data
+}
+
+export async function markEventMessagesRead(eventId: string): Promise<void> {
+  await api.post(`/events/${eventId}/messages/read`)
+}
+
 export async function getEvent(id: string): Promise<EventDetails> {
   const response = await api.get<EventDetails>(`/events/${id}`)
   return response.data
@@ -55,10 +90,26 @@ export async function getEventJoinRequests(id: string): Promise<EventJoinRequest
   return response.data
 }
 
+export async function getEventParticipants(id: string): Promise<EventParticipant[]> {
+  const response = await api.get<EventParticipant[]>(`/events/${id}/participants`)
+  return response.data
+}
+
 export async function approveEventJoinRequest(eventId: string, profileId: string): Promise<void> {
   await api.post(`/events/${eventId}/requests/${profileId}/approve`)
 }
 
 export async function rejectEventJoinRequest(eventId: string, profileId: string): Promise<void> {
   await api.post(`/events/${eventId}/requests/${profileId}/reject`)
+}
+
+export async function uploadEventCover(eventId: string, file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const response = await api.put<{ coverUrl: string }>(`/events/${eventId}/cover`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  })
+  return response.data.coverUrl
 }

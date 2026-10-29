@@ -22,9 +22,10 @@ import { jwtDecode } from "jwt-decode"
 import type { GoogleJwtPayload } from "@/types/auth.types"
 import { useEffect, useState } from "react"
 import { getApiErrorMessage } from "@/lib/api-error"
-import { updateLocationAfterAuthentication } from "@/lib/location"
 import {
   createProfile as submitProfile,
+  getMyProfile,
+  loginWithPassword,
   registerWithPassword,
   signInWithGoogle,
   uploadProfilePhoto,
@@ -43,6 +44,7 @@ import {
   QuestionnaireTitle,
 } from "@/components/ui/questionnaire"
 import { WelcomeOnboardingDialog } from "./welcome-component"
+import { Eye, EyeOff } from "lucide-react"
 
 type RegistrationStep = "account" | "profile"
 
@@ -149,38 +151,52 @@ export function SignupForm({
     ? onboardingQuestionnaireItems
     : allQuestionnaireItems
 
-  const [step, setStep] = useState<RegistrationStep>(
-    isOnboarding ? "profile" : "account"
-  )
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    name: "",
-    birthDate: "",
-    gender: "",
-    avatarUrl: "",
-    avatarFile: null as File | null,
-  })
-  const [showAccountErrors, setShowAccountErrors] = useState(false)
-
   const navigate = useNavigate()
   const login = useAuthStore((state) => state.login)
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const hasSession = hasValidSession(user, isAuthenticated)
+
+  const isPendingRegistration = Boolean(user?.id && user?.token && !isAuthenticated)
+
+  const [step, setStep] = useState<RegistrationStep>(
+    isOnboarding || isPendingRegistration ? "profile" : "account"
+  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState({
+    email: user && !isAuthenticated ? user.email : "",
+    password: "",
+    confirmPassword: "",
+    name: user?.name ?? "",
+    birthDate: "",
+    gender: "",
+    avatarUrl: user?.picture ?? "",
+    avatarFile: null as File | null,
+  })
+  const [showAccountErrors, setShowAccountErrors] = useState(false)
+
   const accountErrors = getAccountErrors(formData)
   const profileErrors = getProfileErrors(formData)
   const [showProfileErrors, setShowProfileErrors] = useState(false)
 
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   useEffect(() => {
-    if (isOnboarding) {
+    if (isOnboarding || isPendingRegistration) {
       setStep("profile")
+      if (user?.email && !formData.email) {
+        setFormData((previous) => ({
+          ...previous,
+          email: user.email,
+          name: previous.name || user.name || "",
+          avatarUrl: previous.avatarUrl || user.picture || "",
+        }))
+      }
     }
-  }, [isOnboarding])
+  }, [isOnboarding, isPendingRegistration])
 
   if (hasSession && !isOnboarding && !showWelcomeModal) {
     return <Navigate to="/tests" replace />
@@ -199,6 +215,7 @@ export function SignupForm({
         name: decoded.name,
         avatarUrl: decoded.picture ?? "",
       }))
+
       login({
         userId: response.userId,
         email: response.email,
@@ -207,7 +224,37 @@ export function SignupForm({
         picture: decoded.picture,
         provider: "google",
       }, false)
-      setStep("profile")
+
+      let hasProfile = false
+      try {
+        await getMyProfile()
+        hasProfile = true
+      } catch (profileError: unknown) {
+        const is404 =
+          profileError && typeof profileError === "object" && "response" in profileError &&
+          profileError.response && typeof profileError.response === "object" &&
+          "status" in profileError.response && profileError.response.status === 404
+
+        if (is404) {
+          hasProfile = false
+        } else {
+          throw profileError
+        }
+      }
+
+      if (hasProfile) {
+        login({
+          userId: response.userId,
+          email: response.email,
+          accessToken: response.accessToken,
+          name: decoded.name,
+          picture: decoded.picture,
+          provider: "google",
+        }, true)
+        navigate("/me")
+      } else {
+        setStep("profile")
+      }
     } catch (error: unknown) {
       toast.add({
         type: "error",
@@ -222,7 +269,23 @@ export function SignupForm({
 
     const accountErrors = getAccountErrors(formData)
     if (Object.keys(accountErrors).length > 0) {
+      const firstError = Object.values(accountErrors)[0]
+      toast.add({
+        type: "error",
+        title: "Заповніть обов'язкові поля",
+        description: firstError,
+      })
       return false
+    }
+
+    if (
+      user?.id &&
+      user?.token &&
+      !isAuthenticated &&
+      user.email.toLowerCase() === formData.email.trim().toLowerCase()
+    ) {
+      setStep("profile")
+      return true
     }
 
     setIsSubmitting(true)
@@ -235,15 +298,72 @@ export function SignupForm({
         accessToken: response.accessToken,
         provider: "local",
       }, false)
+
+      toast.add({
+        type: "success",
+        title: "Акаунт створено",
+        description: "Тепер заповніть інформацію про профіль.",
+      })
+
       setStep("profile")
       return true
     } catch (error: unknown) {
-      const errorMessage =
+      const isConflict =
         error && typeof error === "object" && "response" in error &&
-          error.response && typeof error.response === "object" &&
-          "status" in error.response && error.response.status === 409
-          ? "Користувач з такою поштою вже існує"
-          : getApiErrorMessage(error, "Щось пішло не так")
+        error.response && typeof error.response === "object" &&
+        "status" in error.response && error.response.status === 409
+
+      if (isConflict) {
+        try {
+          const loginResponse = await loginWithPassword(formData.email, formData.password)
+
+          login({
+            userId: loginResponse.userId,
+            email: loginResponse.email,
+            accessToken: loginResponse.accessToken,
+            provider: "local",
+          }, false)
+
+          let hasProfile = false
+          try {
+            await getMyProfile()
+            hasProfile = true
+          } catch (profileError: unknown) {
+            const is404 =
+              profileError && typeof profileError === "object" && "response" in profileError &&
+              profileError.response && typeof profileError.response === "object" &&
+              "status" in profileError.response && profileError.response.status === 404
+            if (is404) {
+              hasProfile = false
+            } else {
+              throw profileError
+            }
+          }
+
+          if (!hasProfile) {
+            toast.add({
+              type: "info",
+              title: "Акаунт знайдено",
+              description: "Заповніть інформацію про профіль, щоб завершити реєстрацію.",
+            })
+            setStep("profile")
+            return true
+          } else {
+            login({
+              userId: loginResponse.userId,
+              email: loginResponse.email,
+              accessToken: loginResponse.accessToken,
+              provider: "local",
+            }, true)
+            navigate("/me")
+            return true
+          }
+        } catch {}
+      }
+
+      const errorMessage = isConflict
+        ? "Користувач з такою поштою вже існує"
+        : getApiErrorMessage(error, "Щось пішло не так")
 
       toast.add({
         type: "error",
@@ -255,10 +375,17 @@ export function SignupForm({
       setIsSubmitting(false)
     }
   }
+
   async function createProfile() {
     setShowProfileErrors(true)
 
     if (Object.keys(profileErrors).length > 0) {
+      const firstError = Object.values(profileErrors)[0]
+      toast.add({
+        type: "error",
+        title: "Заповніть інформацію профілю",
+        description: firstError,
+      })
       return
     }
 
@@ -273,25 +400,38 @@ export function SignupForm({
 
     setIsSubmitting(true)
     try {
-      await submitProfile(
-        {
+      try {
+        await submitProfile({
           displayName: formData.name,
           dateOfBirth: formData.birthDate,
           gender: formData.gender,
-        },
-      )
-      const uploadedPhoto = await uploadProfilePhoto(formData.avatarFile as File)
+        })
+      } catch (profileError: unknown) {
+        const isConflict =
+          profileError && typeof profileError === "object" && "response" in profileError &&
+          profileError.response && typeof profileError.response === "object" &&
+          "status" in profileError.response && profileError.response.status === 409
+        if (!isConflict) {
+          throw profileError
+        }
+      }
+
+      let pictureUrl = formData.avatarUrl
+      if (formData.avatarFile) {
+        const uploadedPhoto = await uploadProfilePhoto(formData.avatarFile)
+        pictureUrl = uploadedPhoto.url
+      }
+
+      setShowWelcomeModal(true)
 
       login({
         userId: user.id,
         email: user.email,
         accessToken: user.token,
         name: formData.name,
-        picture: uploadedPhoto.url,
+        picture: pictureUrl,
         provider: user.provider,
       })
-      updateLocationAfterAuthentication()
-      setShowWelcomeModal(true)
     } catch (error: unknown) {
       toast.add({
         type: "error",
@@ -347,7 +487,7 @@ export function SignupForm({
         />
         {!isOnboarding && (
           <QuestionnaireItem name="account" required>
-            <QuestionnaireTitle>Створіть обліковий запис</QuestionnaireTitle>
+            <QuestionnaireTitle className="text-2xl font-bold font-sans">Створіть обліковий запис</QuestionnaireTitle>
             <QuestionnaireDescription>
               Спочатку введіть email і пароль.
             </QuestionnaireDescription>
@@ -373,46 +513,78 @@ export function SignupForm({
                   required
                 />
               </Field>
+
               <Field>
                 <FieldLabel htmlFor="password">Пароль</FieldLabel>
-                <QuestionnaireInput
-                  id="password"
-                  type="password"
-                  minLength={8}
-                  value={formData.password}
-                  onChange={(event) =>
-                    setFormData({ ...formData, password: event.target.value })
-                  }
-                  aria-invalid={showAccountErrors && !!accountErrors.password}
-                  className={cn(
-                    "bg-card shadow-sm",
-                    showAccountErrors && accountErrors.password &&
-                    "border-destructive ring-3 ring-destructive/20"
-                  )}
-                  required
-                />
+                <div className="relative">
+                  <QuestionnaireInput
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    minLength={8}
+                    value={formData.password}
+                    onChange={(event) =>
+                      setFormData({ ...formData, password: event.target.value })
+                    }
+                    aria-invalid={showAccountErrors && !!accountErrors.password}
+                    className={cn(
+                      "bg-card shadow-sm pr-10",
+                      showAccountErrors &&
+                      accountErrors.password &&
+                      "border-destructive ring-3 ring-destructive/20"
+                    )}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                    aria-label={showPassword ? "Приховати пароль" : "Показати пароль"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
                 <FieldDescription>
                   8+ символів, велика і мала літери та цифра.
                 </FieldDescription>
               </Field>
+
               <Field>
                 <FieldLabel htmlFor="confirm-password">Підтвердіть пароль</FieldLabel>
-                <QuestionnaireInput
-                  id="confirm-password"
-                  type="password"
-                  minLength={8}
-                  value={formData.confirmPassword}
-                  onChange={(event) =>
-                    setFormData({ ...formData, confirmPassword: event.target.value })
-                  }
-                  aria-invalid={showAccountErrors && !!accountErrors.confirmPassword}
-                  className={cn(
-                    "bg-card shadow-sm",
-                    showAccountErrors && accountErrors.confirmPassword &&
-                    "border-destructive ring-3 ring-destructive/20"
-                  )}
-                  required
-                />
+                <div className="relative">
+                  <QuestionnaireInput
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    minLength={8}
+                    value={formData.confirmPassword}
+                    onChange={(event) =>
+                      setFormData({ ...formData, confirmPassword: event.target.value })
+                    }
+                    aria-invalid={showAccountErrors && !!accountErrors.confirmPassword}
+                    className={cn(
+                      "bg-card shadow-sm pr-10",
+                      showAccountErrors &&
+                      accountErrors.confirmPassword &&
+                      "border-destructive ring-3 ring-destructive/20"
+                    )}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                    aria-label={showConfirmPassword ? "Приховати пароль" : "Показати пароль"}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
               </Field>
             </FieldGroup>
             <QuestionnaireError />
@@ -420,7 +592,7 @@ export function SignupForm({
         )}
 
         <QuestionnaireItem name="profile" required>
-          <QuestionnaireTitle>Заповніть профіль</QuestionnaireTitle>
+          <QuestionnaireTitle className="text-2xl font-bold font-sans">Заповніть профіль</QuestionnaireTitle>
           <QuestionnaireDescription>
             Додайте дані про себе, щоб завершити реєстрацію.
           </QuestionnaireDescription>

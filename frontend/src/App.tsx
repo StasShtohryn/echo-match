@@ -15,6 +15,10 @@ import TestPage from "./pages/steps/test-page.tsx"
 import PsychologicalQuizPage from "./pages/steps/psycologic-tests.tsx"
 import VerificationPage from "./pages/verification-page.tsx"
 import EventsPage from "./pages/events-page.tsx"
+import PublicProfilePage from "./pages/public-profile-page.tsx"
+import AboutPage from "./pages/footer/about-page.tsx"
+import ContactPage from "./pages/footer/contacts-page.tsx"
+import PrivacyPage from "./pages/footer/privacy-policy-page.tsx"
 
 function SessionMonitor() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -24,8 +28,20 @@ function SessionMonitor() {
   const hasSession = hasValidSession(user, isAuthenticated)
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      if (user?.token) {
+        if (expiresAt === null || expiresAt <= Date.now()) {
+          logout()
+          return
+        }
+        const timeout = window.setTimeout(logout, expiresAt - Date.now())
+        return () => window.clearTimeout(timeout)
+      }
+      return
+    }
+
     if (!hasSession || expiresAt === null) {
-      if (isAuthenticated || user) logout()
+      logout()
       return
     }
 
@@ -50,9 +66,13 @@ function App() {
       <Routes>
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contacts" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/tests" element={<TestPage />} />
           <Route path="/me" element={<ProfilePage />} />
+          <Route path="/profile/:id" element={<PublicProfilePage />} />
           <Route path="/me/edit" element={<ProfileEditPage />} />
           <Route path="/verification" element={<VerificationPage />} />
           <Route path="/settings" element={<ProfileSettingsPage />} />

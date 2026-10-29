@@ -1,4 +1,4 @@
-import { BellIcon, LogOutIcon, Monitor, Moon, Settings, Sun, User } from "lucide-react";
+import { BellIcon, LogOutIcon, Settings, User } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -10,12 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link, useLocation } from "react-router";
@@ -26,18 +21,11 @@ import { getMyProfile, type MyProfile } from "@/services/auth-service";
 import logo from "@/media/logo.svg"
 import logoDark from "@/media/logo_dark.svg"
 import { useEffect, useState } from "react";
-
+import { ThemeSubMenu } from "@/components/theme-menu";
 
 export default function Header() {
   const { user, logout } = useAuthStore();
-  const {
-    theme,
-    setTheme,
-    accentColor,
-    setAccentColor,
-    darkAccentColor,
-    setDarkAccentColor,
-  } = useTheme()
+  const { theme } = useTheme();
 
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const location = useLocation();
@@ -49,6 +37,8 @@ export default function Header() {
 
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
+
+  const isTestPage = location.pathname.includes("/test") || location.pathname.includes("/onboarding");
 
   useEffect(() => {
     const updateDarkMode = () => {
@@ -107,64 +97,82 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 bg-card/90 px-4 py-3 shadow-none backdrop-blur-lg dark:border-blue-100/30 dark:bg-card/80">
+    <header className="sticky top-0 z-40 flex w-full shrink-0 flex-row items-center justify-between border-b border-border/80 bg-card/90 px-4 py-2.5 sm:py-3 shadow-none backdrop-blur-lg dark:border-blue-100/30 dark:bg-card/80">
       <Link to="/" className="flex items-center gap-2 text-[16px] font-medium">
         <div className="flex">
           <img
             src={isDarkMode ? logoDark : logo}
             alt="EchoMatch Logo"
-            className="h-10 w-auto object-contain"
+            className="h-8 md:h-10 w-auto object-contain"
           />
         </div>
       </Link>
 
-      <nav className="flex justify-between gap-10 ">
-        <Link to="/">
-          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/")
-            ? "text-primary font-semibold"
-            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
-            }`}>
-            Свайпи
-          </Button>
-        </Link>
-        <Link to="/events">
-          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/events")
-            ? "text-primary font-semibold"
-            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
-            }`}>
-            Події
-          </Button>
-        </Link>
-        <Link to="/messenger">
-          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/messenger")
-            ? "text-primary font-semibold"
-            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
-            }`}>
-            Чати
-          </Button>
-        </Link>
-        <Link to="/me">
-          <Button variant="link" className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${isActive("/me")
-            ? "text-primary font-semibold"
-            : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
-            }`}>
-            Профіль
-          </Button>
-        </Link>
-      </nav>
+      {!isTestPage && (
+        <nav className="hidden md:flex justify-between gap-8 lg:gap-10">
+          <Link to="/">
+            <Button
+              variant="link"
+              className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${
+                isActive("/")
+                  ? "text-primary font-semibold"
+                  : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+              }`}
+            >
+              Свайпи
+            </Button>
+          </Link>
+          <Link to="/events">
+            <Button
+              variant="link"
+              className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${
+                isActive("/events")
+                  ? "text-primary font-semibold"
+                  : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+              }`}
+            >
+              Події
+            </Button>
+          </Link>
+          <Link to="/messenger">
+            <Button
+              variant="link"
+              className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${
+                isActive("/messenger")
+                  ? "text-primary font-semibold"
+                  : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+              }`}
+            >
+              Чати
+            </Button>
+          </Link>
+          <Link to="/me">
+            <Button
+              variant="link"
+              className={`cursor-pointer px-1 text-sm font-medium hover:no-underline transition-colors ${
+                isActive("/me")
+                  ? "text-primary font-semibold"
+                  : "text-[#53535A] hover:text-foreground dark:text-[#CCCCCC]"
+              }`}
+            >
+              Профіль
+            </Button>
+          </Link>
+        </nav>
+      )}
 
       <DropdownMenu>
         <DropdownMenuTrigger
           nativeButton={false}
           render={
             <div className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-85">
-              <span className="text-sm font-bold">
+              <span className="hidden md:inline text-sm font-bold">
                 {displayName}
                 {userAge !== undefined && `, ${userAge}`}
               </span>
 
               <Avatar
-                className="size-10 border"
+                className="size-9 sm:size-10 border"
                 style={{ borderColor: "var(--header-accent-border)" }}
               >
                 <AvatarImage
@@ -180,10 +188,9 @@ export default function Header() {
                 </AvatarFallback>
               </Avatar>
             </div>
-
           }
         />
-        <DropdownMenuContent align="center" className="min-w-max">
+        <DropdownMenuContent align="end" className="min-w-max">
           <DropdownMenuGroup>
             <Link to="/notifications">
               <DropdownMenuItem className="cursor-pointer">
@@ -197,7 +204,7 @@ export default function Header() {
                 Профіль
               </DropdownMenuItem>
             </Link>
-            <Link to="/me/edit">
+            <Link to="/settings">
               <DropdownMenuItem className="cursor-pointer">
                 <Settings />
                 Налаштування
@@ -205,66 +212,7 @@ export default function Header() {
             </Link>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              {theme === "dark" ? <Moon /> : theme === "system" ? <Monitor /> : <Sun />}
-              Тема
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Sun />
-                  Світла
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuRadioGroup
-                    value={accentColor}
-                    onValueChange={(value) => {
-                      if (value === "orange" || value === "rose") {
-                        setAccentColor(value);
-                        setTheme("light");
-                      }
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="orange">Orange</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="rose">Rose</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Moon />
-                  Темна
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuRadioGroup
-                    value={darkAccentColor}
-                    onValueChange={(value) => {
-                      if (value === "teal" || value === "violet") {
-                        setDarkAccentColor(value);
-                        setTheme("dark");
-                      }
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="teal">Teal</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="violet">Violet</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup
-                value={theme === "system" ? "system" : ""}
-                onValueChange={(value) => {
-                  if (value === "system") {
-                    setTheme(value);
-                  }
-                }}
-              >
-                <DropdownMenuRadioItem value="system">Системна</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+          <ThemeSubMenu />
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">
             <LogOutIcon />
@@ -272,6 +220,6 @@ export default function Header() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </header >
+    </header>
   );
 }
