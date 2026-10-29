@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { getMyProfile, getPublicProfile, type PublicProfile } from "@/services/auth-service"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useUIStore } from "@/store/useUIStore"
 import type { Match } from "@/types/match.types"
 import { getMatches } from "@/services/match-service"
 import {
@@ -165,12 +166,21 @@ export default function MessengerPage() {
   const navigate = useNavigate()
   const eventIdParam = searchParams.get("eventId") || searchParams.get("event")
   const user = useAuthStore((state) => state.user)
+  const { setIsChatOpen } = useUIStore()
   const { ref: gazeRef, lookAt: gazeLookAt } = useGaze({ travel: 6, lookAt: "pointer" })
   const [matches, setMatches] = useState<Match[]>([])
   const [eventChats, setEventChats] = useState<EventChat[]>([])
   const [eventChatsError, setEventChatsError] = useState<string | null>(null)
   const [isEventChatsLoading, setIsEventChatsLoading] = useState(true)
   const [eventConversationId, setEventConversationId] = useState<string | null>(null)
+  const isConversationOpen = Boolean(matchId || eventConversationId)
+
+  useEffect(() => {
+    setIsChatOpen(isConversationOpen)
+    return () => {
+      setIsChatOpen(false)
+    }
+  }, [isConversationOpen, setIsChatOpen])
   const [eventDetails, setEventDetails] = useState<EventDetails | null>(null)
   const [eventDetailsParticipants, setEventDetailsParticipants] = useState<EventParticipant[]>([])
   const [eventDetailsRequests, setEventDetailsRequests] = useState<EventJoinRequest[]>([])
@@ -1569,7 +1579,7 @@ export default function MessengerPage() {
                   aria-label="Повідомлення в чаті події"
                   maxLength={2000}
                   disabled={!selectedEventChat || !!selectedEventChat.cancelledAt || isSendingEventMessage}
-                  className="min-h-10 max-h-32 flex-1 overflow-y-auto rounded-xl border-border bg-card px-3 py-2 text-sm shadow-sm"
+                  className="min-h-10 max-h-32 flex-1 resize-none overflow-y-auto rounded-xl border-border bg-card px-3 py-2 text-sm leading-5 shadow-sm"
                 />
                 <Button
                   type="submit"
@@ -2079,11 +2089,11 @@ export default function MessengerPage() {
                       event.currentTarget.form?.requestSubmit()
                     }
                   }}
-                  placeholder="Напишіть повідомлення..."
+                  placeholder="Повідомлення..."
                   aria-label="Повідомлення"
                   maxLength={2000}
                   disabled={isSending}
-                  className="min-h-10 max-h-32 flex-1 overflow-y-auto rounded-xl border-border bg-card px-3 py-2 text-sm shadow-sm"
+                  className="min-h-10 max-h-32 flex-1 resize-none overflow-y-auto rounded-xl border-border bg-card px-3 py-2 text-sm leading-5 shadow-sm"
                 />
                 <Button type="submit" size="icon" className="h-10 w-10 shrink-0 shadow-sm" disabled={!messageText.trim() || isSending} aria-label="Надіслати повідомлення">
                   {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}

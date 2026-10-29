@@ -20,12 +20,13 @@ const navItems: NavItem[] = [
 export default function BottomNav() {
   const location = useLocation()
   const { user } = useAuthStore()
-  const { hasUnsavedChanges } = useUIStore()
+  const { hasUnsavedChanges, isChatOpen } = useUIStore()
 
   const pathname = location.pathname
+  const isMatchChat = pathname.startsWith("/messenger/") && pathname !== "/messenger"
   const isTestPage = pathname.includes("/test") || pathname.includes("/onboarding") || pathname.includes("/register")
 
-  if (!user || isTestPage) {
+  if (!user || isTestPage || isChatOpen || isMatchChat) {
     return null
   }
 
@@ -40,9 +41,9 @@ export default function BottomNav() {
     <nav
       aria-label="Мобільна навігація"
       className={cn(
-        "fixed bottom-5 left-1/2 z-40 -translate-x-1/2 md:hidden transition-all duration-300 ease-out",
+        "fixed bottom-8 left-1/2 z-40 -translate-x-1/2 md:hidden transition-all duration-300 ease-out",
         hasUnsavedChanges
-          ? "translate-y-12 opacity-0 pointer-events-none"
+          ? "translate-y-20 opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100 pointer-events-auto"
       )}
     >
