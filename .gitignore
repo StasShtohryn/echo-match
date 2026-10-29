@@ -1,3 +1,6 @@
+# ===== Local AI assistant docs and settings — kept on disk, not in the repo =====
+.claude/
+
 # ===== .NET / Visual Studio (backend) =====
 bin/
 obj/
