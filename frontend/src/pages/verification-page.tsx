@@ -446,7 +446,7 @@ export default function VerificationPage() {
                             </span>
                             <span className="font-semibold text-destructive">
                               {Math.round(result.livenessConfidence)}%{" "}
-                              <span className="font-normal text-muted-foreground">(потрібно ≥ 80%)</span>
+                              <span className="font-normal text-muted-foreground">(потрібно ≥ 70%)</span>
                             </span>
                           </div>
                           <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-muted">
