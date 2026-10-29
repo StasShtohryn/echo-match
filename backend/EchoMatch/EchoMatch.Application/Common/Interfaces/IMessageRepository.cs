@@ -16,6 +16,10 @@ namespace EchoMatch.Application.Common.Interfaces
 
         Task<Message?> GetByIdAsync(Guid messageId, CancellationToken cancellationToken);
 
+
+        // Повідомлення профілю в чинних метчах, де співрозмовник ще існує
+        Task<int> CountSentAsync(Guid profileId, CancellationToken cancellationToken);
+
         Task<MessageReaction?> GetReactionAsync(
             Guid messageId,
             Guid profileId,

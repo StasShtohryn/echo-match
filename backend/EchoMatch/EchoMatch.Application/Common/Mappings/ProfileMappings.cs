@@ -6,9 +6,10 @@ namespace EchoMatch.Application.Common.Mappings
 {
     public static class ProfileMappings
     {
-        public static MyProfileDto ToMyProfileDto(this UserProfile profile) => new()
+        public static MyProfileDto ToMyProfileDto(this UserProfile profile, ProfileStatsDto stats) => new()
         {
             Id = profile.Id,
+            Stats = stats,
             CreatedAt = DateTime.SpecifyKind(profile.CreatedAt, DateTimeKind.Utc),
             DisplayName = profile.DisplayName,
             DateOfBirth = profile.DateOfBirth,

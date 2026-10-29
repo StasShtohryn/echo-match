@@ -2,6 +2,7 @@
 using EchoMatch.Application.Common.Exceptions;
 using EchoMatch.Application.Common.Interfaces;
 using EchoMatch.Application.Common.Mappings;
+using EchoMatch.Application.Features.Profiles.Common;
 using MediatR;
 
 
@@ -11,13 +12,16 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
     {
         private readonly IProfileRepository _profileRepository;
         private readonly ICurrentUserService _currentUserService;
+        private readonly ProfileStatistics _statistics;
 
         public UpdateProfileCommandHandler(
             IProfileRepository profileRepository,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            ProfileStatistics statistics)
         {
             _profileRepository = profileRepository;
             _currentUserService = currentUserService;
+            _statistics = statistics;
         }
 
         public async Task<MyProfileDto> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
@@ -51,7 +55,10 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
 
             await _profileRepository.SaveChangesAsync(cancellationToken);
 
-            return profile.ToMyProfileDto();
+            // Клієнт замінює профіль відповіддю, тож статистика має бути й тут
+            var stats = await _statistics.ForAsync(profile.Id, cancellationToken);
+
+            return profile.ToMyProfileDto(stats);
         }
     }
 }

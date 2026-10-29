@@ -48,5 +48,7 @@ namespace EchoMatch.Application.Common.Dtos
         public required IReadOnlyList<LookupItemDto> Interests { get; init; }
         public required IReadOnlyList<LookupItemDto> Languages { get; init; }
         public required IReadOnlyList<PromptAnswerDto> PromptAnswers { get; init; }
+        // Лише у власному профілі: у публічному цих цифр немає
+        public required ProfileStatsDto Stats { get; init; }
     }
 }
