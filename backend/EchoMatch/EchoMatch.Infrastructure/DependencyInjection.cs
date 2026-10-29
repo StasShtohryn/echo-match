@@ -3,7 +3,9 @@ using Amazon.Rekognition;
 using Amazon.Runtime;
 using Anthropic;
 using EchoMatch.Application.Common.Interfaces;
+using EchoMatch.Application.Common.Security;
 using EchoMatch.Infrastructure.Ai;
+using EchoMatch.Infrastructure.Email;
 using EchoMatch.Infrastructure.FaceVerification;
 using EchoMatch.Infrastructure.Persistence;
 using EchoMatch.Infrastructure.Repositories;
@@ -31,8 +33,18 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
         services.AddScoped<IUserRepository, UserRepository>();
+
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<ILookupRepository, LookupRepository>();
+        services.AddScoped<IUserDataEraser, UserDataEraser>();
+
+
+        // Звичайний об'єкт, а не IOptions: Application не залежить від пакета налаштувань
+        services.AddSingleton(configuration.GetSection(EmailConfirmationOptions.SectionName).Get<EmailConfirmationOptions>()
+            ?? new EmailConfirmationOptions());
+
+        services.Configure<SmtpSettings>(configuration.GetSection(SmtpSettings.SectionName));
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         services.AddScoped<ISwipeRepository, SwipeRepository>();
         services.AddScoped<IMatchRepository, MatchRepository>();

@@ -30,7 +30,7 @@ namespace EchoMatch.Infrastructure.Persistence.Configurations
             builder.Property(p => p.Bio).HasMaxLength(500);
             builder.Property(p => p.Occupation).HasMaxLength(100);
             builder.Property(p => p.Company).HasMaxLength(100);
-            builder.Property(p => p.School).HasMaxLength(100);
+            builder.Property(p => p.School).HasMaxLength(UserProfile.MaxSchoolLength);
             builder.Property(p => p.InstagramHandle).HasMaxLength(30);
             builder.Property(p => p.SpotifyHandle).HasMaxLength(50);
             builder.Property(p => p.FaceLivenessSessionId).HasMaxLength(100);

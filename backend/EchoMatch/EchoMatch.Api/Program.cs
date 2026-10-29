@@ -1,8 +1,10 @@
 ﻿using EchoMatch.Api.Hubs;
 using EchoMatch.Api.Middleware;
+using EchoMatch.Api.Security;
 using EchoMatch.Api.Services;
 using EchoMatch.Application;
 using EchoMatch.Application.Common.Interfaces;
+using EchoMatch.Application.Common.Security;
 using EchoMatch.Infrastructure;
 using EchoMatch.Infrastructure.Persistence;
 using EchoMatch.Infrastructure.Security;
@@ -20,11 +22,6 @@ namespace EchoMatch.Api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
-            if (builder.Environment.IsDevelopment())
-            {
-                builder.Configuration.AddUserSecrets<Program>();
-            }
 
             // Add services to the container.
 
@@ -119,12 +116,29 @@ namespace EchoMatch.Api
                     };
                 });
 
+            var emailConfirmation = builder.Configuration
+             .GetSection(EmailConfirmationOptions.SectionName)
+             .Get<EmailConfirmationOptions>() ?? new EmailConfirmationOptions();
+
             builder.Services.AddAuthorization(options =>
             {
-                options.FallbackPolicy = new AuthorizationPolicyBuilder()
-                    .RequireAuthenticatedUser()
-                    .Build();
+                var signedIn = new AuthorizationPolicyBuilder().RequireAuthenticatedUser();
+
+                // З увімкненим підтвердженням увесь API вимагає підтвердженої
+                // пошти, крім входу, реєстрації й самого підтвердження
+                if (emailConfirmation.Required)
+                {
+                    signedIn.RequireClaim(AuthClaims.EmailVerified, "true");
+                }
+
+                var policy = signedIn.Build();
+                options.FallbackPolicy = policy;
+                options.DefaultPolicy = policy;
+
+                options.AddPolicy(AuthPolicies.UnconfirmedEmailAllowed, unconfirmed => unconfirmed.RequireAuthenticatedUser());
             });
+
+            builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, EmailConfirmationResultHandler>();
 
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();

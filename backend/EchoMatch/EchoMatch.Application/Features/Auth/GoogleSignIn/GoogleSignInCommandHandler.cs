@@ -55,13 +55,14 @@ namespace EchoMatch.Application.Features.Auth.GoogleSignIn
 
                     await _userRepository.AddAsync(user, cancellationToken);
                 }
-
+                // Google уже перевірив, що пошта належить цій людині
+                user.ConfirmEmail();
                 await _userRepository.SaveChangesAsync(cancellationToken);
             }
 
             var accessToken = _jwtTokenGenerator.GenerateToken(user);
 
-            return new AuthResponseDto(user.Id, user.Email, accessToken);
+            return new AuthResponseDto(user.Id, user.Email, accessToken, user.IsEmailConfirmed);
         }
     }
 }

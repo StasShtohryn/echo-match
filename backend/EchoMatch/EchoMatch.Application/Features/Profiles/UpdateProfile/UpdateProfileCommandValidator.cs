@@ -1,5 +1,6 @@
 ﻿
 
+using EchoMatch.Domain.Entities;
 using EchoMatch.Domain.Enums;
 using FluentValidation;
 
@@ -15,7 +16,7 @@ namespace EchoMatch.Application.Features.Profiles.UpdateProfile
             RuleFor(x => x.Bio).MaximumLength(500);
             RuleFor(x => x.Occupation).MaximumLength(100);
             RuleFor(x => x.Company).MaximumLength(100);
-            RuleFor(x => x.School).MaximumLength(100);
+            RuleFor(x => x.School).MaximumLength(UserProfile.MaxSchoolLength);
             RuleFor(x => x.City).MaximumLength(100);
             RuleFor(x => x.InstagramHandle).MaximumLength(30);
             RuleFor(x => x.SpotifyHandle).MaximumLength(50);

@@ -29,6 +29,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized", true),
             AiUnavailableException => (StatusCodes.Status503ServiceUnavailable, "AI assistant unavailable", true),
             FaceVerificationUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Face verification unavailable", true),
+            EmailUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Email unavailable", true),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", false)
         };
 
