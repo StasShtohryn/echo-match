@@ -21,6 +21,7 @@ export function useDiscoveryFeed() {
   const [error, setError] = useState<unknown>(null)
   const [lastSwipe, setLastSwipe] = useState<SwipeResult | null>(null)
   const [lastSwipedCandidate, setLastSwipedCandidate] = useState<DiscoveryCandidate | null>(null)
+  const [matchedCandidate, setMatchedCandidate] = useState<DiscoveryCandidate | null>(null)
   const requestId = useRef(0)
   const canRefill = useRef(true)
 
@@ -75,7 +76,13 @@ export function useDiscoveryFeed() {
       const result = await createSwipe(candidate.profile.id, direction)
       setCandidates((current) => current.filter((item) => item.profile.id !== candidate.profile.id))
       setLastSwipe(result)
-      setLastSwipedCandidate(result.isMatch ? null : candidate)
+      if (result.isMatch) {
+        setMatchedCandidate(candidate)
+        setLastSwipedCandidate(null)
+      } else {
+        setMatchedCandidate(null)
+        setLastSwipedCandidate(candidate)
+      }
       return result
     } catch (nextError) {
       setError(nextError)
@@ -101,6 +108,7 @@ export function useDiscoveryFeed() {
       setIsLoading(false)
       setLastSwipe(null)
       setLastSwipedCandidate(null)
+      setMatchedCandidate(null)
     } catch (nextError) {
       setError(nextError)
       throw nextError
@@ -111,6 +119,7 @@ export function useDiscoveryFeed() {
 
   const refresh = useCallback(() => {
     setLastSwipe(null)
+    setMatchedCandidate(null)
     return loadFeed(true)
   }, [loadFeed])
 
@@ -123,10 +132,14 @@ export function useDiscoveryFeed() {
     isUndoing,
     error,
     lastSwipe,
+    matchedCandidate,
     canUndo: lastSwipedCandidate !== null,
     swipe,
     undoLastSwipe,
     refresh,
-    dismissSwipeResult: () => setLastSwipe(null),
+    dismissSwipeResult: () => {
+      setLastSwipe(null)
+      setMatchedCandidate(null)
+    },
   }
 }
