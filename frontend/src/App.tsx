@@ -19,6 +19,7 @@ import PublicProfilePage from "./pages/public-profile-page.tsx"
 import AboutPage from "./pages/footer/about-page.tsx"
 import ContactPage from "./pages/footer/contacts-page.tsx"
 import PrivacyPage from "./pages/footer/privacy-policy-page.tsx"
+import ConfirmEmailPage from "./pages/confirm-email-page.tsx"
 
 function SessionMonitor() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -83,6 +84,7 @@ function App() {
         </Route>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/confirm-email" element={<ConfirmEmailPage />} />
       </Routes>
     </TooltipProvider>
   )

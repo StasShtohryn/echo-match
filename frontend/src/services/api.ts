@@ -30,6 +30,18 @@ api.interceptors.response.use(
       }
     }
 
+    const problem = axios.isAxiosError(error)
+      ? (error.response?.data as { title?: string } | undefined)
+      : undefined
+    if (
+      axios.isAxiosError(error) &&
+      error.response?.status === 403 &&
+      problem?.title === "Email not confirmed" &&
+      window.location.pathname !== "/confirm-email"
+    ) {
+      window.location.assign("/confirm-email")
+    }
+
     return Promise.reject(error)
   },
 )
