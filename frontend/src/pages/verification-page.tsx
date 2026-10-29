@@ -307,6 +307,42 @@ export default function VerificationPage() {
                   const allCheckedVerified = totalChecked > 0 && verifiedCount === totalChecked;
                   const noneCheckedVerified = totalChecked > 0 && verifiedCount === 0;
 
+                  const mainPhoto = profile?.photos.find((p) => p.isMain);
+                  const checkedMainPhoto = result.photos.find((p) => p.photoId === mainPhoto?.id);
+                  const isMainPhotoJustVerified = checkedMainPhoto?.match === "Verified";
+
+                  const title = noneCheckedVerified
+                    ? totalChecked === 1
+                      ? "Нове фото не підтверджено"
+                      : "Фотографії не підтверджено"
+                    : allCheckedVerified
+                      ? isMainPhotoJustVerified
+                        ? "Профіль успішно верифіковано!"
+                        : totalChecked === 1
+                          ? "Фото успішно підтверджено!"
+                          : "Фотографії успішно підтверджено!"
+                      : "Часткове підтвердження фото";
+
+                  const description = noneCheckedVerified
+                    ? result.isProfileVerified
+                      ? totalChecked === 1
+                        ? "Обличчя на новому фото не збіглося з вашим обличчям на камері. Проте ваш профіль залишається верифікованим за раніше підтвердженим головним фото."
+                        : "Обличчя на перевірених фотографіях не збіглося з вашим обличчям на камері. Проте ваш профіль залишається верифікованим за раніше підтвердженим головним фото."
+                      : "Обличчя перед камерою підтверджено як живе, але воно не збіглося з жодною перевіреною фотографією."
+                    : allCheckedVerified
+                      ? isMainPhotoJustVerified
+                        ? "Головне фото вашого профілю підтверджено. Тепер у вашій анкеті з'явилася позначка верифікації!"
+                        : result.isProfileVerified
+                          ? totalChecked === 1
+                            ? "Нове фото успішно збіглося з вашим обличчям і отримало позначку."
+                            : "Всі перевірені фотографії успішно збіглися з вашим обличчям."
+                          : totalChecked === 1
+                            ? "Фото успішно збіглося з вашим обличчям. Проте для отримання позначки верифікації профілю підтвердіть також головне фото."
+                            : "Перевірені фотографії успішно збіглися з вашим обличчям. Проте для отримання позначки верифікації профілю підтвердіть також головне фото."
+                      : isMainPhotoJustVerified
+                        ? `Успішно підтверджено ${verifiedCount} з ${totalChecked} перевірених фотографій. Головне фото підтверджено, тож профіль отримав позначку верифікації!`
+                        : `Успішно підтверджено ${verifiedCount} з ${totalChecked} перевірених фотографій.`;
+
                   return (
                     <Card className={`bg-card/95 shadow-xl ${noneCheckedVerified ? "border-amber-500/30" : "border-primary/30"}`}>
                       <CardHeader className="text-center">
@@ -320,26 +356,10 @@ export default function VerificationPage() {
                           {noneCheckedVerified ? <AlertTriangle className="size-9" /> : <ShieldCheck className="size-9" />}
                         </div>
                         <CardTitle className="text-2xl sm:text-3xl">
-                          {noneCheckedVerified
-                            ? "Нове фото не підтверджено"
-                            : allCheckedVerified
-                              ? result.isProfileVerified
-                                ? "Профіль успішно верифіковано!"
-                                : "Фото успішно підтверджено!"
-                              : "Часткове підтвердження фото"}
+                          {title}
                         </CardTitle>
                         <CardDescription className="mx-auto max-w-lg text-base">
-                          {noneCheckedVerified ? (
-                            result.isProfileVerified
-                              ? "Обличчя на перевіреному фото не збіглося з вашим обличчям на камері. Проте ваш профіль залишається верифікованим за раніше підтвердженим головним фото."
-                              : "Обличчя перед камерою підтверджено як живе, але воно не збіглося з жодною перевіреною фотографією."
-                          ) : allCheckedVerified ? (
-                            result.isProfileVerified
-                              ? "Головне фото вашого профілю підтверджено. Тепер у вашій анкеті з'явилася синя позначка верифікації!"
-                              : "Всі перевірені фотографії успішно збіглися з вашим обличчям."
-                          ) : (
-                            `Успішно підтверджено ${verifiedCount} з ${totalChecked} перевірених фотографій.`
-                          )}
+                          {description}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6 pt-2">
