@@ -16,6 +16,12 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
+    public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return _context.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+    }
+
+
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
     {
         return _context.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
@@ -30,6 +36,16 @@ public class UserRepository : IUserRepository
     {
         return _context.Users.FirstOrDefaultAsync(u => u.GoogleId == googleId, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Guid>> GetIdsByEmailIncludingDeletedAsync(string email, CancellationToken cancellationToken)
+    {
+        return await _context.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.Email == email)
+            .Select(u => u.Id)
+            .ToListAsync(cancellationToken);
+    }
+
 
     public async Task AddAsync(User user, CancellationToken cancellationToken)
     {

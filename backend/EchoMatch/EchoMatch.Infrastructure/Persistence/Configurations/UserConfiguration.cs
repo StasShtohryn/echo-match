@@ -33,6 +33,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsUnique()
             .HasFilter("[GoogleId] IS NOT NULL AND [IsDeleted] = 0");
 
+        // BCrypt-ץור לא÷ 60 סטלגמכ³ג
+        builder.Property(u => u.EmailCodeHash)
+            .HasMaxLength(100);
+
+
         builder.Property(u => u.Role)
             .HasConversion<string>()
             .HasMaxLength(50)

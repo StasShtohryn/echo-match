@@ -100,11 +100,13 @@ namespace EchoMatch.Infrastructure.Persistence
         // Імена роздаються без повторів, поки пул не вичерпається
         private readonly Dictionary<string, Queue<string>> _names = new();
         private readonly Dictionary<string, int> _rounds = new();
+        private readonly IUserDataEraser _eraser;
 
-        public DevDataSeeder(AppDbContext context, IPasswordHasher passwordHasher)
+        public DevDataSeeder(AppDbContext context, IPasswordHasher passwordHasher, IUserDataEraser eraser)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _eraser = eraser;
         }
 
         public async Task<DevSeedResult> SeedAsync(int count, string? likeEmail, CancellationToken cancellationToken)
@@ -179,7 +181,7 @@ namespace EchoMatch.Infrastructure.Persistence
 
                 var profile = new UserProfile
                 {
-                    User = new User { Email = email, PasswordHash = passwordHash },
+                    User = ConfirmedUser(email, passwordHash),
                     DisplayName = person.Name,
                     DateOfBirth = today.AddYears(-age).AddDays(-_random.Next(1, 300)),
                     Gender = gender,
@@ -275,27 +277,17 @@ namespace EchoMatch.Infrastructure.Persistence
 
         public async Task<int> RemoveAsync(CancellationToken cancellationToken)
         {
-            var profileIds = await _context.UserProfiles
-                .Where(p => p.User.Email.EndsWith(EmailDomain))
-                .Select(p => p.Id)
+            var userIds = await _context.Users
+                .IgnoreQueryFilters()
+                .Where(u => u.Email.EndsWith(EmailDomain))
+                .Select(u => u.Id)
                 .ToListAsync(cancellationToken);
 
-            if (profileIds.Count > 0)
-            {
-                // Спершу те, що посилається на профілі: зовнішні ключі стоять на Restrict
-                await _context.Matches
-                    .Where(m => profileIds.Contains(m.ProfileOneId) || profileIds.Contains(m.ProfileTwoId))
-                    .ExecuteDeleteAsync(cancellationToken);
+            // Те саме видалення, що й в адміна. Фото тестових профілів — чужі
+            // посилання, а не файли в нашому сховищі, тож прибирати нема чого
+            await _eraser.EraseAsync(userIds, cancellationToken);
 
-                await _context.Swipes
-                    .Where(s => profileIds.Contains(s.SwiperProfileId) || profileIds.Contains(s.TargetProfileId))
-                    .ExecuteDeleteAsync(cancellationToken);
-            }
-
-            // Профілі, фото й зв'язки підуть каскадом за користувачем
-            return await _context.Users
-                .Where(u => u.Email.EndsWith(EmailDomain))
-                .ExecuteDeleteAsync(cancellationToken);
+            return userIds.Count;
         }
 
         // Ім'я без повторів, поки вистачає пулу. Далі пул перемішується заново,
@@ -334,6 +326,15 @@ namespace EchoMatch.Infrastructure.Persistence
             var values = Enum.GetValues<T>();
             return values[_random.Next(values.Length)];
         }
+
+        // Тестові акаунти ніхто не підтверджує листом
+        private static User ConfirmedUser(string email, string passwordHash)
+        {
+            var user = new User { Email = email, PasswordHash = passwordHash };
+            user.ConfirmEmail();
+            return user;
+        }
+
 
         // Як у живих анкетах: хтось не вказує нічого, хтось має одну-дві тварини,
         // хтось лише ставлення до них

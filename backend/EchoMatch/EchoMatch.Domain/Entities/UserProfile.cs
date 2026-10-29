@@ -20,6 +20,8 @@ namespace EchoMatch.Domain.Entities
         public string? Bio { get; set; }
         public string? Occupation { get; set; }
         public string? Company { get; set; }
+        // Назва з реєстру ЄДЕБО буває довшою за 200 символів
+        public const int MaxSchoolLength = 300;
         public string? School { get; set; }
         public int? HeightCm { get; set; }
 

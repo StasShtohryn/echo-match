@@ -1178,11 +1178,27 @@ namespace EchoMatch.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<int>("EmailCodeAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EmailCodeExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmailCodeHash")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("EmailCodeSentAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("GoogleId")
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsEmailConfirmed")
                         .HasColumnType("bit");
 
                     b.Property<string>("PasswordHash")
@@ -1332,8 +1348,8 @@ namespace EchoMatch.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("School")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<string>("Smoking")
                         .HasMaxLength(50)
