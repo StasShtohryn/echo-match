@@ -10,6 +10,13 @@ import type { DiscoveryPreferences, UpdatePreferencesRequest } from "@/services/
 import type { Match } from "@/types/match.types"
 import { FilterPanel } from "./filter-panel";
 import { Link } from "react-router"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "./ui/context-menu"
+import { Trash2 } from "lucide-react"
 
 
 interface FilterMatchPanelProps {
@@ -19,6 +26,7 @@ interface FilterMatchPanelProps {
   isMatchesLoading?: boolean
   onApply: (preferences: UpdatePreferencesRequest) => void
   onMatchClick?: (matchId: string) => void;
+  onDeleteMatch?: (matchId: string) => void;
 }
 
 export function FilterMatchPanel({
@@ -28,6 +36,7 @@ export function FilterMatchPanel({
   initialPreferences,
   onApply,
   onMatchClick,
+  onDeleteMatch,
 }: FilterMatchPanelProps) {
   // Прокрутка 
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -70,41 +79,57 @@ export function FilterMatchPanel({
                 <p className="px-1 py-3 text-xs text-muted-foreground">Поки що немає нових метчів чи повідомлень</p>
               ) : (
                 unreadMatches.map((match) => (
-                  <Link
-                    key={match.id}
-                    to={`/messenger/${match.id}`}
-                    onClick={() => onMatchClick?.(match.id)}
-                    className="flex cursor-pointer items-center gap-3.5 rounded-lg px-1 py-3.5 transition-colors hover:bg-muted/60"
-                  >
-                    <div className="relative flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-lg font-semibold text-muted-foreground">
-                      {match.partner.mainPhotoUrl ? (
-                        <img
-                          src={match.partner.mainPhotoUrl}
-                          alt={match.partner.displayName}
-                          className="size-full rounded-xl object-cover"
-                        />
-                      ) : (
-                        match.partner.displayName.charAt(0).toUpperCase()
-                      )}
-                      {match.isNew && (
-                        <span className="absolute -top-1 -right-1 size-3 rounded-full border-2 border-card bg-primary" />
-                      )}
-                    </div>
+                  <ContextMenu key={match.id}>
+                    <ContextMenuTrigger
+                      render={
+                        <Link
+                          to={`/messenger/${match.id}`}
+                          onClick={() => onMatchClick?.(match.id)}
+                          className="flex cursor-pointer items-center gap-3.5 rounded-lg px-1 py-3.5 transition-colors hover:bg-muted/60"
+                        >
+                          <div className="relative flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-lg font-semibold text-muted-foreground">
+                            {match.partner.mainPhotoUrl ? (
+                              <img
+                                src={match.partner.mainPhotoUrl}
+                                alt={match.partner.displayName}
+                                className="size-full rounded-xl object-cover"
+                              />
+                            ) : (
+                              match.partner.displayName.charAt(0).toUpperCase()
+                            )}
+                            {match.isNew && (
+                              <span className="absolute -top-1 -right-1 size-3 rounded-full border-2 border-card bg-primary" />
+                            )}
+                          </div>
 
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <span className="text-sm font-bold leading-tight text-foreground">
-                        {match.partner.displayName}, {match.partner.age}
-                      </span>
-                      <span className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {match.lastMessage?.text ?? (match.isNew ? "Новий метч" : "Почніть розмову")}
-                      </span>
-                    </div>
-                    {match.unreadCount > 0 && (
-                      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                        {match.unreadCount > 99 ? "99+" : match.unreadCount}
-                      </span>
-                    )}
-                  </Link>
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <span className="text-sm font-bold leading-tight text-foreground">
+                              {match.partner.displayName}, {match.partner.age}
+                            </span>
+                            <span className="mt-0.5 truncate text-xs text-muted-foreground">
+                              {match.lastMessage?.text ?? (match.isNew ? "Новий метч" : "Почніть розмову")}
+                            </span>
+                          </div>
+                          {match.unreadCount > 0 && (
+                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                              {match.unreadCount > 99 ? "99+" : match.unreadCount}
+                            </span>
+                          )}
+                        </Link>
+                      }
+                    >
+                    </ContextMenuTrigger>
+
+                    <ContextMenuContent className="w-48 bg-popover/80 backdrop-blur-xl">
+                      <ContextMenuItem
+                        variant="destructive"
+                        onClick={() => onDeleteMatch?.(match.id)}
+                      >
+                        <Trash2 className="mr-2 size-4" />
+                        Видалити метч
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))
               )}
             </div>

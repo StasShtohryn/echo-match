@@ -83,20 +83,12 @@ export default function LoveLanguageStep({
                                         : "border-border bg-card hover:border-primary/60 hover:bg-accent/40"
                                 )}
                             >
-                                <div
-                                    className={cn(
-                                        "flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors",
-                                        isSelected
-                                            ? "bg-primary text-primary-foreground"
-                                            : "bg-accent text-primary group-hover:bg-primary group-hover:text-primary-foreground"
-                                    )}
-                                >
-                                </div>
+
 
                                 <div className="flex flex-col">
                                     <span
                                         className={cn(
-                                            "text-sm font-semibold transition-colors",
+                                            "text-sm transition-all sm:text-base font-sans",
                                             isSelected ? "text-primary" : "text-foreground"
                                         )}
                                     >

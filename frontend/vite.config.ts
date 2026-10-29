@@ -11,4 +11,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/edbo": {
+        target: "https://registry.edbo.gov.ua",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/edbo/, ""),
+      },
+    },
+  },
 })

@@ -145,12 +145,9 @@ export interface UpdateProfileRequest {
 }
 
 export interface UniversityItem {
-  id?: string | number
-  institution_id?: string | number
-  institution_name?: string
-  name?: string
-  short_name?: string
-  [key: string]: unknown
+  id: number
+  name: string
+  shortName: string | null
 }
 
 export interface UpdatePreferencesRequest {
@@ -291,25 +288,43 @@ export async function updateMyInterests(interestIds: number[]): Promise<LookupIt
   return response.data
 }
 
-export async function getUniversities(regionCode: number, categoryCode: number): Promise<UniversityItem[]> {
-  const response = await api.get<UniversityItem[] | { items: UniversityItem[] }>(
-    "/api/universities",
-    {
-      params: {
-        rg: regionCode,
-        ut: categoryCode,
-        exp: "json",
-      },
-    }
-  )
+const EDBO_BLOCKED = "Дата блокування суб'єкта освітньої діяльності в ЄДЕБО"
 
-  const data = response.data
-  if (Array.isArray(data)) return data
-  if (data && typeof data === "object" && "items" in data && Array.isArray(data.items)) {
-    return data.items
-  }
-  return []
+function edboText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null
 }
+
+// Заклади регіону напряму з ЄДЕБО, через проксі /edbo
+export async function getUniversities(regionCode: number, categoryCode: number): Promise<UniversityItem[]> {
+  const params = new URLSearchParams({
+    ut: String(categoryCode),
+    // Тільки двома цифрами: "5" реєстр читає як префікс і віддає регіони 51, 53, 56, 59
+    rg: String(regionCode).padStart(2, "0"),
+    exp: "json",
+  })
+
+  // Без скісної риски перед «?»: інакше ЄДЕБО відповідає перенаправленням
+  const response = await fetch(`/edbo/api/opendata/universities?${params}`)
+
+  // Порожній результат реєстр віддає як 404 {"error":"No results found"}
+  if (response.status === 404) return []
+  if (!response.ok) throw new Error(`ЄДЕБО відповів ${response.status}`)
+
+  const data: unknown = await response.json()
+  if (!Array.isArray(data)) return []
+
+  return (data as Record<string, unknown>[])
+    // Заблоковані в реєстрі заклади не показуємо
+    .filter((row) => !edboText(row[EDBO_BLOCKED]))
+    .map((row) => ({
+      id: Number(row["Код"]),
+      name: edboText(row["Назва закладу освіти"]) ?? "",
+      shortName: edboText(row["Коротка назва"]),
+    }))
+    .filter((item) => item.id && item.name)
+    .sort((a, b) => a.name.localeCompare(b.name, "uk"))
+}
+
 
 export async function updateMyLanguages(languageIds: number[]): Promise<LookupItem[]> {
   const response = await api.put<LookupItem[]>("/profiles/me/languages", { languageIds })
