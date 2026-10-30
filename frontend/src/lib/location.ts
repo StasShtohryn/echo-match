@@ -1,3 +1,4 @@
+import { markLocationUpdated } from "@/lib/location-reminder"
 import { toast } from "@/components/ui/toast"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { updateMyLocation } from "@/services/auth-service"
@@ -12,13 +13,6 @@ interface ReverseGeocodeResponse {
   }
 }
 
-function showLocationError(description: string) {
-  toast.add({
-    type: "warning",
-    title: "Геолокацію не оновлено",
-    description,
-  })
-}
 
 function showCityError(description: string) {
   toast.add({
@@ -76,6 +70,7 @@ export async function saveMyLocation(latitude: number, longitude: number): Promi
   }
 
   await updateMyLocation(latitude, longitude, city)
+  markLocationUpdated()
 }
 
 
