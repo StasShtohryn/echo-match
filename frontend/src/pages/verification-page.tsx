@@ -253,7 +253,7 @@ export default function VerificationPage() {
                           <ScanFace className="size-5" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">Підтвердження особи</CardTitle>
+                          <CardTitle className="text-lg font-sans">Підтвердження особи</CardTitle>
                           <CardDescription>Швидка відеоперевірка обличчя</CardDescription>
                         </div>
                       </div>
@@ -290,7 +290,7 @@ export default function VerificationPage() {
                   <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                     <Loader2 className="size-8 animate-spin" />
                   </div>
-                  <h2 className="font-heading text-2xl font-semibold">Звіряємо обличчя...</h2>
+                  <h2 className="font-sans text-2xl font-semibold">Звіряємо обличчя...</h2>
                   <p className="text-sm leading-6 text-muted-foreground">
                     Кадр з камери отримано. Сервер порівнює його з фотографіями вашого профілю за допомогою штучного інтелекту.
                   </p>
@@ -347,11 +347,10 @@ export default function VerificationPage() {
                     <Card className={`bg-card/95 shadow-xl ${noneCheckedVerified ? "border-amber-500/30" : "border-primary/30"}`}>
                       <CardHeader className="text-center">
                         <div
-                          className={`mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl ${
-                            noneCheckedVerified
-                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                              : "bg-primary/15 text-primary"
-                          }`}
+                          className={`mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl ${noneCheckedVerified
+                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                            : "bg-primary/15 text-primary"
+                            }`}
                         >
                           {noneCheckedVerified ? <AlertTriangle className="size-9" /> : <ShieldCheck className="size-9" />}
                         </div>
@@ -570,7 +569,7 @@ export default function VerificationPage() {
                       <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
                         <ScanFace className="size-6" />
                       </div>
-                      <CardTitle className="text-2xl text-background">Що таке Amazon Rekognition?</CardTitle>
+                      <CardTitle className="text-2xl text-background font-sans">Що таке Amazon Rekognition?</CardTitle>
                       <CardDescription className="text-background/70">
                         Сучасна система комп'ютерного зору від Amazon Web Services для безпечного та конфіденційного
                         підтвердження особи без збереження відеозаписів.
@@ -592,24 +591,24 @@ export default function VerificationPage() {
                   <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-primary">Як це працює</p>
-                      <h2 className="mt-1 font-heading text-2xl font-semibold">Простий та швидкий процес</h2>
+                      <h2 className="mt-1 font-heading text-2xl font-semibold font-sans">Простий та швидкий процес</h2>
                     </div>
                     <p className="max-w-sm text-sm leading-6 text-muted-foreground sm:text-right">
                       Увесь процес займає менше хвилини і запускається лише за вашою командою.
                     </p>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid gap-4 md:grid-cols-3 font-sans">
                     {verificationSteps.map(({ icon: Icon, title, description }, index) => (
-                      <Card key={title} className="relative bg-card/80 shadow-none ring-1 ring-foreground/8">
+                      <Card key={title} className="relative bg-card/80 shadow-none ring-1 ring-foreground/8 ">
                         <CardContent className="pt-6">
-                          <div className="mb-5 flex items-center justify-between">
+                          <div className="mb-5 flex items-center justify-between ">
                             <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                               <Icon className="size-5" />
                             </div>
-                            <span className="font-heading text-3xl font-semibold text-foreground/15">0{index + 1}</span>
+                            <span className="font-sans text-3xl font-semibold text-foreground/15">0{index + 1}</span>
                           </div>
-                          <h3 className="font-heading text-lg font-semibold">{title}</h3>
+                          <h3 className="font-sans text-lg font-semibold">{title}</h3>
                           <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
                         </CardContent>
                       </Card>
@@ -620,7 +619,7 @@ export default function VerificationPage() {
                 <section className="mt-14 grid gap-8 border-t border-foreground/10 pt-8 md:grid-cols-[.8fr_1.2fr] md:items-center">
                   <div>
                     <p className="text-sm font-semibold text-primary">Прозоро та безпечно</p>
-                    <h2 className="mt-1 font-heading text-2xl font-semibold">Що саме перевіряється?</h2>
+                    <h2 className="mt-1 font-sans text-2xl font-semibold">Що саме перевіряється?</h2>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">
                       Алгоритм працює виключно з геометрією та живістю обличчя. Результат миттєво відображається у вигляді
                       офіційної синьої позначки довіри у вашому профілі.
