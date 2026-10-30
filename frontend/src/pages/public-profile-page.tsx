@@ -3,7 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Heart, MessageCircle, HeartHandshake } from "lucide-react";
+import { ArrowLeft, BadgeCheck } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { getPublicProfile, type PublicProfile } from "@/services/auth-service"; // перевір свій шлях імпорту
@@ -124,6 +129,8 @@ export default function PublicProfilePage() {
     })
     : [];
   const count = photos.length;
+  const verifiedPhotosCount = photos.filter((photo) => photo.isFaceVerified).length;
+  const hasUnverifiedPhotos = verifiedPhotosCount < count;
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full flex-1 flex-col">
@@ -149,10 +156,59 @@ export default function PublicProfilePage() {
                       <AvatarImage src={profilePicture ?? undefined} alt={displayName} />
                       <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
-                    <h2 className="mt-4 text-lg font-semibold">{displayName}</h2>
+                    <div className="mt-4 flex items-center justify-center gap-1.5">
+                      <h2 className="text-lg font-semibold">{displayName}</h2>
+                      {profile.isFaceVerified && (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="text-primary hover:opacity-80 transition-opacity">
+                              <BadgeCheck className="size-5" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-60">
+                            <p>Користувач пройшов верифікацію за допомогою сервісу AWS Amazon Rekognition</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
                     {profile.city && (
                       <p className="text-muted-foreground text-sm mt-0.5">{profile.city}</p>
                     )}
+                  </div>
+
+                  <div className="mt-6 space-y-3 border-t border-border/50 pt-4 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground font-medium">Верифікація</span>
+                      {profile.isFaceVerified ? (
+                        hasUnverifiedPhotos ? (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge
+                                variant="secondary"
+                                className="gap-1 text-xs text-primary transition-colors"
+                              >
+                                <BadgeCheck className="size-3.5" />
+                                <span>
+                                  Верифіковано ({verifiedPhotosCount}/{count})
+                                </span>
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-64">
+                              <p>
+                                Головне фото підтверджено ({verifiedPhotosCount}/{count} верифікованих фото).
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Badge variant="secondary" className="gap-1 text-xs text-primary">
+                            <BadgeCheck className="size-3.5" />
+                            <span>Верифіковано</span>
+                          </Badge>
+                        )
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">Не верифіковано</span>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -177,6 +233,11 @@ export default function PublicProfilePage() {
                           className="aspect-[4/5] relative overflow-hidden rounded-2xl"
                         >
                           <img src={photos[0].url} alt="Main photo" className="size-full object-cover" />
+                          {photos[0].isFaceVerified && (
+                            <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                              <BadgeCheck className="size-4" />
+                            </span>
+                          )}
                         </button>
                       </div>
                     )}
@@ -195,6 +256,11 @@ export default function PublicProfilePage() {
                             className="aspect-square relative overflow-hidden rounded-2xl"
                           >
                             <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                            {photo.isFaceVerified && (
+                              <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                                <BadgeCheck className="size-4" />
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -214,6 +280,11 @@ export default function PublicProfilePage() {
                             className="aspect-square relative overflow-hidden rounded-2xl"
                           >
                             <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                            {photo.isFaceVerified && (
+                              <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                                <BadgeCheck className="size-4" />
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -233,6 +304,11 @@ export default function PublicProfilePage() {
                             className="aspect-square relative overflow-hidden rounded-2xl"
                           >
                             <img src={photo.url} alt={`Photo ${index + 1}`} className="size-full object-cover" />
+                            {photo.isFaceVerified && (
+                              <span className="absolute top-2 right-2 rounded-full bg-background/80 p-1 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                                <BadgeCheck className="size-4" />
+                              </span>
+                            )}
                           </button>
                         ))}
                         <div className="grid grid-cols-2 gap-2">
@@ -249,6 +325,11 @@ export default function PublicProfilePage() {
                                 className="aspect-square relative overflow-hidden rounded-xl"
                               >
                                 <img src={photo.url} alt="Photo" className="size-full object-cover" />
+                                {photo.isFaceVerified && (
+                                  <span className="absolute top-1.5 right-1.5 rounded-full bg-background/80 p-0.5 text-primary shadow-xs backdrop-blur-xs" title="Обличчя верифіковано">
+                                    <BadgeCheck className="size-3.5" />
+                                  </span>
+                                )}
                               </button>
                             );
                           })}
