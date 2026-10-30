@@ -87,6 +87,14 @@ export interface FaceVerificationResult {
   photos: PhotoFaceCheck[]
 }
 
+export interface ProfileStats {
+  matches: number
+  messagesSent: number
+  likesGiven: number
+  mutualLikes: number
+  mutualLikesPercent: number | null
+}
+
 export interface MyProfile {
   id: string
   createdAt: string
@@ -120,6 +128,7 @@ export interface MyProfile {
   interests: LookupItem[]
   languages: LookupItem[]
   promptAnswers: PromptAnswer[]
+  stats?: ProfileStats
 }
 
 export interface UpdateProfileRequest {

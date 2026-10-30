@@ -5,7 +5,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Edit, Settings, MessageCircle, Heart, HeartHandshake, BadgeCheck } from "lucide-react";
@@ -585,7 +585,7 @@ export default function ProfilePage() {
                         <Heart className="text-primary size-5" />
                       </div>
                       <div>
-                        <p className="text-2xl font-semibold">{matchCount ?? "—"}</p>
+                        <p className="text-2xl font-semibold">{profile.stats?.matches ?? matchCount ?? 0}</p>
                         <p className="text-muted-foreground text-sm">
                           Метчів
                         </p>
@@ -600,7 +600,7 @@ export default function ProfilePage() {
                         <MessageCircle className="text-primary size-5" />
                       </div>
                       <div>
-                        <p className="text-2xl font-semibold">8.5k</p>
+                        <p className="text-2xl font-semibold">{profile.stats ? profile.stats.messagesSent : "—"}</p>
                         <p className="text-muted-foreground text-sm">
                           Повідомлень
                         </p>
@@ -615,7 +615,13 @@ export default function ProfilePage() {
                         <HeartHandshake className="text-primary size-5" />
                       </div>
                       <div>
-                        <p className="text-2xl font-semibold">79%</p>
+                        <p className="text-2xl font-semibold">
+                          {profile.stats
+                            ? profile.stats.mutualLikesPercent !== null
+                              ? `${profile.stats.mutualLikesPercent}%`
+                              : "—"
+                            : "—"}
+                        </p>
                         <p className="text-muted-foreground text-sm">
                           Взаємність
                         </p>
