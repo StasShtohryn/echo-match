@@ -118,6 +118,23 @@ export const EVENT_CATEGORY_OPTIONS: Record<string, string> = {
 
 export function getLabel(map: Record<string, string>, value?: string | null): string | null {
     if (!value) return null;
-    return map[value] ?? value;
+    // Якщо передано масив ключів (наприклад, ["Dog", "Cat", "Хом'як"])
+    if (Array.isArray(value)) {
+        if (value.length === 0) return null
+        return value.map((item) => map[item] ?? item).join(", ")
+    }
+
+    // Якщо передано рядок через кому (наприклад, "Dog, Cat")
+    if (typeof value === "string" && value.includes(",")) {
+        return value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => map[item] ?? item)
+            .join(", ")
+    }
+
+    // Звичайний поодинокий рядок
+    return map[value] ?? value
 }
 

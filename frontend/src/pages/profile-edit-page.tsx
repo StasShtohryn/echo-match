@@ -56,6 +56,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -93,6 +94,13 @@ import {
   type PromptAnswerInput,
   type UpdateProfileRequest,
 } from "@/services/auth-service"
+
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
+import { Loader2 } from "lucide-react"
+import { REGIONS, INSTITUTION_CATEGORIES } from "@/data/regions"
+import { getUniversities, type UniversityItem } from "@/services/auth-service"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 
 const noSelectionValue = "__not_specified__"
 const MAX_PHOTOS = 6
@@ -138,8 +146,19 @@ function getOptionLabel(optionKey: string, value: string): string {
       return COMMUNICATION_OPTIONS[value] ?? value
     case "loveLanguage":
       return LOVE_STYLE_OPTIONS[value] ?? value
-    case "pets":
+    case "pets": {
+      if (Array.isArray(value)) {
+        return value.map((pet) => PET_OPTIONS[pet] ?? pet).join(", ")
+      }
+      if (typeof value === "string" && value.includes(",")) {
+        return value
+          .split(",")
+          .map((p) => p.trim())
+          .map((pet) => PET_OPTIONS[pet] ?? pet)
+          .join(", ")
+      }
       return PET_OPTIONS[value] ?? value
+    }
     case "drinking":
       return DRINKING_OPTIONS[value] ?? value
     case "smoking":
@@ -150,6 +169,431 @@ function getOptionLabel(optionKey: string, value: string): string {
       return value
   }
 }
+
+function SchoolSearchPicker({
+  value,
+  onChange,
+}: {
+  value: string | null
+  onChange: (val: string | null) => void
+}) {
+  const [selectedRegion, setSelectedRegion] = useState<number | null>(80) // Киев
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(1) // ЗВО
+  const [searchQuery, setSearchQuery] = useState(value ?? "")
+  const [universities, setUniversities] = useState<UniversityItem[]>([])
+  const [isFetching, setIsFetching] = useState(false)
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+
+  useEffect(() => {
+    setSearchQuery(value ?? "")
+  }, [value])
+
+  const selectedRegionName = useMemo(() => {
+    return REGIONS.find((r) => r.code === selectedRegion)?.name
+  }, [selectedRegion])
+
+  const selectedCategoryName = useMemo(() => {
+    return INSTITUTION_CATEGORIES.find((c) => c.code === selectedCategory)?.name
+  }, [selectedCategory])
+
+  useEffect(() => {
+    if (selectedRegion === null || selectedCategory === null) {
+      setUniversities([])
+      return
+    }
+
+    let isMounted = true
+    async function fetchData() {
+      try {
+        setIsFetching(true)
+        const list = await getUniversities(selectedRegion!, selectedCategory!)
+        if (isMounted) setUniversities(list)
+      } catch (err) {
+        console.error("Ошибка загрузки учебных заведений:", err)
+      } finally {
+        if (isMounted) setIsFetching(false)
+      }
+    }
+
+    void fetchData()
+    return () => {
+      isMounted = false
+    }
+  }, [selectedRegion, selectedCategory])
+
+  const filteredUniversities = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return universities.slice(0, 15)
+    return universities
+      .filter(
+        (u) =>
+          u.name.toLowerCase().includes(q) ||
+          (u.shortName?.toLowerCase().includes(q) ?? false)
+      )
+      .slice(0, 20)
+  }, [universities, searchQuery])
+
+  const handleSelect = (name: string) => {
+    setSearchQuery(name)
+    onChange(name)
+    setIsPopoverOpen(false)
+  }
+
+  const handleClear = () => {
+    setSearchQuery("")
+    onChange(null)
+  }
+
+  return (
+    <Field className="flex flex-col gap-1.5">
+      <FieldLabel htmlFor="school" className="flex items-center gap-1.5 text-xs font-semibold">
+        <GraduationCap className="size-3.5 text-muted-foreground" />
+        Освіта
+      </FieldLabel>
+
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+        <PopoverTrigger
+          render={
+            <div className="relative w-full">
+              <Input
+                id="school"
+                value={searchQuery}
+                placeholder="Назва закладу освіти..."
+                readOnly
+                onClick={() => setIsPopoverOpen(true)}
+                className="rounded-xl pr-8 cursor-pointer"
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleClear()
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              ) : (
+                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+              )}
+            </div>
+          }
+        />
+
+        <PopoverContent className="w-85 sm:w-96 rounded-2xl p-4 shadow-xl space-y-3" align="start">
+          <div className="text-s font-semibold font-sans text-foreground">
+            Пошук закладу освіти
+          </div>
+
+          {/* Фильтры в 2 колонки */}
+          <div className="grid grid-cols-2 gap-2 pb-2 border-b border-border/60">
+            <div className="space-y-1">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase">Регіон</span>
+              <Select
+                value={selectedRegion ? String(selectedRegion) : ""}
+                onValueChange={(val) => {
+                  setSelectedRegion(val ? Number(val) : null)
+                }}
+              >
+                <SelectTrigger className="h-8 w-full rounded-lg text-xs bg-background">
+                  <SelectValue placeholder="Регіон">
+                    {selectedRegionName || "Регіон"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-48 rounded-xl">
+                  <SelectGroup>
+                    {REGIONS.map((reg) => (
+                      <SelectItem key={reg.code} value={String(reg.code)} className="text-xs">
+                        {reg.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase">Категорія</span>
+              <Select
+                value={selectedCategory ? String(selectedCategory) : ""}
+                onValueChange={(val) => {
+                  setSelectedCategory(val ? Number(val) : null)
+                }}
+              >
+                <SelectTrigger className="h-8 w-full rounded-lg text-xs bg-background">
+                  <SelectValue placeholder="Категорія">
+                    {selectedCategoryName || "Категорія"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-48 rounded-xl">
+                  <SelectGroup>
+                    {INSTITUTION_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.code} value={String(cat.code)} className="text-xs">
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Поле ввода поиска внутри Поповера */}
+          <div className="relative">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Введіть назву або абревіатуру..."
+              className="h-9 text-xs rounded-xl pl-8"
+              autoFocus
+            />
+            {isFetching ? (
+              <Loader2 className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 animate-spin text-primary" />
+            ) : (
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            )}
+          </div>
+
+          {/* Результаты поиска */}
+          <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
+            {filteredUniversities.length > 0 ? (
+              filteredUniversities.map((item, index) => (
+                <button
+                  key={item.id ?? index}
+                  type="button"
+                  onClick={() => handleSelect(item.name)}
+                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-foreground hover:bg-accent hover:text-primary transition-colors flex items-center justify-between"
+                >
+                  <span className="truncate">{item.name}</span>
+                  {item.shortName && (
+                    <span className="ml-1.5 shrink-0 text-[10px] font-semibold text-muted-foreground">
+                      ({item.shortName})
+                    </span>
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="py-4 text-center text-xs text-muted-foreground">
+                {isFetching ? "Завантаження..." : "Закладів не знайдено"}
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </Field>
+  )
+}
+
+const OWNED_PETS = new Set<string>(["Dog", "Cat", "Bird", "Fish", "Reptile", "Amphibian"])
+const NONE_OWNED_PETS = new Set<string>(["DontHaveButLove", "NoPets"])
+const MAX_SELECTED_PETS = 5
+
+const PET_OPTION_ITEMS = [
+  { value: "Dog", title: "Собака" },
+  { value: "Cat", title: "Кіт" },
+  { value: "Bird", title: "Птах" },
+  { value: "Fish", title: "Рибки" },
+  { value: "Reptile", title: "Рептилія" },
+  { value: "Amphibian", title: "Амфібія" },
+  { value: "DontHaveButLove", title: "Не маю, але обожнюю тварин" },
+  { value: "WantAPet", title: "Хочу завести улюбленця" },
+  { value: "Allergic", title: "Алергія на тварин" },
+  { value: "NoPets", title: "Не маю і не планую" },
+  { value: "Other", title: "Інше" },
+]
+
+function PetsSelectorCard({
+  value,
+  onChange,
+}: {
+  value: string[] | null
+  onChange: (val: string[] | null) => void
+}) {
+  const selectedList = value ?? []
+  const [customPet, setCustomPet] = useState("")
+  const [isOtherPopoverOpen, setIsOtherPopoverOpen] = useState(false)
+
+  const knownValues = PET_OPTION_ITEMS.map((o) => o.value)
+  const customValues = selectedList.filter((v) => !knownValues.includes(v))
+  const isOtherSelected = customValues.length > 0 || selectedList.includes("Other")
+
+  const hasOwned = selectedList.some((item) => OWNED_PETS.has(item))
+  const hasNoneOwned = selectedList.some((item) => NONE_OWNED_PETS.has(item))
+
+  const toggleOption = (optValue: string) => {
+    if (selectedList.includes(optValue)) {
+      const next = selectedList.filter((item) => item !== optValue)
+      onChange(next.length > 0 ? next : null)
+      return
+    }
+
+    if (selectedList.length >= MAX_SELECTED_PETS) {
+      toast.add({
+        type: "warning",
+        title: "Ліміт досягнуто",
+        description: `Можна обрати не більше ${MAX_SELECTED_PETS} варіантів.`,
+      })
+      return
+    }
+
+    let updatedList = [...selectedList]
+    if (OWNED_PETS.has(optValue) && hasNoneOwned) {
+      updatedList = updatedList.filter((item) => !NONE_OWNED_PETS.has(item))
+    } else if (NONE_OWNED_PETS.has(optValue) && hasOwned) {
+      updatedList = updatedList.filter((item) => !OWNED_PETS.has(item))
+    }
+
+    updatedList.push(optValue)
+    onChange(updatedList)
+  }
+
+  const handleAddCustomPet = () => {
+    const trimmed = customPet.trim()
+    if (!trimmed) return
+
+    if (selectedList.length >= MAX_SELECTED_PETS) {
+      toast.add({
+        type: "warning",
+        title: "Ліміт досягнуто",
+        description: `Можна обрати не більше ${MAX_SELECTED_PETS} варіантів.`,
+      })
+      return
+    }
+
+    // 1. Прибираємо конфліктний "не маю тварин"
+    let updatedList = selectedList.filter((item) => !NONE_OWNED_PETS.has(item))
+
+    // 2. Якщо енум "Other" ще не в масиві — додаємо його для беку
+    if (!updatedList.includes("Other")) {
+      updatedList.push("Other")
+    }
+
+    onChange(updatedList)
+    setCustomPet("")
+    setIsOtherPopoverOpen(false)
+  }
+
+  const formattedLabel = selectedList.length > 0
+    ? selectedList.map((p) => PET_OPTIONS[p] ?? p).join(", ")
+    : "Не вказано"
+
+  return (
+    <div className="rounded-2xl border border-border/60 bg-muted/10 p-3 transition-colors hover:bg-muted/20">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <Dog className="size-3.5 text-primary" />
+          <span>Домашні тварини</span>
+        </div>
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+          {selectedList.length} / {MAX_SELECTED_PETS}
+        </span>
+      </div>
+
+      <Popover>
+        <PopoverTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-between rounded-xl bg-background text-left font-normal h-10 px-3"
+            >
+              <span className="truncate text-xs font-medium text-foreground">
+                {formattedLabel}
+              </span>
+            </Button>
+          }
+        />
+        <PopoverContent className="w-80 rounded-2xl p-4 shadow-xl" align="start">
+          <div className="space-y-3">
+            <div className="text-xs font-bold text-foreground">
+              Оберіть улюбленців (до 5)
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {PET_OPTION_ITEMS.map((opt) => {
+                const isOther = opt.value === "Other"
+                const isSelected = isOther ? isOtherSelected : selectedList.includes(opt.value)
+                const isDisabled =
+                  (!isSelected && selectedList.length >= MAX_SELECTED_PETS) ||
+                  (OWNED_PETS.has(opt.value) && hasNoneOwned) ||
+                  (NONE_OWNED_PETS.has(opt.value) && hasOwned)
+
+                if (isOther) {
+                  return (
+                    <Popover key={opt.value} open={isOtherPopoverOpen} onOpenChange={setIsOtherPopoverOpen}>
+                      <PopoverTrigger
+                        render={
+                          <button
+                            type="button"
+                            disabled={isDisabled}
+                            className={cn(
+                              "flex items-center justify-center rounded-xl border p-2 text-xs font-medium text-center transition-all",
+                              isDisabled
+                                ? "opacity-40 cursor-not-allowed border-border/50 bg-muted/20"
+                                : "cursor-pointer",
+                              isSelected && !isDisabled
+                                ? "border-primary bg-accent text-primary ring-1 ring-primary/30"
+                                : !isDisabled && "border-border bg-card hover:border-primary/60"
+                            )}
+                          >
+                            {opt.title}
+                          </button>
+                        }
+                      />
+                      <PopoverContent className="w-64 rounded-xl p-3 shadow-lg">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold">Свій варіант</Label>
+                          <div className="flex gap-1.5">
+                            <Input
+                              value={customPet}
+                              onChange={(e) => setCustomPet(e.target.value)}
+                              placeholder="Хом'як..."
+                              className="h-8 text-xs rounded-lg"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault()
+                                  handleAddCustomPet()
+                                }
+                              }}
+                            />
+                            <Button size="sm" type="button" onClick={handleAddCustomPet} className="h-8 rounded-lg px-2.5 text-xs">
+                              ОК
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )
+                }
+
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => toggleOption(opt.value)}
+                    className={cn(
+                      "flex items-center justify-center rounded-xl border p-2 text-xs font-medium text-center transition-all",
+                      isDisabled
+                        ? "opacity-40 cursor-not-allowed border-border/50 bg-muted/20"
+                        : "cursor-pointer",
+                      isSelected && !isDisabled
+                        ? "border-primary bg-accent text-primary ring-1 ring-primary/30"
+                        : !isDisabled && "border-border bg-card hover:border-primary/60"
+                    )}
+                  >
+                    {opt.title}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
 
 interface OptionConfig {
   key: keyof UpdateProfileRequest
@@ -562,7 +1006,7 @@ export default function ProfileEditPage() {
             <CardHeader className="pb-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <CardTitle className="text-xl font-bold">Фотографії</CardTitle>
+                  <CardTitle className="text-xl font-semibold font-sans">Фотографії</CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
                     Перше фото — головне, його бачать першим у стрічці. Додайте до 6 світлин.
                   </CardDescription>
@@ -711,7 +1155,7 @@ export default function ProfileEditPage() {
           {/* 2. БАЗОВА ІНФОРМАЦІЯ (ПРО ВАС) */}
           <Card className="rounded-3xl border-border/80 shadow-xs">
             <CardHeader>
-              <CardTitle className="text-xl font-bold">Про вас</CardTitle>
+              <CardTitle className="text-xl font-semibold font-sans">Про вас</CardTitle>
               <CardDescription>Основні відомості, які першими читають у вашому профілі</CardDescription>
             </CardHeader>
             <CardContent>
@@ -737,15 +1181,28 @@ export default function ProfileEditPage() {
                     min={120}
                     max={250}
                     value={form.heightCm ?? ""}
-                    onChange={(e) =>
-                      setForm((cur) => ({
-                        ...cur,
-                        heightCm: e.target.value ? Number(e.target.value) : null,
-                      }))
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (!val) {
+                        setForm((cur) => ({ ...cur, heightCm: null }))
+                        return
+                      }
+                      const num = Number(val)
+                      if (num > 250) {
+                        setForm((cur) => ({ ...cur, heightCm: 250 }))
+                      } else {
+                        setForm((cur) => ({ ...cur, heightCm: num }))
+                      }
+                    }}
+                    onBlur={() => {
+                      if (form.heightCm !== null && form.heightCm < 120) {
+                        setForm((cur) => ({ ...cur, heightCm: 120 }))
+                      }
+                    }}
                     placeholder="Наприклад, 178"
                     className="rounded-xl"
                   />
+                  <FieldDescription>Від 120 до 250 см</FieldDescription>
                 </Field>
 
                 <Field className="md:col-span-2">
@@ -804,19 +1261,10 @@ export default function ProfileEditPage() {
                   />
                 </Field>
 
-                <Field>
-                  <FieldLabel htmlFor="school" className="flex items-center gap-1.5">
-                    <GraduationCap className="size-3.5 text-muted-foreground" />
-                    Освіта
-                  </FieldLabel>
-                  <Input
-                    id="school"
-                    value={form.school ?? ""}
-                    onChange={(e) => updateField("school", e.target.value)}
-                    placeholder="Університет, факультет чи курс"
-                    className="rounded-xl"
-                  />
-                </Field>
+                <SchoolSearchPicker
+                  value={form.school}
+                  onChange={(val) => setForm((cur) => ({ ...cur, school: val }))}
+                />
 
                 <Field>
                   <FieldLabel htmlFor="city" className="flex items-center gap-1.5">
@@ -876,7 +1324,7 @@ export default function ProfileEditPage() {
                     <Heart className="size-4" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-bold">Стосунки та цінності</CardTitle>
+                    <CardTitle className="text-lg font-semibold font-sans">Стосунки та цінності</CardTitle>
                     <CardDescription>Що для вас важливо в парі</CardDescription>
                   </div>
                 </div>
@@ -892,11 +1340,6 @@ export default function ProfileEditPage() {
                         <Icon className="size-3.5 text-primary" />
                         <span>{label}</span>
                       </div>
-                      {form[key] && (
-                        <span className="text-xs text-primary font-medium truncate max-w-44">
-                          {getOptionLabel(optionKey, String(form[key]))}
-                        </span>
-                      )}
                     </div>
 
                     <Select
@@ -931,51 +1374,59 @@ export default function ProfileEditPage() {
                     <Sparkles className="size-4" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-bold">Звички та спосіб життя</CardTitle>
+                    <CardTitle className="text-lg font-semibold font-sans">Звички та спосіб життя</CardTitle>
                     <CardDescription>Повсякденні звички та хобі</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {lifestyleConfigs.map(({ key, label, optionKey, icon: Icon }) => (
-                  <div
-                    key={key}
-                    className="rounded-2xl border border-border/60 bg-muted/10 p-3 hover:bg-muted/20 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        <Icon className="size-3.5 text-primary" />
-                        <span>{label}</span>
-                      </div>
-                      {form[key] && (
-                        <span className="text-xs text-primary font-medium truncate max-w-44">
-                          {getOptionLabel(optionKey, String(form[key]))}
-                        </span>
-                      )}
-                    </div>
+                {lifestyleConfigs.map(({ key, label, optionKey, icon: Icon }) => {
+                  // 🌟 Окрема обробка для улюбленців
+                  if (key === "pets") {
+                    return (
+                      <PetsSelectorCard
+                        key={key}
+                        value={Array.isArray(form.pets) ? form.pets : form.pets ? String(form.pets).split(",") : null}
+                        onChange={(newVal) => setForm((cur) => ({ ...cur, pets: newVal }))}
+                      />
+                    )
+                  }
 
-                    <Select
-                      value={form[key] ?? ""}
-                      onValueChange={(val) =>
-                        updateField(key, val === noSelectionValue ? "" : val ?? "")
-                      }
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-2xl border border-border/60 bg-muted/10 p-3 hover:bg-muted/20 transition-colors"
                     >
-                      <SelectTrigger id={key} className="w-full bg-background rounded-xl">
-                        <SelectValue placeholder="Не вказано">
-                          {form[key] ? getOptionLabel(optionKey, String(form[key])) : "Не вказано"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60 rounded-xl">
-                        <SelectItem value={noSelectionValue}>Не вказано</SelectItem>
-                        {(lookups.options[optionKey] ?? []).map((val) => (
-                          <SelectItem key={val} value={val}>
-                            {getOptionLabel(optionKey, val)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          <Icon className="size-3.5 text-primary" />
+                          <span>{label}</span>
+                        </div>
+                      </div>
+
+                      <Select
+                        value={form[key] ?? ""}
+                        onValueChange={(val) =>
+                          updateField(key, val === noSelectionValue ? "" : val ?? "")
+                        }
+                      >
+                        <SelectTrigger id={key} className="w-full bg-background rounded-xl">
+                          <SelectValue placeholder="Не вказано">
+                            {form[key] ? getOptionLabel(optionKey, String(form[key])) : "Не вказано"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 rounded-xl">
+                          <SelectItem value={noSelectionValue}>Не вказано</SelectItem>
+                          {(lookups.options[optionKey] ?? []).map((val) => (
+                            <SelectItem key={val} value={val}>
+                              {getOptionLabel(optionKey, val)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )
+                })}
               </CardContent>
             </Card>
           </div>
@@ -983,7 +1434,7 @@ export default function ProfileEditPage() {
           {/* 4. ІНТЕРЕСИ ТА МОВИ */}
           <Card className="rounded-3xl border-border/80 shadow-xs">
             <CardHeader>
-              <CardTitle className="text-xl font-bold">Інтереси та мови</CardTitle>
+              <CardTitle className="text-xl font-semibold font-sans">Інтереси та мови</CardTitle>
               <CardDescription>
                 Оберіть захоплення, щоб знаходити людей за спільними темами
               </CardDescription>
@@ -1015,7 +1466,7 @@ export default function ProfileEditPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl font-bold">Запитання про себе</CardTitle>
+                  <CardTitle className="text-xl font-semibold font-sans">Запитання про себе</CardTitle>
                   <CardDescription>
                     Оберіть до 3 запитань, щоб проявити своє почуття гумору або розповісти цікаву історію
                   </CardDescription>

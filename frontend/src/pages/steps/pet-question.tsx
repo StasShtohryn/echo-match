@@ -138,7 +138,6 @@ export default function PetsStep({
     const trimmed = customPet.trim()
     if (!trimmed) return
 
-
     if (selectedList.length >= MAX_SELECTED_PETS) {
       toast.add({
         type: "warning",
@@ -148,12 +147,15 @@ export default function PetsStep({
       return
     }
 
-    // Видаляємо маркер "Other", якщо він був, і додаємо введений текст
-    const filtered = selectedList.filter((item) => item !== "Other")
-    if (!filtered.includes(trimmed)) {
-      const next = [...filtered, trimmed]
-      onChange(next)
+    // 1. Прибираємо конфліктний "не маю тварин"
+    let updatedList = selectedList.filter((item) => !NONE_OWNED_PETS.has(item))
+
+    // 2. Якщо енум "Other" ще не в масиві — додаємо його для беку
+    if (!updatedList.includes("Other")) {
+      updatedList.push("Other")
     }
+
+    onChange(updatedList)
     setCustomPet("")
     setIsPopoverOpen(false)
   }
