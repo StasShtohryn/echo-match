@@ -787,7 +787,10 @@ export default function ProfileEditPage() {
   }
 
   function updateField(key: keyof UpdateProfileRequest, value: string) {
-    setForm((current) => ({ ...current, [key]: value || null }))
+    setForm((current) => ({
+      ...current,
+      [key]: key === "displayName" ? value : (value || null),
+    }))
   }
 
   function toggleInterest(id: number) {
@@ -807,7 +810,7 @@ export default function ProfileEditPage() {
   }
 
   async function save() {
-    if (!form.displayName.trim()) {
+    if (!form.displayName?.trim()) {
       toast.add({
         type: "error",
         title: "Вкажіть ім'я",
@@ -820,7 +823,7 @@ export default function ProfileEditPage() {
     try {
       await updateMyProfile({
         ...form,
-        displayName: form.displayName.trim(),
+        displayName: (form.displayName ?? "").trim(),
         heightCm: form.heightCm ? Number(form.heightCm) : null,
       })
       await updateMyInterests(interestIds)
@@ -1622,7 +1625,7 @@ export default function ProfileEditPage() {
               type="button"
               size="sm"
               onClick={() => void save()}
-              disabled={isSaving || !form.displayName.trim()}
+              disabled={isSaving || !form.displayName?.trim()}
               className="h-8 rounded-full px-4 text-xs font-semibold shadow-xs"
             >
               {isSaving ? (
