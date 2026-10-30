@@ -363,7 +363,7 @@ export function SignupForm({
             navigate("/me")
             return true
           }
-        } catch {}
+        } catch { }
       }
 
       const errorMessage = isConflict
@@ -660,7 +660,11 @@ export function SignupForm({
                     "border-destructive ring-3 ring-destructive/20"
                   )}
                 >
-                  <SelectValue placeholder="Оберіть стать" />
+                  <SelectValue placeholder="Оберіть стать">
+                    {formData.gender === "Male" && "Чоловік"}
+                    {formData.gender === "Female" && "Жінка"}
+                    {formData.gender === "Other" && "Інше"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Male">Чоловік</SelectItem>

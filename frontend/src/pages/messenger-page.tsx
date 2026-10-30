@@ -1591,7 +1591,7 @@ export default function MessengerPage() {
               <span className="hidden text-xs text-muted-foreground sm:block">
                 {!user?.token || connectionStatus === "disconnected"
                   ? "Немає live-підключення"
-                  : connectionStatus === "connected" ? "Підключено" : "Підключення..."}
+                  : connectionStatus === "connected" ? "В мережі" : "Підключення..."}
               </span>
             </header>
             {selectedEventChat?.cancelledAt && (

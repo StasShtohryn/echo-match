@@ -95,7 +95,11 @@ export function SettingsSections({
               <CardTitle className="text-xl font-semibold font-sans">Конфіденційність</CardTitle>
             </CardHeader>
             <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">
+                Це просто заморозить Вашу анкету. Ви не будете бачити інших, і навпаки.
+              </p>
               <div className="flex items-center gap-3 text-sm">
+
                 <Checkbox
                   id="isPrivate"
                   checked={isPrivate}
