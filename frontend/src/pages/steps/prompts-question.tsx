@@ -117,8 +117,12 @@ export default function PromptsStep({
           <span>Оберіть до {MAX_PROMPTS} запитань і дайте коротку відповідь:</span>
           <span
             className={cn(
-              "font-bold",
-              filledCount === MAX_PROMPTS ? "text-primary" : "text-foreground"
+              "text-xs font-semibold px-2.5 py-0.5 rounded-full transition-colors",
+              filledCount === MAX_PROMPTS
+                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                : filledCount > 0
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground"
             )}
           >
             {filledCount} / {MAX_PROMPTS} заповнено
@@ -145,13 +149,13 @@ export default function PromptsStep({
                   key={item.id}
                   value={`prompt-${item.id}`}
                   className={cn(
-                    "rounded-2xl border px-4 transition-all duration-200 shadow-xs",
+                    " overflow-hidden rounded-2xl border px-4 transition-all duration-200 shadow-xs",
                     hasAnswer
                       ? "border-primary bg-accent/40 ring-1 ring-primary/40"
                       : "border-border bg-card hover:border-primary/60"
                   )}
                 >
-                  <AccordionTrigger className="cursor-pointer py-3.5 hover:no-underline">
+                  <AccordionTrigger className="cursor-pointer py-3.5 hover:no-underlinetext-sm sm:text-base font-sans text-foreground">
                     <div className="flex items-center gap-2.5 text-left text-sm font-semibold text-foreground">
                       {hasAnswer && (
                         <CheckCircle2 className="size-4 shrink-0 text-primary" />

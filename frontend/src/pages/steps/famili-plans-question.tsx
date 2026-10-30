@@ -79,7 +79,7 @@ export default function FamilyPlansStep({
                 type="button"
                 onClick={() => onChange(isSelected ? null : opt.value)}
                 className={cn(
-                  "group relative flex items-center gap-3.5 rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer shadow-xs",
+                  "flex items-center justify-center rounded-2xl border p-4 text-center transition-all duration-200 cursor-pointer shadow-xs",
                   isSelected
                     ? "border-primary bg-accent ring-2 ring-primary/30"
                     : "border-border bg-card hover:border-primary/60 hover:bg-accent/40"

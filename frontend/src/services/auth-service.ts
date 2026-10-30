@@ -136,7 +136,7 @@ export interface UpdateProfileRequest {
   familyPlans: string | null
   communication: string | null
   loveLanguage: string | null
-  pets: string | null
+  pets: string[] | null
   drinking: string | null
   smoking: string | null
   workout: string | null
