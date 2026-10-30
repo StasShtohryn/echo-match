@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/edbo/:path*",
+      "destination": "https://registry.edbo.gov.ua/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

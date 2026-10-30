@@ -34,7 +34,7 @@ import { getMyProfile, getPublicProfile, type PublicProfile } from "@/services/a
 import { useAuthStore } from "@/store/useAuthStore"
 import { useUIStore } from "@/store/useUIStore"
 import type { Match } from "@/types/match.types"
-import { getMatches } from "@/services/match-service"
+import { getMatches, markMatchAsRead } from "@/services/match-service"
 import {
   getChatHubUrl,
   getMessages,
@@ -90,6 +90,9 @@ import {
 } from "@/components/ui/input-group"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+import { deleteMatch } from "@/services/match-service"
+import { toast } from "@/components/ui/toast"
 
 const PAGE_SIZE = 30
 const REACTION_OPTIONS: { type: ReactionType; emoji: string; label: string }[] = [
@@ -554,9 +557,12 @@ export default function MessengerPage() {
 
   const markRead = useCallback(async (id: string) => {
     try {
-      await markMessagesRead(id)
+      await Promise.all([
+        markMessagesRead(id),
+        markMatchAsRead(id),
+      ])
       setMatches((current) => current.map((match) => (
-        match.id === id ? { ...match, unreadCount: 0 } : match
+        match.id === id ? { ...match, isNew: false, unreadCount: 0 } : match
       )))
     } catch (error: unknown) {
       setChatError(getApiErrorMessage(error, "Не вдалося позначити повідомлення прочитаними."))
@@ -577,8 +583,15 @@ export default function MessengerPage() {
   useEffect(() => {
     if (!matchId) return
 
+    setMatches((current) =>
+      current.map((m) =>
+        m.id === matchId ? { ...m, isNew: false, unreadCount: 0 } : m
+      )
+    );
+
     const activeMatchId = matchId
     let cancelled = false
+    void markRead(activeMatchId)
 
     async function loadConversation() {
       setLoadedMatchId(null)
@@ -601,6 +614,7 @@ export default function MessengerPage() {
             myReaction: myReaction ?? null,
             partnerReaction: partnerReaction ?? null,
           }
+
         })
         setMessages(chronological)
         setLoadedMatchId(activeMatchId)
@@ -872,7 +886,10 @@ export default function MessengerPage() {
     async function startConnection() {
       try {
         await connection.start()
-        if (disposed) return
+        if (disposed) {
+          // void connection.stop()
+          return
+        }
         setConnectionStatus("connected")
         const currentMatchId = selectedMatchIdRef.current
         if (currentMatchId) await connection.invoke("JoinMatch", currentMatchId)
@@ -880,6 +897,11 @@ export default function MessengerPage() {
         if (!disposed) {
           setConnectionStatus("disconnected")
           setChatError(getApiErrorMessage(error, "Не вдалося підключитися до чату в реальному часі."))
+
+          // const errorMessage = String(error)
+          // if (!errorMessage.includes("stopped during negotiation")) {
+          //   setChatError(getApiErrorMessage(error, "Не вдалося підключитися до чату в реальному часі."))
+          // }
         }
       }
     }
@@ -1286,8 +1308,14 @@ export default function MessengerPage() {
     }
   }
 
-  function deleteMatch(id: string) {
-    setMatches((current) => current.filter((match) => match.id !== id))
+  function handledeleteMatch(id: string) {
+    // 1. Одразу перенаправляємо на головну сторінку месенджера (щоб розмонтувати активний чат)
+    if (matchId === id) {
+      navigate("/messenger", { replace: true })
+    }
+
+    // 2. Миттєво видаляємо з локального масиву чатів
+    setMatches((current) => current.filter((m) => m.id !== id))
     setPinnedMatchIds((current) => {
       const next = new Set(current)
       next.delete(id)
@@ -1298,7 +1326,22 @@ export default function MessengerPage() {
       next.delete(id)
       return next
     })
-    if (matchId === id) navigate("/messenger")
+
+    // 3. Відправляємо запит у фоні без блокування UI
+    void (async () => {
+      try {
+        await deleteMatch(id)
+        toast.add({ type: "success", title: "Метч видалено" })
+      } catch (error: unknown) {
+        console.error("Помилка видалення метчу:", error)
+        toast.add({
+          type: "error",
+          title: "Не вдалося видалити метч",
+          description: getApiErrorMessage(error, "Спробуйте оновити сторінку."),
+        })
+        void refreshMatches()
+      }
+    })()
   }
 
   return (
@@ -1351,6 +1394,7 @@ export default function MessengerPage() {
                       render={
                         <Link
                           to={`/messenger/${match.id}`}
+
                           className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/70 ${match.id === matchId ? "bg-muted" : ""}`}
                         >
                           <Avatar className="size-12 shrink-0 rounded-xl">
@@ -1445,10 +1489,10 @@ export default function MessengerPage() {
                         </ContextMenuItem>
                         <ContextMenuItem
                           variant="destructive"
-                          onClick={() => deleteMatch(match.id)}
+                          onClick={() => void handledeleteMatch(match.id)}
                         >
                           <Trash2 />
-                          Видалити чат
+                          Видалити метч
                         </ContextMenuItem>
                       </ContextMenuGroup>
                     </ContextMenuContent>
@@ -1635,53 +1679,53 @@ export default function MessengerPage() {
                             <ChatDateBadge label={formatTelegramDate(message.sentAt)} />
                           )}
                           <div className={`flex items-end gap-2 ${message.isMine ? "justify-end" : "justify-start"}`}>
-                      {!message.isMine && (
-                        <Link
-                          aria-label={`Відкрити профіль ${message.sender.displayName}`}
-                          className="shrink-0"
-                          to={`/profile/${message.sender.profileId}`}
-                        >
-                          <Avatar className="size-11">
-                            <AvatarImage alt={message.sender.displayName} src={message.sender.mainPhotoUrl ?? undefined} />
-                            <AvatarFallback className="text-xs">{initials(message.sender.displayName)}</AvatarFallback>
-                          </Avatar>
-                        </Link>
-                      )}
-                      {message.isMine ? (
-                        <div className="max-w-[min(78%,34rem)] rounded-2xl rounded-br-xs bg-primary px-3 py-2 text-primary-foreground">
-                          <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
-                            <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{message.text}</p>
-                            <time className="ml-auto shrink-0 text-[10px] opacity-70" dateTime={message.sentAt}>
-                              {formatTime(message.sentAt)}
-                            </time>
-                          </div>
-                          {otherParticipantsCount > 0 && (
-                            <div
-                              aria-label={readCount > 0
-                                ? `Переглянули ${readCount} з ${otherParticipantsCount}`
-                                : "Не переглянуто"}
-                              className="mt-1 flex items-center justify-end gap-1 text-[10px] text-primary-foreground/75"
-                              title={readCount > 0
-                                ? `Переглянули ${readCount} з ${otherParticipantsCount}`
-                                : "Не переглянуто"}
-                            >
-                              {readCount > 0
-                                ? <><CheckCheck className="size-3" />{readCount}/{otherParticipantsCount}</>
-                                : <><Check className="size-3" />Не переглянуто</>}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="max-w-[min(78%,34rem)] rounded-2xl rounded-bl-xs border border-border bg-card px-3 py-2">
-                          <p className="mb-1 text-xs font-semibold text-primary">{message.sender.displayName}</p>
-                          <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
-                            <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{message.text}</p>
-                            <time className="ml-auto shrink-0 text-[10px] text-muted-foreground" dateTime={message.sentAt}>
-                              {formatTime(message.sentAt)}
-                            </time>
-                          </div>
-                        </div>
-                      )}
+                            {!message.isMine && (
+                              <Link
+                                aria-label={`Відкрити профіль ${message.sender.displayName}`}
+                                className="shrink-0"
+                                to={`/profile/${message.sender.profileId}`}
+                              >
+                                <Avatar className="size-11">
+                                  <AvatarImage alt={message.sender.displayName} src={message.sender.mainPhotoUrl ?? undefined} />
+                                  <AvatarFallback className="text-xs">{initials(message.sender.displayName)}</AvatarFallback>
+                                </Avatar>
+                              </Link>
+                            )}
+                            {message.isMine ? (
+                              <div className="max-w-[min(78%,34rem)] rounded-2xl rounded-br-xs bg-primary px-3 py-2 text-primary-foreground">
+                                <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+                                  <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{message.text}</p>
+                                  <time className="ml-auto shrink-0 text-[10px] opacity-70" dateTime={message.sentAt}>
+                                    {formatTime(message.sentAt)}
+                                  </time>
+                                </div>
+                                {otherParticipantsCount > 0 && (
+                                  <div
+                                    aria-label={readCount > 0
+                                      ? `Переглянули ${readCount} з ${otherParticipantsCount}`
+                                      : "Не переглянуто"}
+                                    className="mt-1 flex items-center justify-end gap-1 text-[10px] text-primary-foreground/75"
+                                    title={readCount > 0
+                                      ? `Переглянули ${readCount} з ${otherParticipantsCount}`
+                                      : "Не переглянуто"}
+                                  >
+                                    {readCount > 0
+                                      ? <><CheckCheck className="size-3" />{readCount}/{otherParticipantsCount}</>
+                                      : <><Check className="size-3" />Не переглянуто</>}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="max-w-[min(78%,34rem)] rounded-2xl rounded-bl-xs border border-border bg-card px-3 py-2">
+                                <p className="mb-1 text-xs font-semibold text-primary">{message.sender.displayName}</p>
+                                <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+                                  <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{message.text}</p>
+                                  <time className="ml-auto shrink-0 text-[10px] text-muted-foreground" dateTime={message.sentAt}>
+                                    {formatTime(message.sentAt)}
+                                  </time>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </Fragment>
                       )
@@ -1973,75 +2017,75 @@ export default function MessengerPage() {
                           <div
                             className={`flex ${message.isMine ? "justify-end" : "justify-start"} ${activeReactionMessageId === message.id ? "relative z-[45]" : ""}`}
                           >
-                      <div className={`relative max-w-[min(78%,34rem)] ${reactions.length > 0 ? "mb-3" : ""}`}>
-                        <ContextMenu
-                          onOpenChange={(open) => {
-                            setActiveReactionMessageId((current) => {
-                              if (open) return message.id
-                              return current === message.id ? null : current
-                            })
-                          }}
-                        >
-                          <ContextMenuTrigger className="block w-fit max-w-full cursor-context-menu">
-                            <Bubble
-                              align={message.isMine ? "end" : "start"}
-                              variant={message.isMine ? "default" : "muted"}
-                              className="max-w-full"
-                            >
-                              <BubbleContent className={`rounded-2xl px-3 py-1.5 ${message.isMine ? "rounded-br-xs" : "rounded-bl-xs border-border bg-card text-card-foreground!"}`}>
-                                <div className="flex flex-wrap items-end justify-between gap-x-2.5 gap-y-0.5">
-                                  <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-[14px] leading-snug">{message.text}</p>
-                                  <div className={`ml-auto inline-flex shrink-0 select-none items-center gap-1 self-end text-[10px] tabular-nums ${message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                    <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
-                                    {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
-                                  </div>
-                                </div>
-                              </BubbleContent>
-                            </Bubble>
-                          </ContextMenuTrigger>
-                          <ContextMenuContent>
-                            <ContextMenuGroup>
-                              <ContextMenuLabel>Поставити реакцію</ContextMenuLabel>
-                              <div className="grid grid-cols-6 gap-0.5 px-1 pb-1">
-                                {REACTION_OPTIONS.map(({ type, emoji, label }) => (
-                                  <ContextMenuItem
-                                    key={type}
-                                    aria-label={myReaction === type ? `Убрать реакцию: ${label}` : `Поставить реакцию: ${label}`}
-                                    title={label}
-                                    className={`size-9 justify-center p-0 text-lg ${myReaction === type ? "bg-accent" : ""}`}
-                                    onClick={() => void handleReaction(message, type)}
+                            <div className={`relative max-w-[min(78%,34rem)] ${reactions.length > 0 ? "mb-3" : ""}`}>
+                              <ContextMenu
+                                onOpenChange={(open) => {
+                                  setActiveReactionMessageId((current) => {
+                                    if (open) return message.id
+                                    return current === message.id ? null : current
+                                  })
+                                }}
+                              >
+                                <ContextMenuTrigger className="block w-fit max-w-full cursor-context-menu">
+                                  <Bubble
+                                    align={message.isMine ? "end" : "start"}
+                                    variant={message.isMine ? "default" : "muted"}
+                                    className="max-w-full"
                                   >
-                                    {emoji}
-                                  </ContextMenuItem>
-                                ))}
-                              </div>
-                            </ContextMenuGroup>
-                          </ContextMenuContent>
-                        </ContextMenu>
-                        {reactions.length > 0 && (
-                          <BubbleReactions
-                            align={message.isMine ? "end" : "start"}
-                            aria-label="Реакції на повідомлення"
-                          >
-                            {myReaction && (
-                              <span key="mine" aria-label={`Ваша реакція: ${reactionEmoji(myReaction)}`} title="Ваша реакція">
-                                {reactionEmoji(myReaction)}
-                              </span>
-                            )}
-                            {partnerReaction && (
-                              <span key="partner" aria-label={`Реакція співрозмовника: ${reactionEmoji(partnerReaction)}`} title="Реакція співрозмовника">
-                                {reactionEmoji(partnerReaction)}
-                              </span>
-                            )}
-                          </BubbleReactions>
-                        )}
+                                    <BubbleContent className={`rounded-2xl px-3 py-1.5 ${message.isMine ? "rounded-br-xs" : "rounded-bl-xs border-border bg-card text-card-foreground!"}`}>
+                                      <div className="flex flex-wrap items-end justify-between gap-x-2.5 gap-y-0.5">
+                                        <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-[14px] leading-snug">{message.text}</p>
+                                        <div className={`ml-auto inline-flex shrink-0 select-none items-center gap-1 self-end text-[10px] tabular-nums ${message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                          <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
+                                          {message.isMine && (read ? <CheckCheck className="size-3.5" aria-label="Прочитано" /> : <Check className="size-3.5" aria-label="Надіслано" />)}
+                                        </div>
+                                      </div>
+                                    </BubbleContent>
+                                  </Bubble>
+                                </ContextMenuTrigger>
+                                <ContextMenuContent>
+                                  <ContextMenuGroup>
+                                    <ContextMenuLabel>Поставити реакцію</ContextMenuLabel>
+                                    <div className="grid grid-cols-6 gap-0.5 px-1 pb-1">
+                                      {REACTION_OPTIONS.map(({ type, emoji, label }) => (
+                                        <ContextMenuItem
+                                          key={type}
+                                          aria-label={myReaction === type ? `Убрать реакцию: ${label}` : `Поставить реакцию: ${label}`}
+                                          title={label}
+                                          className={`size-9 justify-center p-0 text-lg ${myReaction === type ? "bg-accent" : ""}`}
+                                          onClick={() => void handleReaction(message, type)}
+                                        >
+                                          {emoji}
+                                        </ContextMenuItem>
+                                      ))}
+                                    </div>
+                                  </ContextMenuGroup>
+                                </ContextMenuContent>
+                              </ContextMenu>
+                              {reactions.length > 0 && (
+                                <BubbleReactions
+                                  align={message.isMine ? "end" : "start"}
+                                  aria-label="Реакції на повідомлення"
+                                >
+                                  {myReaction && (
+                                    <span key="mine" aria-label={`Ваша реакція: ${reactionEmoji(myReaction)}`} title="Ваша реакція">
+                                      {reactionEmoji(myReaction)}
+                                    </span>
+                                  )}
+                                  {partnerReaction && (
+                                    <span key="partner" aria-label={`Реакція співрозмовника: ${reactionEmoji(partnerReaction)}`} title="Реакція співрозмовника">
+                                      {reactionEmoji(partnerReaction)}
+                                    </span>
+                                  )}
+                                </BubbleReactions>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </Fragment>
-                    )
-                  })}
-                </>
-              )}
+                        </Fragment>
+                      )
+                    })}
+                  </>
+                )}
                 <div ref={messagesEndRef} className="h-px w-full" />
               </div>
             </ScrollArea>
@@ -2254,7 +2298,7 @@ export default function MessengerPage() {
           </>
         ) : matchId ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-            <p className="text-muted-foreground">{isMatchesLoading ? "Завантаження чату..." : "Цей чат не знайдено серед ваших мэтчів."}</p>
+            <p className="text-muted-foreground">{isMatchesLoading ? "Завантаження чату..." : "Цей чат не знайдено серед ваших метчів."}</p>
             <Button nativeButton={false} render={<Link to="/messenger" />} variant="outline">До списку чатів</Button>
           </div>
         ) : (
@@ -2267,3 +2311,4 @@ export default function MessengerPage() {
     </div >
   )
 }
+

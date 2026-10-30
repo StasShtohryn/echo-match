@@ -32,3 +32,7 @@ export async function getMatchCompatibility(matchId: string): Promise<MatchCompa
   const response = await api.get<MatchCompatibility>(`/matches/${matchId}/compatibility`)
   return response.data
 }
+
+export async function deleteMatch(matchId: string): Promise<void> {
+  await api.delete(`/matches/${matchId}`)
+}

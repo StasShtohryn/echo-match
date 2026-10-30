@@ -71,7 +71,7 @@ export default function SmokingStep({
                             >
                                 <span
                                     className={cn(
-                                        "text-sm font-semibold transition-colors",
+                                        "text-sm transition-all sm:text-base font-sans",
                                         isSelected ? "text-primary" : "text-foreground"
                                     )}
                                 >

@@ -7,7 +7,7 @@ import OrientationStep from "./orientation-question"
 import GoalsStep from "./goal-question"
 import BioStep from "./bio-question"
 import OccupationStep from "./occupation-question"
-// import SchoolStep from "./school-question"
+import SchoolStep from "./school-question"
 import CompanyStep from "./company-question"
 import LifestyleStep, { type LifestyleValue } from "./lifestyle-question"
 import FamilyPlansStep from "./famili-plans-question"
@@ -22,7 +22,6 @@ import LanguagesStep from "./languages-question"
 import { updateMyPreferences, type UpdatePreferencesRequest, updateMyVisibility } from "@/services/auth-service"
 import { QuizOnboardingDialog } from "@/components/quizz-question-window"
 import SettingsStep from "./settings-question"
-import { updateLocationFromDevice } from "@/lib/location"
 
 
 const stepsConfig = [
@@ -46,10 +45,10 @@ const stepsConfig = [
     field: "loveLanguage" as const,
     component: LoveLanguageStep
   },
-  // {
-  //     field: "school" as const,
-  //     component: SchoolStep,
-  // },
+  {
+    field: "school" as const,
+    component: SchoolStep,
+  },
   {
     field: "occupation" as const,
     component: OccupationStep,

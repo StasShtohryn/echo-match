@@ -13,7 +13,7 @@ import { useMatches } from "@/hooks/use-matches"
 import { Undo2 } from "lucide-react"
 import { calculateTotalScore } from "@/lib/compatibility"
 import { type Match } from "@/types/match.types"
-import { markMatchAsRead } from "@/services/match-service"
+import { deleteMatch, markMatchAsRead } from "@/services/match-service"
 
 const statusContent: Record<DiscoveryStatus, { title: string; description: string; action?: string }> = {
   Ready: { title: "Шукаємо пару", description: "Завантажуємо анкети для вас." },
@@ -163,9 +163,26 @@ export default function HomePage() {
   const currentStatus = statusContent[status]
   const showStatus = isLoading || !currentCandidate || status !== "Ready"
 
+  const handleDeleteMatch = async (matchId: string) => {
+    setLocalMatches((prev) => prev.filter((m) => m.id !== matchId))
+
+    try {
+      await deleteMatch(matchId)
+      toast.add({ type: "success", title: "Метч видалено" })
+    } catch (error) {
+      console.error("Не вдалося видалити метч:", error)
+      toast.add({
+        type: "error",
+        title: "Не вдалося видалити метч",
+        description: getApiErrorMessage(error, "Спробуйте ще раз."),
+      })
+      void refreshMatches()
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
-      <FilterMatchPanel matches={localMatches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onMatchClick={handleMatchClick} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
+      <FilterMatchPanel matches={localMatches} isMatchesLoading={isMatchesLoading} initialPreferences={preferences} isSaving={isSavingFilters} onMatchClick={handleMatchClick} onDeleteMatch={(matchId) => void handleDeleteMatch(matchId)} onApply={(nextPreferences) => void applyFilters(nextPreferences)} />
       <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-muted/20 px-2 py-4">
         {showStatus ? (
           <div className="flex max-w-sm flex-1 flex-col justify-center items-center gap-4 text-center">
@@ -186,7 +203,7 @@ export default function HomePage() {
         )}
       </main>
       <InfoPanel displayName={currentCandidate?.profile.displayName ?? "Ваш discovery"} age={currentCandidate?.profile.age ?? 0} bio={currentCandidate?.profile.bio ?? null} lookingFor={currentCandidate?.profile.lookingFor ?? undefined} compatibilityPercent={compatibilityScore} pets={currentCandidate?.profile.pets ?? null} orientation={currentCandidate?.profile.orientation ?? null} loveLanguage={currentCandidate?.profile.loveLanguage} communication={currentCandidate?.profile.communication} promptAnswer={currentCandidate?.profile.promptAnswers[1]} />
-      
+
       <MatchModal
         isOpen={Boolean(lastSwipe?.isMatch)}
         matchId={lastSwipe?.matchId ?? null}

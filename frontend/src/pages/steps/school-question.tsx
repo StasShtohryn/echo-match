@@ -46,6 +46,15 @@ export default function SchoolStep({
   const [isFetching, setIsFetching] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
+
+  const selectedRegionName = useMemo(() => {
+    return REGIONS.find((r) => r.code === selectedRegion)?.name
+  }, [selectedRegion])
+
+  const selectedCategoryName = useMemo(() => {
+    return INSTITUTION_CATEGORIES.find((c) => c.code === selectedCategory)?.name
+  }, [selectedCategory])
+
   // Запит робиться тільки тоді, коли обидва поля заповнені
   useEffect(() => {
     if (selectedRegion === null || selectedCategory === null) {
@@ -80,13 +89,14 @@ export default function SchoolStep({
 
   // Пошук за назвою серед завантажених даних
   const filteredUniversities = useMemo(() => {
-    if (!searchQuery.trim()) return []
-    const q = searchQuery.toLowerCase()
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return []
     return universities
-      .filter((u) => {
-        const name = (u.institution_name || u.name || "").toLowerCase()
-        return name.includes(q)
-      })
+      .filter(
+        (u) =>
+          u.name.toLowerCase().includes(q) ||
+          (u.shortName?.toLowerCase().includes(q) ?? false)
+      )
       .slice(0, 20)
   }, [universities, searchQuery])
 
@@ -114,9 +124,8 @@ export default function SchoolStep({
       nextButtonText={!value ? "Пропустити" : "Далі"}
     >
       <div className="mx-auto flex w-full max-w-xl flex-col gap-5 py-4">
-
-        {/* 1. Вибір регіону (показує назву, віддає числовий код) */}
-        <Field className="grid grid-cols-[160px_1fr] items-center gap-3">
+        {/* 1. Вибір регіону */}
+        <Field className="grid grid-cols-[130px_1fr] items-center gap-3">
           <FieldLabel className="text-sm font-bold text-foreground">
             Регіон
           </FieldLabel>
@@ -127,8 +136,10 @@ export default function SchoolStep({
               handleClear()
             }}
           >
-            <SelectTrigger className="h-12 w-full rounded-full border border-input bg-card px-5 text-sm font-medium text-foreground shadow-xs focus:ring-2 focus:ring-primary/40">
-              <SelectValue placeholder="Оберіть регіон" />
+            <SelectTrigger className="min-w-0 h-12 w-full rounded-full border border-input bg-card px-5 text-sm font-medium text-foreground shadow-xs focus:ring-2 focus:ring-primary/40">
+              <SelectValue className="truncate min-w-0 flex-1 text-left" placeholder="Оберіть регіон">
+                {selectedRegionName || "Оберіть регіон"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="max-h-64 rounded-2xl border border-input bg-popover shadow-xl">
               <SelectGroup>
@@ -147,7 +158,7 @@ export default function SchoolStep({
         </Field>
 
         {/* 2. Вибір типу закладу */}
-        <Field className="grid grid-cols-[160px_1fr] items-center gap-3">
+        <Field className="grid grid-cols-[130px_1fr] items-center gap-3">
           <FieldLabel className="text-sm font-bold text-foreground">
             Категорія закладу
           </FieldLabel>
@@ -158,8 +169,10 @@ export default function SchoolStep({
               handleClear()
             }}
           >
-            <SelectTrigger className="h-12 w-full rounded-full border border-input bg-card px-5 text-sm font-medium text-foreground shadow-xs focus:ring-2 focus:ring-primary/40">
-              <SelectValue placeholder="Оберіть категорію" />
+            <SelectTrigger className="min-w-0 h-12 w-full rounded-full border border-input bg-card px-5 text-sm font-medium text-foreground shadow-xs focus:ring-2 focus:ring-primary/40">
+              <SelectValue className="truncate min-w-0 flex-1 text-left" placeholder="Оберіть категорію">
+                {selectedCategoryName || "Оберіть категорію"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="max-h-60 rounded-2xl border border-input bg-popover shadow-xl">
               <SelectGroup>
@@ -178,7 +191,7 @@ export default function SchoolStep({
         </Field>
 
         {/* 3. Пошуковий інпут */}
-        <Field className="relative grid grid-cols-[160px_1fr] items-center gap-3">
+        <Field className="relative grid grid-cols-[130px_1fr] items-center gap-3">
           <FieldLabel className="text-sm font-bold text-foreground">
             Назва закладу
           </FieldLabel>
@@ -229,22 +242,26 @@ export default function SchoolStep({
             {isDropdownOpen && searchQuery.trim().length > 0 && (
               <div className="absolute top-[105%] left-0 z-30 max-h-56 w-full overflow-y-auto rounded-2xl border border-input bg-card p-1.5 shadow-xl">
                 {filteredUniversities.length > 0 ? (
-                  filteredUniversities.map((item, index) => {
-                    const instName = item.institution_name || item.name || ""
-                    return (
-                      <button
-                        key={item.id ?? item.institution_id ?? index}
-                        type="button"
-                        onClick={() => handleSelect(instName)}
-                        className="w-full text-left rounded-xl px-3 py-2 text-xs sm:text-sm text-foreground hover:bg-accent hover:text-primary transition-colors"
-                      >
-                        {instName}
-                      </button>
-                    )
-                  })
+                  filteredUniversities.map((item, index) => (
+                    <button
+                      key={item.id ?? index}
+                      type="button"
+                      onClick={() => handleSelect(item.name)}
+                      className="w-full rounded-xl px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-accent hover:text-primary transition-colors"
+                    >
+                      <span>{item.name}</span>
+                      {item.shortName && (
+                        <span className="ml-1 text-muted-foreground">
+                          ({item.shortName})
+                        </span>
+                      )}
+                    </button>
+                  ))
                 ) : (
                   <div className="p-3 text-center text-xs text-muted-foreground">
-                    {isFetching ? "Пошук закладів..." : "Закладів за цією назвою не знайдено"}
+                    {isFetching
+                      ? "Пошук закладів..."
+                      : "Закладів за цією назвою не знайдено"}
                   </div>
                 )}
               </div>
@@ -260,7 +277,6 @@ export default function SchoolStep({
             Оберіть заклад зі списку або залиште поле порожнім і натисніть «Пропустити».
           </p>
         </div>
-
       </div>
     </TestPage>
   )
