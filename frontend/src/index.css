@@ -132,6 +132,16 @@
   --sidebar-ring: #B8A1FF;
 }
 
+.dark-rose {
+  --header-accent: #FB7185;
+  --primary: #F43F5E;
+  --primary-foreground: #FFFFFF;
+  --ring: #FB7185;
+  --sidebar-primary: #F43F5E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-ring: #FB7185;
+}
+
 @theme inline {
   --font-sans: 'Inter Variable', sans-serif;
   --font-heading: 'EB Garamond Variable', serif;

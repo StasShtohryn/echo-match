@@ -59,7 +59,7 @@ export function ThemeSubMenu({ inline = false }: ThemeSubMenuProps) {
           <DropdownMenuRadioGroup
             value={darkAccentColor}
             onValueChange={(value) => {
-              if (value === "teal" || value === "violet") {
+              if (value === "teal" || value === "violet" || value === "rose") {
                 setDarkAccentColor(value);
                 setTheme("dark");
               }
@@ -67,6 +67,7 @@ export function ThemeSubMenu({ inline = false }: ThemeSubMenuProps) {
           >
             <DropdownMenuRadioItem value="teal">Teal</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="violet">Violet</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="rose">Rose</DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuSubContent>
       </DropdownMenuSub>

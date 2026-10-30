@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react"
 
 type Theme = "dark" | "light" | "system"
 export type AccentColor = "orange" | "rose"
-export type DarkAccentColor = "teal" | "violet"
+export type DarkAccentColor = "teal" | "violet" | "rose"
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -49,7 +49,7 @@ export function ThemeProvider({
   })
   const [darkAccentColor, setDarkAccentColor] = useState<DarkAccentColor>(() => {
     const storedAccentColor = localStorage.getItem(darkAccentStorageKey)
-    return storedAccentColor === "violet" ? "violet" : "teal"
+    return storedAccentColor === "violet" || storedAccentColor === "rose" ? storedAccentColor : "teal"
   })
 
   useEffect(() => {
@@ -73,6 +73,10 @@ export function ThemeProvider({
       root.classList.toggle(
         "dark-violet",
         resolvedTheme === "dark" && darkAccentColor === "violet"
+      )
+      root.classList.toggle(
+        "dark-rose",
+        resolvedTheme === "dark" && darkAccentColor === "rose"
       )
     }
 
